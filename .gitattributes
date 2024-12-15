@@ -1,0 +1,2 @@
+Admin/logfile.log filter=lfs diff=lfs merge=lfs -text
+DeptHead/logfile.log filter=lfs diff=lfs merge=lfs -text
