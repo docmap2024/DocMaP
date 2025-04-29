@@ -47,9 +47,9 @@ $sql = "
                IF(ua.mname IS NOT NULL AND ua.mname != '', CONCAT(' ', LEFT(ua.mname, 1), '.'), ''), 
                ' ', ua.lname) AS Teacher_FullName,
 
-    t.`rank` AS DHead_Role,
-        p.`rank` AS Principal_Role,
-        ua.`rank` AS Teacher_Role
+    t.`Urank` AS DHead_Role,
+        p.`Urank` AS Principal_Role,
+        ua.`Urank` AS Teacher_Role
     FROM 
         `school_details` sd
     INNER JOIN 
