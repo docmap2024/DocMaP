@@ -1,7 +1,7 @@
 <?php
 $servername = "localhost";
 $username = "root";
-$password = "";
+$password = "1a31bd02bd7bdbc569d0";
 $dbname = "docmap2";
 
 // Create connection
