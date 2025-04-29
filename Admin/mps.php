@@ -621,7 +621,7 @@ function sendMessage() {
                         win.document.close();
                         win.onload = function() {
                             win.print();
-                            win.close();
+
                         };
 
                         // Restore action columns
