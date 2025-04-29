@@ -8,17 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 // Include your database connection file here
 include 'connection.php';
 
-// Log file path
-$log_file = __DIR__ . '/logfile.log'; // Ensure the log file path is correct
 
-// Function to log messages
-function logMessage($message) {
-    global $log_file; // Use global variable to access log file
-    error_log(date('Y-m-d H:i:s') . " - " . $message . PHP_EOL, 3, $log_file);
-}
-
-ini_set('log_errors', 1);
-ini_set('error_log', $log_file);
 
 // Initialize variables
 $task_title = "";
