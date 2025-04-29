@@ -35,7 +35,7 @@
                     $user_id = $_SESSION['user_id'];
 
                     // Count unread notifications
-                    $count_sql = "SELECT COUNT(*) FROM notif_user WHERE UserID = ? AND Status = 1";
+                    $count_sql = "SELECT COUNT(*) FROM Notif_User WHERE UserID = ? AND Status = 1";
                     $count_stmt = $conn->prepare($count_sql);
                     $count_stmt->bind_param("s", $user_id);
                     $count_stmt->execute();
@@ -56,17 +56,28 @@
                     <?php
                     // Query to get the notifications where the user is the recipient (NotifUserID = session user_id)
                     $sql = "
-                    SELECT ts.NotifID, ts.TaskID, ts.ContentID, ts.UserID, ts.Title, ts.Content, nu.Status, ts.TimeStamp, ua.fname, ua.lname
-                    FROM notifications ts
-                    INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
-                    INNER JOIN useracc ua ON ts.UserID = ua.UserID
-                    WHERE nu.UserID = ?
-                    ORDER BY 
-                        CASE 
-                            WHEN nu.Status = 1 THEN 1 -- New notifications (Status = 1)
-                            ELSE 2 -- Old notifications (Status = 0)
-                        END ASC, 
-                        ts.TimeStamp DESC";
+                    SELECT 
+    ts.NotifID, 
+    ts.TaskID, 
+    ts.ContentID, 
+    ts.UserID, 
+    ts.Title, 
+    ts.Content, 
+    nu.Status, 
+    ts.TimeStamp, 
+    ua.fname, 
+    ua.lname
+FROM notifications ts
+INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
+INNER JOIN useracc ua ON ts.UserID = ua.UserID
+WHERE nu.UserID = ?
+ORDER BY 
+    CASE 
+        WHEN nu.Status = 1 THEN 1 -- New notifications (Status = 1)
+        ELSE 2 -- Old notifications (Status = 0)
+    END ASC, 
+    ts.TimeStamp DESC;
+";
 
                     // Prepare and execute the SQL statement
                     $stmt = $conn->prepare($sql);
