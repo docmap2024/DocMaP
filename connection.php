@@ -1,5 +1,5 @@
 <?php
-$servername = "localhost";
+$servername = "docmap_docmap";
 $username = "mysql";
 $password = "1a31bd02bd7bdbc569d0";
 $dbname = "docmap2";
