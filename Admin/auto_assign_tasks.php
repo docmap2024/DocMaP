@@ -8,10 +8,17 @@ date_default_timezone_set('Asia/Manila');
 
 // Create or open a log file to write logs
 function write_log($message) {
-    $logfile = 'logfile.log'; // Log file path
-    $timestamp = date("Y-m-d H:i:s"); // Get current timestamp
-    $logMessage = "[{$timestamp}] {$message}\n"; // Format log message
-    file_put_contents($logfile, $logMessage, FILE_APPEND); // Append log message to the file
+    $logfile = 'logfile.log'; // Better organized logs
+    $timestamp = date("Y-m-d H:i:s");
+    
+    try {
+        if (!is_dir(dirname($logfile))) {
+            mkdir(dirname($logfile), 0755, true);
+        }
+        file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
+    } catch (Exception $e) {
+        error_log("Log write failed: " . $e->getMessage());
+    }
 }
 
 function autoAssignTasks() {
@@ -209,7 +216,11 @@ if ($mobileResult->num_rows > 0) {
 
     // Send SMS using Semaphore API (example)
     $api_url = "https://api.semaphore.co/api/v4/messages"; // Semaphore API URL
-    $api_key = "d796c0e11273934ac9d789536133684a"; // Your Semaphore API key
+    $api_key = $_ENV['SEMAPHORE_API_KEY'] ?? '';
+    if (empty($api_key)) {
+        write_log("Semaphore API key not configured");
+        return false;
+    }
 
     foreach ($messages as $index => $message) {
         $number = $mobileNumbers[$index]; // Get the corresponding mobile number
