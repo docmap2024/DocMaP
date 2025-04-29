@@ -6,20 +6,6 @@ include 'connection.php'; // Your database connection file
 // Set the timezone to Philippine Standard Time
 date_default_timezone_set('Asia/Manila');
 
-// Create or open a log file to write logs
-function write_log($message) {
-    $logfile = 'logfile.log'; // Better organized logs
-    $timestamp = date("Y-m-d H:i:s");
-    
-    try {
-        if (!is_dir(dirname($logfile))) {
-            mkdir(dirname($logfile), 0755, true);
-        }
-        file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
-    } catch (Exception $e) {
-        error_log("Log write failed: " . $e->getMessage());
-    }
-}
 
 function autoAssignTasks() {
     global $conn; // Use your existing connection
