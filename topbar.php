@@ -72,10 +72,12 @@ INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
 INNER JOIN useracc ua ON ts.UserID = ua.UserID
 WHERE nu.UserID = ?
 ORDER BY 
+    -- Ordering notifications by their status first (new first, then old)
     CASE 
         WHEN nu.Status = 1 THEN 1 -- New notifications (Status = 1)
         ELSE 2 -- Old notifications (Status = 0)
     END ASC, 
+    -- Then by TimeStamp in descending order (latest first)
     ts.TimeStamp DESC;
 ";
 
