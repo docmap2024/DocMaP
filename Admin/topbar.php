@@ -43,15 +43,14 @@
             </div>
             <?php
                 // Query to fetch notifications
-                $sql = "SELECT ts.NotifID, ts.TaskID, ts.ContentID, ts.UserID, ts.Title, ts.Content, nu.Status, ts.TimeStamp, ua.fname, ua.lname
+                $sql = "SELECT DISTINCT ts.NotifID, ts.TaskID, ts.ContentID, ts.UserID, ts.Title, ts.Content, nu.Status, ts.TimeStamp, ua.fname, ua.lname
                         FROM notifications ts
                         INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
                         INNER JOIN useracc ua ON ts.UserID = ua.UserID
                         WHERE nu.UserID = ?
-                        GROUP BY ts.Title, ts.Content  -- Group by the Title, TaskID, and ContentID to avoid duplicates
                         ORDER BY 
                         CASE 
-                            WHEN ts.Status = 1 THEN 1 
+                            WHEN nu.Status = 1 THEN 1 
                             ELSE 2 
                         END, 
                         ts.TimeStamp DESC;";
