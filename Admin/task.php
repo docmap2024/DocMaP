@@ -3040,12 +3040,12 @@ if (isset($_GET['title'])) {
                 });
         }
 
-        /*JavaScript code for autoUpdateScheduledTasks function
+        //JavaScript code for autoUpdateScheduledTasks function
         window.addEventListener('load', function() {
             autoUpdateScheduledTasks();
         });
         
-        setInterval(autoUpdateScheduledTasks, 60000);*/
+        setInterval(autoUpdateScheduledTasks, 60000);
 
         // Optionally, trigger the check immediately when the script loads
         autoUpdateScheduledTasks();
