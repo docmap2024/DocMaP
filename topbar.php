@@ -35,7 +35,7 @@
                     $user_id = $_SESSION['user_id'];
 
                     // Count unread notifications
-                    $count_sql = "SELECT COUNT(*) FROM notif_user WHERE UserID = ? AND Status = 1";
+                    $count_sql = "SELECT COUNT(*) FROM Notif_User WHERE UserID = ? AND Status = 1";
                     $count_stmt = $conn->prepare($count_sql);
                     $count_stmt->bind_param("s", $user_id);
                     $count_stmt->execute();
