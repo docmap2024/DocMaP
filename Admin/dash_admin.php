@@ -30,8 +30,8 @@ if ($stmt_user = $conn->prepare($sql_user)) {
 
 
 // Fetch distinct School Years
-$schoolYears = $conn->query("SELECT DISTINCT Year_Range FROM SchoolYear ORDER BY Year_Range");
-$yearRanges = $conn->query("SELECT DISTINCT Year_Range FROM SchoolYear ORDER BY Year_Range");
+$schoolYears = $conn->query("SELECT DISTINCT Year_Range FROM schoolyear ORDER BY Year_Range");
+$yearRanges = $conn->query("SELECT DISTINCT Year_Range FROM schoolyear ORDER BY Year_Range");
 
 // Default filter values
 $selectedYear = $_GET['school_year'] ?? null;
