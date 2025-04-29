@@ -99,20 +99,78 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
             continue; // Skip to the next file
         }
 
-        // Try to upload file
+        // Try to upload file locally first
         if (move_uploaded_file($fileTmpName, $target_file)) {
-            write_log("File uploaded: $fileName, Stored at: $target_file");
+            write_log("File uploaded locally: $fileName, Stored at: $target_file");
 
-            // Store file details in an array to insert after task creation
-            $uploadedFiles[] = [
-                'fileName' => $fileName, // Use the new file name with random number
-                'fileMimeType' => $fileMimeType,
-                'fileSize' => $fileSize,
-                'target_file' => $target_file
+            // GitHub Repository Details
+            $githubRepo = "docmap2024/DocMaP"; // GitHub username/repo
+            $branch = "main";
+            $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/Attachments/$fileName";
+        
+            // Fetch GitHub Token from Environment Variables
+            $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
+            if (!$githubToken) {
+                continue;
+                write_log("GitHub token not found in environment variables");
+            }
+        
+            // Prepare File Data for GitHub
+            $content = base64_encode(file_get_contents($target_file));
+            $data = json_encode([
+                "message" => "Adding a new file to upload folder",
+                "content" => $content,
+                "branch" => $branch
+            ]);
+        
+            $headers = [
+                "Authorization: token $githubToken",
+                "Content-Type: application/json",
+                "User-Agent: DocMaP"
             ];
+        
+            // GitHub API Call
+            $ch = curl_init($uploadUrl);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        
+            if ($response === false) {
+                write_log("GitHub upload failed for file: $fileName - " . curl_error($ch));
+                $allFilesUploaded = false;
+            } else {
+                $responseData = json_decode($response, true);
+                if ($httpCode == 201) { // Successful upload
+                    $githubDownloadUrl = $responseData['content']['download_url'];
+                    write_log("File uploaded to GitHub: $fileName, Download URL: $githubDownloadUrl");
+        
+                    // Save File Information to the array for database insertion
+                    $uploadedFiles[] = [
+                        'fileName' => $fileName,
+                        'fileMimeType' => $fileMimeType,
+                        'fileSize' => $fileSize,
+                        'target_file' => $githubDownloadUrl // Using GitHub URL instead of local path
+                    ];
+                } else {
+                    write_log("GitHub upload failed for file: $fileName - HTTP Code: $httpCode");
+                    $allFilesUploaded = false;
+                }
+            }
+        
+            curl_close($ch);
+        
+            // Delete Local File After Upload to GitHub
+            if (file_exists($target_file)) {
+                unlink($target_file);
+                write_log("Local file deleted: $target_file");
+            }
         } else {
-            write_log("Error uploading file: $fileOriginalName");
-            $allFilesUploaded = false; // Mark overall process as failed
+            write_log("Error uploading file locally: $fileOriginalName");
+            $allFilesUploaded = false;
         }
     }
 } else {
@@ -270,40 +328,38 @@ if (empty($ContentIDs)) {
                         write_log("Mobile numbers for dept_ID $deptID: $mobileNumbersList");
                         write_log("Messages to be sent: " . implode(" | ", $messages));
                     
-                        // Send SMS using Semaphore API (example)
-                        $api_url = "https://api.semaphore.co/api/v4/messages"; // Semaphore API URL
-                        $api_key = "d796c0e11273934ac9d789536133684a"; // Your Semaphore API key
-                    
-                        foreach ($messages as $index => $message) {
-                            $number = $mobileNumbers[$index]; // Get the corresponding mobile number
-                    
-                            // Prepare POST data
-                            $postData = [
-                                'apikey' => $api_key,
-                                'number' => $number, // Individual number
-                                'message' => $message
-                            ];
-                    
-                            // Initialize cURL session
-                            $ch = curl_init();
-                            curl_setopt($ch, CURLOPT_URL, $api_url);
-                            curl_setopt($ch, CURLOPT_POST, true);
-                            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    
-                            // Execute cURL request
-                            $response = curl_exec($ch);
-                            if (curl_errno($ch)) {
-                                write_log("Error sending SMS to number ($number): " . curl_error($ch));
-                            } else {
-                                write_log("SMS sent successfully to number: $number");
-                            }
-                            curl_close($ch);
-                        }
-                    } else {
-                        write_log("No mobile numbers found for dept_ID $deptID");
-                    }
+                        // Send SMS using Semaphore API
+                        $api_url = "https://api.semaphore.co/api/v4/messages";
+                        $api_key = $_ENV['SEMAPHORE_API_KEY'] ?? '';
 
+                        if (!empty($api_key)) {
+                            foreach ($messages as $index => $message) {
+                                $number = $mobileNumbers[$index];
+                                
+                                $postData = [
+                                    'apikey' => $api_key,
+                                    'number' => $number,
+                                    'message' => $message
+                                ];
+                                
+                                $ch = curl_init();
+                                curl_setopt($ch, CURLOPT_URL, $api_url);
+                                curl_setopt($ch, CURLOPT_POST, true);
+                                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+                                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                                
+                                $response = curl_exec($ch);
+                                if (curl_errno($ch)) {
+                                    write_log("Error sending SMS to number ($number): " . curl_error($ch));
+                                } else {
+                                    write_log("SMS sent successfully to number: $number");
+                                }
+                                curl_close($ch);
+                            }
+                        } else {
+                            write_log("Semaphore API key not configured");
+                        }
+                    }
                     // Close user query
                     $userDeptQuery->close();
                 } else {
@@ -478,39 +534,37 @@ if (empty($ContentIDs)) {
                         
                             // Send SMS using Semaphore API (example)
                             $api_url = "https://api.semaphore.co/api/v4/messages"; // Semaphore API URL
-                            $api_key = "d796c0e11273934ac9d789536133684a"; // Your Semaphore API key
-                        
-                            foreach ($messages as $index => $message) {
-                                $number = $mobileNumbers[$index]; // Get the corresponding mobile number
-                        
-                                // Prepare POST data
-                                $postData = [
-                                    'apikey' => $api_key,
-                                    'number' => $number, // Individual number
-                                    'message' => $message
-                                ];
-                        
-                                // Initialize cURL session
-                                $ch = curl_init();
-                                curl_setopt($ch, CURLOPT_URL, $api_url);
-                                curl_setopt($ch, CURLOPT_POST, true);
-                                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-                                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                        
-                                // Execute cURL request
-                                $response = curl_exec($ch);
-                                if (curl_errno($ch)) {
-                                    write_log("Error sending SMS to number ($number): " . curl_error($ch));
-                                } else {
-                                    write_log("SMS sent successfully to number: $number");
-                                }
-                                curl_close($ch);
-                            }
-                        } else {
-                            write_log("No mobile numbers found for ContentID $ContentID");
-                        }
-                    
+                            $api_key = $_ENV['SEMAPHORE_API_KEY'] ?? '';
 
+                            if (!empty($api_key)) {
+                                foreach ($messages as $index => $message) {
+                                    $number = $mobileNumbers[$index];
+                                    
+                                    $postData = [
+                                        'apikey' => $api_key,
+                                        'number' => $number,
+                                        'message' => $message
+                                    ];
+                                    
+                                    $ch = curl_init();
+                                    curl_setopt($ch, CURLOPT_URL, $api_url);
+                                    curl_setopt($ch, CURLOPT_POST, true);
+                                    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+                                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                                    
+                                    $response = curl_exec($ch);
+                                    if (curl_errno($ch)) {
+                                        write_log("Error sending SMS to number ($number): " . curl_error($ch));
+                                    } else {
+                                        write_log("SMS sent successfully to number: $number");
+                                    }
+                                    curl_close($ch);
+                                }
+                            } else {
+                                write_log("Semaphore API key not configured");
+                            }
+                    
+                        }
                         // Close user query
                         $userContentQuery->close();
                     } else {
