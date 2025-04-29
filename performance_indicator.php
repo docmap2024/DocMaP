@@ -871,6 +871,8 @@ $conn->close();
 
     </script>
 
+    <!---------------------------------Calculation in Creation Modal-------------------------------->
+
     <script>
         // Function to calculate and update the drop rate
         function calculateDropRate() {
@@ -882,6 +884,19 @@ $conn->close();
                 document.getElementById('drop_rate').value = dropRate.toFixed(2);
             } else {
                 document.getElementById('drop_rate').value = '';
+            }
+        }
+
+        // Function to calculate and update the repeaters rate
+        function calculateRepeatersRate() {
+            const enrollmentGross = parseFloat(document.getElementById('enrollment_gross').value) || 0;
+            const repeatersFigure = parseFloat(document.getElementById('repeaters_figure').value) || 0;
+
+            if (enrollmentGross > 0) {
+                const repeatersRate = (repeatersFigure / enrollmentGross) * 100;
+                document.getElementById('repeaters_rate').value = repeatersRate.toFixed(2);
+            } else {
+                document.getElementById('repeaters_rate').value = '';
             }
         }
 
@@ -901,10 +916,65 @@ $conn->close();
         // Event listeners for input changes
         document.getElementById('enrollment_gross').addEventListener('input', () => {
             calculateDropRate();
+            calculateRepeatersRate();
             calculateGraduationRate();
         });
         document.getElementById('drop_figure').addEventListener('input', calculateDropRate);
+        document.getElementById('repeaters_figure').addEventListener('input', calculateRepeatersRate);
         document.getElementById('graduation_figure').addEventListener('input', calculateGraduationRate);
+    </script>
+
+    <!---------------------------------Calculation in Update Modal-------------------------------->
+    
+    <script>
+        // Function to calculate and update the drop rate
+        function editcalculateDropRate() {
+            const editenrollmentGross = parseFloat(document.getElementById('editEnrollGross').value) || 0;
+            const editdropFigure = parseFloat(document.getElementById('editDropoutFigure').value) || 0;
+
+            if (editenrollmentGross > 0) {
+                const editdropRate = (editdropFigure / editenrollmentGross) * 100;
+                document.getElementById('editDropoutRate').value = editdropRate.toFixed(2);
+            } else {
+                document.getElementById('editDropoutRate').value = '';
+            }
+        }
+
+        // Function to calculate and update the repeaters rate
+        function editcalculateRepeatersRate() {
+            const editenrollmentGross = parseFloat(document.getElementById('editEnrollGross').value) || 0;
+            const editrepeatersFigure = parseFloat(document.getElementById('editRepeatersFigure').value) || 0;
+
+            if (editenrollmentGross > 0) {
+                const editrepeatersRate = (editrepeatersFigure / editenrollmentGross) * 100;
+                document.getElementById('editRepeatersRate').value = editrepeatersRate.toFixed(2);
+            } else {
+                document.getElementById('editRepeatersRate').value = '';
+            }
+        }
+
+        // Function to calculate and update the graduation rate
+        function editcalculateGraduationRate() {
+            const editenrollmentGross = parseFloat(document.getElementById('editEnrollGross').value) || 0;
+            const editgraduationFigure = parseFloat(document.getElementById('editPromotionFigure').value) || 0;
+
+            if (editenrollmentGross > 0) {
+                const editgraduationRate = (editgraduationFigure / editenrollmentGross) * 100;
+                document.getElementById('editPromotionRate').value = editgraduationRate.toFixed(2);
+            } else {
+                document.getElementById('editPromotionRate').value = '';
+            }
+        }
+
+        // Event listeners for input changes
+        document.getElementById('editEnrollGross').addEventListener('input', () => {
+            editcalculateDropRate();
+            editcalculateRepeatersRate();
+            editcalculateGraduationRate();
+        });
+        document.getElementById('editDropoutFigure').addEventListener('input', editcalculateDropRate);
+        document.getElementById('editRepeatersFigure').addEventListener('input', editcalculateRepeatersRate);
+        document.getElementById('editPromotionFigure').addEventListener('input', editcalculateGraduationRate);
     </script>
 
     <script>

@@ -101,7 +101,10 @@ if (isset($_GET['task_id'])) {
             u.lname, 
             u.profile, 
             tu.Status,
-            tu.Task_User_ID, tu.SubmitDate, tu.ApproveDate, tu.RejectDate,
+            tu.Task_User_ID, 
+            tu.SubmitDate, 
+            tu.ApproveDate, 
+            tu.RejectDate,
             d.name AS file_name,
             d.uri AS file_path,
             d.mimeType,
@@ -130,59 +133,63 @@ if (isset($_GET['task_id'])) {
     $stmt->close();
 }
 
-// Check if taskID and contentID are set
-if (isset($_GET['task_id']) && isset($_GET['content_id'])) {
+// Check if taskID is set
+if (isset($_GET['task_id'])) {
     $taskID = $_GET['task_id'];
-    $contentID = $_GET['content_id'];
+    $contentID = isset($_GET['content_id']) ? $_GET['content_id'] : null; // ContentID can be null
 
     // Log all received parameters
     logMessage("Received parameters: " . json_encode($_GET));
 
-    // Check for empty parameters and log specifically
+    // Check for empty taskID and log specifically
     if (empty($taskID)) {
         logMessage("TaskID is missing or empty.");
     }
 
-    if (empty($contentID)) {
-        logMessage("ContentID is missing or empty.");
-    }
+    if (!empty($taskID)) {
+        logMessage("Fetching counts for TaskID: $taskID and ContentID: " . ($contentID ?? 'NULL'));
 
-    if (!empty($taskID) && !empty($contentID)) {
-        logMessage("Fetching counts for TaskID: $taskID and ContentID: $contentID");
+        // Base condition for the WHERE clause
+        $baseCondition = "TaskID = '$taskID'";
+        if ($contentID !== null) {
+            $baseCondition .= " AND ContentID = '$contentID'";
+        } else {
+            $baseCondition .= " AND ContentID IS NULL"; // Handle NULL ContentID
+        }
 
         // Query to count handed-in users
         $queryHandedIn = "
             SELECT COUNT(*) AS handedInCount 
             FROM task_user 
-            WHERE TaskID = '$taskID' AND ContentID = '$contentID' AND Status = 'Submitted'
+            WHERE $baseCondition AND Status = 'Submitted'
         ";
 
         // Query to count assigned users
         $queryAssigned = "
             SELECT COUNT(*) AS assignedCount 
             FROM task_user 
-            WHERE TaskID = '$taskID' AND ContentID = '$contentID' AND Status = 'Assigned'
+            WHERE $baseCondition AND Status = 'Assigned'
         ";
 
         // Query to count missing users
         $queryMissing = "
             SELECT COUNT(*) AS missingCount 
             FROM task_user 
-            WHERE TaskID = '$taskID' AND ContentID = '$contentID' AND Status = 'Missing'
+            WHERE $baseCondition AND Status = 'Missing'
         ";
 
         // Query to count approved users
         $queryApproved = "
             SELECT COUNT(*) AS approvedCount 
             FROM task_user 
-            WHERE TaskID = '$taskID' AND ContentID = '$contentID' AND Status = 'Approved'
+            WHERE $baseCondition AND Status = 'Approved'
         ";
 
         // Query to count rejected users
         $queryRejected = "
             SELECT COUNT(*) AS rejectedCount 
             FROM task_user 
-            WHERE TaskID = '$taskID' AND ContentID = '$contentID' AND Status = 'Rejected'
+            WHERE $baseCondition AND Status = 'Rejected'
         ";
 
         // Execute queries to get counts
@@ -256,13 +263,7 @@ if (isset($_GET['task_id']) && isset($_GET['content_id'])) {
     }
 } else {
     // Log specifically which parameter is missing
-    if (!isset($_GET['task_id'])) {
-        logMessage("TaskID parameter is missing.");
-    }
-
-    if (!isset($_GET['content_id'])) {
-        logMessage("ContentID parameter is missing.");
-    }
+    logMessage("TaskID parameter is missing.");
 
     // Set fallback values
     $assignedCount = 0; // Or a fallback value
@@ -413,22 +414,22 @@ mysqli_close($conn);
         }
 
         .pin-icon {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 40px; /* Adjust size of the circle */
-    height: 40px; /* Adjust size of the circle */
-    border-radius: 50%; /* Makes the shape a circle */
-    background-color: #9b2035; /* Circle color */
-    color: white; /* Icon color */
-    font-size: 20px; /* Adjust icon size */
-    margin-left: 40px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px; /* Adjust size of the circle */
+            height: 40px; /* Adjust size of the circle */
+            border-radius: 50%; /* Makes the shape a circle */
+            background-color: #9b2035; /* Circle color */
+            color: white; /* Icon color */
+            font-size: 20px; /* Adjust icon size */
+            margin-left: 40px;
 
-}
+        }
 
-.pin-icon i {
-    margin: 0; /* Remove any margin around the icon */
-}
+        .pin-icon i {
+            margin: 0; /* Remove any margin around the icon */
+        }
 
         .user-list, .user-attachments {
             padding: 20px; /* General padding for both sections */
@@ -443,57 +444,126 @@ mysqli_close($conn);
             padding-left: 20px; /* Space to the left of the attachments */
         }
         .document-container {
-    background-color: white;
-    border-radius: 8px;
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Optional: For a slight shadow */
-    border: 1px solid #ddd; /* Optional: Border for better visibility */
-  
-}
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Optional: For a slight shadow */
+            border: 1px solid #ddd; /* Optional: Border for better visibility */
+        
+        }
 
-.document-link {
-    text-decoration: none;
-    color: #007bff;
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    align-items: center;
-}
+        .document-link {
+            text-decoration: none;
+            color: #007bff;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+        }
 
-.document-name {
-    flex-grow: 1;
-    font-size: 14px;
-    color: black;
-}
+        .document-name {
+            flex-grow: 1;
+            font-size: 14px;
+            color: black;
+        }
 
-.document-icon-container {
-    width: 30px;
-    height: 30px;
-    background-color: #9b2035;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-left: 10px;
-}
+        .document-icon-container {
+            width: 30px;
+            height: 30px;
+            background-color: #9b2035;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 10px;
+        }
 
-.document-icon {
-    font-size: 18px;
-    color: white;
-}
+        .document-icon {
+            font-size: 18px;
+            color: white;
+        }
 
-.comment-icon {
-    font-size: 18px;
-    color: white;
-}
-.status-title{
-    font-weight:bold;
-    color:#9b2035;
-}
+        .comment-icon {
+            font-size: 18px;
+            color: white;
+        }
+        .status-title{
+            font-weight:bold;
+            color:#9b2035;
+        }
+
+        .comment-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            max-width: 90%;
+        }
+
+        .comment-item.current-user {
+            margin-left: auto;
+            max-width: 85%;
+        }
+
+        .comment-item img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+
+        .comment-item:not(.current-user) img {
+            margin-right: 10px;
+        }
+
+        .comment-item.current-user img {
+            margin-left: 10px;
+        }
+
+        .comment-content {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 18px;
+        }
+
+        .comment-item:not(.current-user) .comment-content {
+            background-color: #f1f1f1;
+            margin-right: 10px;
+        }
+
+        .comment-item.current-user .comment-content {
+            background-color: #e3f2fd;
+            margin-left: 10px;
+        }
+
+        .date-divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .date-divider span {
+            background: #f0f0f0;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: #666;
+            font-size: 0.9em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .date-divider:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ddd;
+            z-index: 0;
+        }
 
 
     </style>
@@ -849,6 +919,10 @@ mysqli_close($conn);
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
                                                                 <?php foreach ($documents as $doc): ?>
+                                                                    <?php
+                                                                        // Remove the leading numbers followed by an underscore
+                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                    ?>
                                                                     <?php if (!empty($doc['file_name'])): ?>
                                                                         <div class="col-md-12 document-container" style="margin-bottom: 15px;">
                                                                             <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
@@ -905,6 +979,10 @@ mysqli_close($conn);
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
                                                                 <?php foreach ($documents as $doc): ?>
+                                                                    <?php
+                                                                        // Remove the leading numbers followed by an underscore
+                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                    ?>
                                                                     <?php if (!empty($doc['file_name'])): ?>
                                                                         <div class="col-md-12 document-container" style="margin-bottom: 15px;">
                                                                             <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
@@ -1136,6 +1214,10 @@ mysqli_close($conn);
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
                                                                 <?php foreach ($documents as $doc): ?>
                                                                     <?php if (!empty($doc['file_name'])): ?>
+                                                                        <?php 
+                                                                            // Clean up document display name
+                                                                            $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                        ?>
                                                                         <div class="col-md-12 document-container" style="margin-bottom: 15px;">
                                                                             <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
                                                                                 <?php echo htmlspecialchars($displayName); ?>
@@ -1325,10 +1407,14 @@ mysqli_close($conn);
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
                                                                 <?php foreach ($documents as $doc): ?>
+                                                                    <?php 
+                                                                        // Clean up document display name
+                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                    ?>
                                                                     <?php if (!empty($doc['file_name'])): ?>
                                                                         <div class="col-md-12 document-container" style="margin-bottom: 15px;">
                                                                             <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($doc['file_name']); ?>
+                                                                                <?php echo htmlspecialchars($displayName); ?>
                                                                             </span>
                                                                             <span class="document-icon-container" style="margin-left: 15px;">
                                                                                 <i class="bx bxs-file document-icon"></i>
@@ -1444,6 +1530,25 @@ mysqli_close($conn);
 
 
 <script>
+    function calculateHrWidth(text, fontSize = '1.2rem') {
+        // Create a temporary span element to measure the text width
+        const span = document.createElement('span');
+        span.style.visibility = 'hidden';
+        span.style.position = 'absolute';
+        span.style.fontSize = fontSize;
+        span.style.fontWeight = 'bold'; // Match your name style
+        span.style.fontFamily = "'Times New Roman', serif"; // Match your font
+        span.style.whiteSpace = 'nowrap';
+        span.textContent = text;
+            
+        document.body.appendChild(span);
+        const width = span.offsetWidth;
+        document.body.removeChild(span);
+            
+        // Return width plus some padding (e.g., 20px)
+        return `${width + 20}px`;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const generateReportBtn = document.getElementById("generateReportBtn");
         const myTab = document.getElementById("myTab");
@@ -1501,68 +1606,196 @@ mysqli_close($conn);
 
                     // Prepare the logo and school details for the print view
                     var logo = data.Logo ? '<img src="../img/Logo/' + data.Logo + '" style="width: 130px; height: auto; margin-right:20px;" />' : '<p>No Logo Available</p>';
-                    var schoolDetails = ` 
-                        <div class="header-content">
-                            <div class="logo">${logo}</div>
-                            <div class="school-details">
-                                <p>Republic of the ${data.Country}</p>
-                                <p>${data.Organization}</p>
-                                <p>${data.Region}</p>
-                                <h2 style="font-weight: bold; font-size: 1.5em;">${data.Name}</h2>
-                                <p>${data.Address}</p>
-                                <p>School ID: ${data.School_ID}</p>
+                    // Centered DepEd Logo
+                    var depedLogo = `
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <img src="../img/Logo/deped_logo.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
+                            </div>
+                        `;
+
+                    var schoolDetails = `
+                        <div class="header-container">
+                            ${depedLogo}
+                            <div class="school-details" style="text-align: center;">
+                                <p style='font-family: "Old English Text MT", serif; font-weight:bold; font-size:20px; margin: 0;'>Republic of the ${data.Country || 'Philippines'}</p>
+                                <p style='font-family: "Old English Text MT", serif;font-weight:bold; font-size:28px; margin: 4px 0 2px 0;'>${data.Organization || 'Department of Education'}</p>
+                                <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">Region ${data.Region || 'IV-A'}</p>
+                                <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">Schools Division of Batangas</p>
+                                <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">${data.Name || 'School Name'}</p>
+                                <p style="text-transform: uppercase;  font-family: 'Tahoma'; font-size: 16px; margin: 1px;">${data.Address}, ${data.City_Muni}</p>
                             </div>
                         </div>
-                        <hr/>
+                        <hr style="max-width:100%; margin: 10px auto; border: 1px solid black;">
                         <div class="additional-titles" style="text-align: center; font-family: 'Times New Roman', serif;">
                             <h3>Submission Report</h3>
                             <h4>${feedContentTitleCaption}</h4>
-                            <h4>Department: ${deptName}</h4>
+                            <h4>${deptName}</h4>
                         </div>
+                    `;
+
+                    // Calculate widths for both names
+                    const principalName = data.Principal_FullName.toUpperCase();
+
+                    // Get the computed font size from your style (1.2rem)
+                    const fontSize = '1.2rem';
+                    const principalHrWidth = calculateHrWidth(principalName, fontSize);
+
+                    const signatureSection = `
+                        <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="text-align: center; flex: 1;">
+                                <span>Approved by:</span><br/><br/>
+                                <div style="margin-bottom: -55px; margin-top: -65px;">
+                                    <img src="img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                </div>
+                                <span style="font-weight:bold;">${principalName}</span><br/>
+                                <hr style="width: ${principalHrWidth}; margin: 0 auto; border: 1px solid black;">
+                                <span>${data.Principal_Role}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    // Footer with DepEd MATATAG Logo (will be positioned at bottom via CSS)
+                    var footerContent = `
+                        <div class="footer">
+                            <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
+                                <div class="footer-logo">
+                                    <img src="  img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                    ${data.Logo ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
+                                </div>
+                                <div class="footer-details">
+                                    <p style="margin-bottom: -5px;">${data.Address || ''} ${data.City_Muni || ''} ${data.School_ID ? 'School ID: ' + data.School_ID : ''}</p>
+                                    <p style="margin-bottom: -5px;">${data.Mobile_No ? 'Contact nos.: ' + data.Mobile_No : ''} ${data.landline ? ' Landline: ' + data.landline : ''}</p>
+                                    <p class="footer-underline">${data.Email || ''}</p>
+                                </div>
+                            </div>
+                         </div>
                     `;
 
                     // Prepare the report HTML content (without opening a new window)
                     const reportContent = `
                         <html>
                         <head>
-                            <title>Report for Task ${taskTitle}</title>
+                            <title>Lian National High School Task Submission Report</title>
                             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
                             <style>
-                                body { font-family: Arial, sans-serif; padding: 20px; }
-                                h1 { text-align: center; }
-                                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                                th, td { padding: 8px; text-align: center; border: 1px solid #ddd; } /* Centering all cells */
-                                th { background-color: #f2f2f2; }
-                                .header-content { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
-                                .logo {}
-                                .school-details { text-align: center; font-family: 'Times New Roman', serif; }
-                                .school-details h2 { font-size: 1.5em; font-weight: bold; }
-                                .school-details p { margin: 0; }
-                                hr { border-top: 1px solid black; width: 100%; margin-top: 10px; }
-                                .additional-titles { margin-top: 10px; margin-bottom: 50px; }
-                                .additional-titles h3, .additional-titles h4 { margin: 5px 0; font-weight: bold; }
-                                .signature-section { margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start; }
-                                .signature-section div { flex: 1; text-align: center; }
-                                .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; pointer-events: none; z-index: -1; }
+                                body { 
+                                    font-family: Arial, sans-serif; 
+                                    padding: 20px; 
+                                }
+                                h1 { 
+                                    text-align: center; 
+                                    font-size: 2em;
+                                }
+                                table { 
+                                    width: 100%; 
+                                    border-collapse: collapse; 
+                                    margin-top: 20px; 
+                                }
+                                th, td { 
+                                    padding: 8px; 
+                                    text-align: center; 
+                                    border: 1px solid #ddd; 
+                                } /* Centering all cells */
+                                th { 
+                                    background-color: #f2f2f2; 
+                                }
+                                .header-content { 
+                                    display: flex; 
+                                    justify-content: center;
+                                    align-items: center; 
+                                    margin-bottom: 20px; 
+                                }
+                                .school-details { 
+                                    text-align: center; 
+                                    font-family: 'Times New Roman', serif; 
+                                }
+                                .school-details h2 { 
+                                    font-size: 1.5em; 
+                                    font-weight: bold; 
+                                }
+                                .school-details p { 
+                                    margin: 0; 
+                                }
+                                .school-details {
+                                    text-align: center;
+                                }
+                                hr {
+                                    border-top: 1px solid black;
+                                    width: 100%;
+                                    margin: 10px auto;
+                                }
+                                .additional-titles {
+                                    margin: 20px 0;
+                                }
+                                .additional-titles h3 {
+                                    font-size: 1.3em;
+                                    margin-bottom: 5px;
+                                    font-weight: bold;
+                                }
+                                .additional-titles h4 {
+                                    font-size: 1.1em;
+                                    margin-top: 0;
+                                    font-weight: bold;
+                                }
+                                .signature-section {
+                                    margin-top: 60px;
+                                    margin-bottom: 100px; /* Space above footer */
+                                    page-break-inside: avoid;
+                                }
+                                .footer {
+                                    position: fixed;
+                                    bottom: 0;
+                                    left: 0;
+                                    right: 0;
+                                    width: 100%;
+                                    background-color: white;
+                                    padding: 5px 0;
+                                    border-top: 2.5px solid #000;
+                                    margin-bottom: 15px;
+                                }
+
+                                .footer-logo {
+                                    display: flex;
+                                    align-items: center;
+                                    margin-right: 20px;
+                                }
+
+                                .footer-details {
+                                    text-align: left;
+                                    font-size: 1.5rem;
+                                    line-height: 1.3;
+                                }
+
+                                .footer-underline {
+                                    color: blue;
+                                    text-decoration: underline;
+                                }
+
                             </style>
                         </head>
                         <body>
-                            ${schoolDetails}
-                            <h1>Report for "${taskTitle}"</h1>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>#</th> <!-- Change UserID column to # -->
-                                        <th>First Name</th>
-                                        <th>Last Name</th>
-                                        <th>Document(s)</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${generateTableRows()}
-                                </tbody>
-                            </table>
+                            <div class="page-container">
+                                <div class="content">
+                                    ${schoolDetails}
+                                    <h1>Report for "${taskTitle}"</h1>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>First Name</th>
+                                                <th>Last Name</th>
+                                                <th>Document(s)</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${generateTableRows()}
+                                        </tbody>
+                                    </table>
+                                    ${signatureSection}
+                                </div>
+                                ${footerContent}
+                            </div>
                         </body>
                         </html>
                     `;
@@ -1910,44 +2143,153 @@ document.addEventListener('DOMContentLoaded', function() {
         const commentsContainer = document.getElementById(`commentsContainer${userID}`);
         commentsContainer.innerHTML = '<p>Loading comments...</p>';
 
-        const taskId = document.querySelector(`[name="task_id"]`).value;
-        const contentId = document.querySelector(`[name="content_id"]`).value;
+        const taskId = document.querySelector('[name="task_id"]').value;
+        const contentIdInput = document.querySelector('[name="content_id"]');
+        const contentId = contentIdInput ? contentIdInput.value : null;
 
-        // AJAX request to fetch comments
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', `fetch_comments.php?task_id=${taskId}&content_id=${contentId}&user_id=${userID}`, true);
+        console.log('Fetching comments with:', { taskId, contentId, userID });
 
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.success) {
-                        commentsContainer.innerHTML = ''; // Clear previous content
-                        response.comments.forEach(comment => {
-                            const commentHTML = `
-                                <div class="comment-item" style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                                    <img src="${comment.profile}" alt="${comment.fname} ${comment.lname}'s profile" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                                    <div style="flex: 1;">
-                                        <strong style="color: #9b2035;">${comment.fname} ${comment.lname}</strong>
-                                        <span style="color: gray; font-size: 0.8em; margin-left: 5px;">&bull; ${comment.timestamp}</span> <!-- Dot icon and timestamp -->
-                                        <p style="margin: 0;">${comment.Comment}</p>
-                                    </div>
-                                </div>
-                            `;
-                            commentsContainer.innerHTML += commentHTML;
-                        });
+        // Build URL with optional content_id
+        let url = `fetch_comments.php?task_id=${taskId}&user_id=${userID}`;
+        if (contentId) {
+            url += `&content_id=${contentId}`;
+        }
 
-
-                    } else {
-                        commentsContainer.innerHTML = '<p>No comments available.</p>';
-                    }
-                } else {
-                    commentsContainer.innerHTML = '<p>Error loading comments.</p>';
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            }
-        };
+                return response.json();
+            })
+            .then(response => {
+                console.log('Received response:', response);
+                
+                commentsContainer.innerHTML = '';
+                
+                if (response.success && response.comments.length > 0) {
+                    // Group comments by date
+                    const groupedComments = {};
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
 
-        xhr.send();
+                    response.comments.forEach(comment => {
+                        const commentDate = new Date(comment.timestamp);
+                        const dateKey = commentDate.toDateString();
+                        
+                        if (!groupedComments[dateKey]) {
+                            groupedComments[dateKey] = [];
+                        }
+                        groupedComments[dateKey].push(comment);
+                    });
+
+                    // Create date dividers and comments
+                    Object.keys(groupedComments).forEach(dateKey => {
+                        const comments = groupedComments[dateKey];
+                        const commentDate = new Date(dateKey);
+
+                        // Create date divider
+                        const dateDivider = document.createElement('div');
+                        dateDivider.classList.add('date-divider');
+                        
+                        let dividerText;
+                        if (commentDate.toDateString() === today.toDateString()) {
+                            dividerText = 'Today';
+                        } else if (commentDate.toDateString() === yesterday.toDateString()) {
+                            dividerText = 'Yesterday';
+                        } else {
+                            dividerText = commentDate.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                        }
+
+                        dateDivider.innerHTML = `<span>${dividerText}</span>`;
+                        commentsContainer.appendChild(dateDivider);
+
+                        // Add comments for this date
+                        comments.forEach(comment => {
+                            // Format the timestamp (time only since date is in divider)
+                            const formattedTimestamp = new Date(comment.timestamp).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+                            
+                            const commentDiv = document.createElement('div');
+                            commentDiv.className = 'comment-item';
+                            
+                            // Add current-user class if it's the current user's comment
+                            if (comment.isCurrentUser) {
+                                commentDiv.classList.add('current-user');
+                            }
+                            
+                            const img = document.createElement('img');
+                            img.src = comment.profile;
+                            img.alt = `${comment.fname} ${comment.lname}'s profile`;
+                            
+                            const contentDiv = document.createElement('div');
+                            contentDiv.className = 'comment-content';
+                            
+                            const nameSpan = document.createElement('strong');
+                            nameSpan.style.color = '#9b2035';
+                            nameSpan.textContent = `${comment.fname} ${comment.lname}`;
+                            
+                            const timeSpan = document.createElement('span');
+                            timeSpan.style.cssText = 'color: gray; font-size: 0.8em; margin-left: 5px;';
+                            timeSpan.innerHTML = `&bull; ${formattedTimestamp}`;
+                            
+                            const commentPara = document.createElement('p');
+                            commentPara.style.margin = '0';
+                            commentPara.textContent = comment.Comment;
+                            
+                            contentDiv.appendChild(nameSpan);
+                            contentDiv.appendChild(timeSpan);
+                            contentDiv.appendChild(commentPara);
+                            
+                            // Append elements in the correct order
+                            commentDiv.appendChild(img);
+                            commentDiv.appendChild(contentDiv);
+                            
+                            commentsContainer.appendChild(commentDiv);
+                        });
+                    });
+                } else {
+                    commentsContainer.innerHTML = '<p>No comments available.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comments:', error);
+                commentsContainer.innerHTML = '<p>Error loading comments. Please try again.</p>';
+            });
+    }
+
+    // Helper function to format timestamp
+    function formatTimestamp(timestamp) {
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        
+        // Parse the timestamp (assuming format: YYYY/MM/DD HH:MM)
+        const [datePart, timePart] = timestamp.split(' ');
+        const [year, month, day] = datePart.split('/');
+        const [hours, minutes] = timePart.split(':');
+        
+        // Convert to 12-hour format
+        let hour12 = parseInt(hours);
+        const ampm = hour12 >= 12 ? 'PM' : 'AM';
+        hour12 = hour12 % 12;
+        hour12 = hour12 ? hour12 : 12; // Convert 0 to 12
+        
+        // Get month name
+        const monthName = months[parseInt(month) - 1];
+        
+        // Format as "Month Day, Year at HH:MM AM/PM"
+        return `${monthName} ${day}, ${year} at ${hour12}:${minutes} ${ampm}`;
     }
 });
 

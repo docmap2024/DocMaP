@@ -9,7 +9,7 @@ include 'connection.php';
 $taskID = isset($_GET['taskID']) ? $_GET['taskID'] : null;
 $contentID = isset($_GET['contentID']) ? $_GET['contentID'] : null;
 
-if ($taskID && $contentID) {
+if ($taskID) {
     try {
         // Query to get the Title from the tasks table
         $taskQuery = "SELECT Title AS taskTitle FROM tasks WHERE TaskID = ?";
@@ -19,25 +19,49 @@ if ($taskID && $contentID) {
         $taskResult = $taskStmt->get_result();
         $taskTitle = $taskResult->num_rows > 0 ? $taskResult->fetch_assoc()['taskTitle'] : "No Task Title";
 
-        // Query to get Title + Caption from the feedcontent table
-        $contentQuery = "SELECT CONCAT(Title, ' ', Captions) AS feedContentTitleCaption, dept_ID FROM feedcontent WHERE ContentID = ?";
-        $contentStmt = $conn->prepare($contentQuery);
-        $contentStmt->bind_param("i", $contentID);
-        $contentStmt->execute();
-        $contentResult = $contentStmt->get_result();
-        $contentData = $contentResult->num_rows > 0 ? $contentResult->fetch_assoc() : null;
-        $feedContentTitleCaption = $contentData ? $contentData['feedContentTitleCaption'] : "No Title + Caption";
-        $deptID = $contentData ? $contentData['dept_ID'] : null;
+        // Initialize content-related variables
+        $feedContentTitleCaption = "Administrative Department"; // Default value when no contentID
+        $deptName = "No Department Name";
+        
+        if ($contentID) {
+            // Query to get Title + Caption from the feedcontent table when contentID is provided
+            $contentQuery = "SELECT CONCAT(Title, ' ', Captions) AS feedContentTitleCaption, dept_ID FROM feedcontent WHERE ContentID = ?";
+            $contentStmt = $conn->prepare($contentQuery);
+            $contentStmt->bind_param("i", $contentID);
+            $contentStmt->execute();
+            $contentResult = $contentStmt->get_result();
+            $contentData = $contentResult->num_rows > 0 ? $contentResult->fetch_assoc() : null;
+            
+            if ($contentData) {
+                $feedContentTitleCaption = $contentData['feedContentTitleCaption'];
+                $deptID = $contentData['dept_ID'];
 
-        // Query to get dept_name from the department table
-        $deptName = "No Department Name"; // Default value
-        if ($deptID) {
-            $deptQuery = "SELECT dept_name FROM department WHERE dept_ID = ?";
-            $deptStmt = $conn->prepare($deptQuery);
-            $deptStmt->bind_param("i", $deptID);
-            $deptStmt->execute();
-            $deptResult = $deptStmt->get_result();
-            $deptName = $deptResult->num_rows > 0 ? $deptResult->fetch_assoc()['dept_name'] : "No Department Name";
+                // Query to get dept_name from the department table
+                if ($deptID) {
+                    $deptQuery = "SELECT dept_name FROM department WHERE dept_ID = ?";
+                    $deptStmt = $conn->prepare($deptQuery);
+                    $deptStmt->bind_param("i", $deptID);
+                    $deptStmt->execute();
+                    $deptResult = $deptStmt->get_result();
+                    $deptRow = $deptResult->fetch_assoc();
+                    $deptName = $deptResult->num_rows > 0 ? $deptRow['dept_name'] : "No Department Name";
+                }
+            }
+        } else {
+            // When contentID is not provided, get department from task_department table
+            $taskDeptQuery = "SELECT d.dept_name 
+                              FROM task_department td
+                              JOIN department d ON td.dept_ID = d.dept_ID
+                              WHERE td.TaskID = ?";
+            $taskDeptStmt = $conn->prepare($taskDeptQuery);
+            $taskDeptStmt->bind_param("i", $taskID);
+            $taskDeptStmt->execute();
+            $taskDeptResult = $taskDeptStmt->get_result();
+            
+            if ($taskDeptResult->num_rows > 0) {
+                $deptRow = $taskDeptResult->fetch_assoc();
+                $deptName = $deptRow['dept_name'];
+            }
         }
 
         // Query to get all userIDs from the task_user table
@@ -77,7 +101,7 @@ if ($taskID && $contentID) {
             'taskTitle' => $taskTitle,
             'feedContentTitleCaption' => $feedContentTitleCaption,
             'deptName' => $deptName,
-            'userDates' => $userDates // Include the userDates data
+            'userDates' => $userDates
         ];
 
         // Return the response as JSON
@@ -86,5 +110,7 @@ if ($taskID && $contentID) {
         error_log("Error: " . $e->getMessage());
         echo json_encode(['error' => 'An error occurred while fetching data']);
     }
+} else {
+    echo json_encode(['error' => 'Task ID is required']);
 }
 ?>

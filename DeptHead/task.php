@@ -89,7 +89,7 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $rows_per_page;
 
 // Fetch tasks for display, filtered by user's dept_ID, ordered by timestamp (newest first)
-$sql = "SELECT t.TaskID AS TaskID, t.Title AS TaskTitle, t.taskContent, t.DueDate, t.DueTime, d.dept_name, fc.Title AS ContentTitle, fc.Captions, t.Status, t.TimeStamp
+$sql = "SELECT t.TaskID AS TaskID, t.Title AS TaskTitle, t.taskContent, t.DueDate, t.DueTime, d.dept_name, fc.Title AS ContentTitle, fc.Captions, t.Status, t.TimeStamp, fc.ContentID
         FROM tasks t
         LEFT JOIN feedcontent fc ON t.ContentID = fc.ContentID
         LEFT JOIN department d ON fc.dept_ID = d.dept_ID
@@ -462,7 +462,7 @@ if (!$stmt_auto_reject->execute()) {
             max-height: 800px; /* Optional: maximum height */
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            overflow-y: auto; /* Scroll if content exceeds the height */
+            overflow-y: relative; /* Scroll if content exceeds the height */
             position: relative;
             top: 50%; /* Center the modal vertically */
             transform: translateY(-50%); /* Center the modal vertically */
@@ -661,17 +661,20 @@ if (!$stmt_auto_reject->execute()) {
         }
 
         .checkbox-container, .checkbox-all-container {
-        padding: 4px 2px;
-        border-bottom: 1px solid #ddd;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+            padding: 6px 8px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Adds space between checkbox and label */
         }
 
         .checkbox-container input, .checkbox-all-container input {
-        cursor: pointer;
-        outline: none;
-        border: none;
+            cursor: pointer;
+    outline: none;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    width: 16px;
+    height: 16px;
         }
 
         .checkbox-container label, .checkbox-all-container label {
@@ -1145,8 +1148,179 @@ if (!$stmt_auto_reject->execute()) {
         .hidden {
             display: none;
         }
+        .dropdown-okay-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
 
+        .dropdown-okay-button:hover {
+            background-color: #45a049;
+        }
 
+        /* Task View Modal - Specific Styles */
+        #taskViewModal {
+            display: none;
+            position: fixed;
+            z-index: 1050; /* Higher than your existing modal */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        #taskViewModal .task-modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 25px;
+            border: none;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: taskModalFadeIn 0.3s;
+        }
+
+        @keyframes taskModalFadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        #taskViewModal .task-modal-close {
+            color: #6c757d;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: -10px;
+            margin-right: -10px;
+        }
+
+        #taskViewModal .task-modal-close:hover,
+        #taskViewModal .task-modal-close:focus {
+            color:rgb(0, 0, 0);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Task View Header */
+        #taskViewModal .task-view-header {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        #taskViewModal #taskViewTitle {
+            margin: 0;
+            color:rgb(0, 0, 0);
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Task Meta Information */
+        #taskViewModal .task-meta-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #taskViewModal .task-meta-item {
+            margin-bottom: 5px;
+        }
+
+        #taskViewModal .task-meta-label {
+            display: block;
+            font-size: 13px;
+            color:rgb(0, 0, 0);
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+
+        #taskViewModal .task-meta-value {
+            font-size: 15px;
+            color: #343a40;
+            font-weight: 500;
+        }
+
+        #taskViewModal #taskViewStatus {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Task Content Area */
+        #taskViewModal .task-content-area {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        #taskViewModal .task-content-area h3 {
+            margin-top: 0;
+            color:rgb(0, 0, 0);
+            font-size: 18px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        #taskViewModal #taskViewContent {
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        #taskViewModal #taskViewContent p {
+            margin-bottom: 15px;
+        }
+
+        #taskViewModal #taskViewContent img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        /* View Full Task Button Styles */
+        .task-view-footer {
+            margin-top: 20px;
+            text-align: right;
+            border-top: 1px solid #e9ecef;
+            padding-top: 15px;
+        }
+
+        .buttonViewFullTask {
+            background-color: #4a6fdc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .buttonViewFullTask:hover {
+            background-color: #3a5bc7;
+        }
+
+        .buttonViewFullTask i {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -1166,7 +1340,7 @@ if (!$stmt_auto_reject->execute()) {
         <main>
         <div class="tab-buttons">
     <button class="tab-button <?php echo $active_tab === 'tasks' ? 'active' : ''; ?>" onclick="switchTab('tasks')">Tasks</button>
-    <button class="tab-button <?php echo $active_tab === 'pending' ? 'active' : ''; ?>" onclick="switchTab('pending')">Pending Tasks</button>
+
 </div>
 
 <!-- Task Table (Tasks Tab) -->
@@ -1220,78 +1394,121 @@ foreach ($tasks as $task) {
             </div>
         </div>
        <table>
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Content</th>
-            <th>Department</th>
-            <th>Grade</th>
-            <th>Due Date</th>
-            <th>Due Time</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody id="taskTableBody">
-        <?php if (!empty($groupedTasks)): ?>
-            <?php foreach ($groupedTasks as $groupKey => $tasks): ?>
-                <!-- Render only the first task in each group -->
-                <?php $mainTask = $tasks[0]; ?>
-                <tr class="task-row" data-status="<?php echo htmlspecialchars($mainTask['Status']); ?>">
-                    <td rowspan="<?php echo count($tasks); ?>">
-                        <?php echo htmlspecialchars($mainTask['TaskTitle']); ?>
-                    </td>
-                    <td><?php echo addslashes($mainTask['taskContent']); ?></td>
-                    <td><?php echo htmlspecialchars($mainTask['dept_name']); ?></td>
-                    <td><?php echo htmlspecialchars($mainTask['ContentTitle'] . ' - ' . $mainTask['Captions']); ?></td>
-                    <td><?php echo htmlspecialchars(date('M d, Y', strtotime($mainTask['DueDate']))); ?></td>
-                    <td><?php echo htmlspecialchars(date('h:i A', strtotime($mainTask['DueTime']))); ?></td>
-                    <td><?php echo htmlspecialchars($mainTask['Status']); ?></td>
-                    <td>
-                        <div class="button-group">
-                            <button class="buttonEdit" onclick="editTask('<?php echo $mainTask['TaskID']; ?>', '<?php echo htmlspecialchars(addslashes($mainTask['TaskTitle']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($mainTask['taskContent']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($mainTask['dept_name']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($mainTask['ContentTitle'] . ' - ' . $mainTask['Captions']), ENT_QUOTES); ?>', '<?php echo $mainTask['DueDate']; ?>', '<?php echo $mainTask['DueTime']; ?>')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="buttonDelete" onclick="deleteTask('<?php echo $mainTask['TaskID']; ?>')">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </td>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Content</th>
+                    <th>Department</th>
+                    <th>Grade</th>
+                    <th>Due Date</th>
+                    <th>Due Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                 </tr>
-                <!-- Render additional rows for other tasks in the group -->
-                <?php for ($i = 1; $i < count($tasks); $i++): ?>
-                    <?php $subTask = $tasks[$i]; ?>
-                    <tr class="task-row" data-status="<?php echo htmlspecialchars($subTask['Status']); ?>">
-                        <td><?php echo addslashes($subTask['taskContent']); ?></td>
-                        <td><?php echo htmlspecialchars($subTask['dept_name']); ?></td>
-                        <td><?php echo htmlspecialchars($subTask['ContentTitle'] . ' - ' . $subTask['Captions']); ?></td>
-                        <td><?php echo htmlspecialchars(date('M d, Y', strtotime($subTask['DueDate']))); ?></td>
-                        <td><?php echo htmlspecialchars(date('h:i A', strtotime($subTask['DueTime']))); ?></td>
-                        <td><?php echo htmlspecialchars($subTask['Status']); ?></td>
-                        <td>
-                            <div class="button-group">
-                                <button class="buttonEdit" onclick="editTask('<?php echo $subTask['TaskID']; ?>', '<?php echo htmlspecialchars(addslashes($subTask['TaskTitle']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($subTask['taskContent']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($subTask['dept_name']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($subTask['ContentTitle'] . ' - ' . $subTask['Captions']), ENT_QUOTES); ?>', '<?php echo $subTask['DueDate']; ?>', '<?php echo $subTask['DueTime']; ?>')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="buttonDelete" onclick="deleteTask('<?php echo $subTask['TaskID']; ?>')">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </td>
+            </thead>
+            <tbody id="taskTableBody">
+                <?php if (!empty($groupedTasks)): ?>
+                    <?php foreach ($groupedTasks as $groupKey => $tasks): ?>
+                        <!-- Render only the first task in each group -->
+                        <?php $mainTask = $tasks[0]; ?>
+                        <tr class="task-row" data-status="<?php echo htmlspecialchars($mainTask['Status']); ?>"
+                            onclick="viewTask(
+                                '<?php echo $mainTask['TaskID']; ?>',
+                                '<?php echo htmlspecialchars(addslashes($mainTask['TaskTitle']), ENT_QUOTES); ?>',
+                                '<?php echo addslashes($mainTask['taskContent']); ?>',
+                                '<?php echo htmlspecialchars(addslashes($mainTask['dept_name']), ENT_QUOTES); ?>',
+                                '<?php echo htmlspecialchars(addslashes($mainTask['ContentTitle'] . ' - ' . $mainTask['Captions']), ENT_QUOTES); ?>',
+                                '<?php echo $mainTask['DueDate']; ?>',
+                                '<?php echo $mainTask['DueTime']; ?>',
+                                '<?php echo $mainTask['Status']; ?>',
+                                '<?php echo isset($mainTask['ContentID']) ? $mainTask['ContentID'] : ''; ?>'
+                            )" style="cursor: pointer;">
+                            <td rowspan="<?php echo count($tasks); ?>">
+                                <?php echo htmlspecialchars($mainTask['TaskTitle']); ?>
+                            </td>
+                            <td><?php echo addslashes($mainTask['taskContent']); ?></td>
+                            <td><?php echo htmlspecialchars($mainTask['dept_name']); ?></td>
+                            <td><?php echo htmlspecialchars($mainTask['ContentTitle'] . ' - ' . $mainTask['Captions']); ?></td>
+                            <td><?php echo htmlspecialchars(date('M d, Y', strtotime($mainTask['DueDate']))); ?></td>
+                            <td><?php echo htmlspecialchars(date('h:i A', strtotime($mainTask['DueTime']))); ?></td>
+                            <td style="font-weight:bold; color: <?php echo $mainTask['Status'] == 'Assign' ? 'green' : ($mainTask['Status'] == 'Schedule' ? 'blue' : 'grey'); ?>;">
+                                <?php echo htmlspecialchars($mainTask['Status']); ?>
+                            </td>
+                            <td>
+                                <div class="button-group">
+                                    <button class="buttonEdit" 
+                                        onclick="event.stopPropagation(); editTask(
+                                            '<?php echo $mainTask['TaskID']; ?>', 
+                                            '<?php echo htmlspecialchars(addslashes($mainTask['TaskTitle']), ENT_QUOTES); ?>', 
+                                            '<?php echo htmlspecialchars(addslashes($mainTask['taskContent']), ENT_QUOTES); ?>', 
+                                            '<?php echo htmlspecialchars(addslashes($mainTask['dept_name']), ENT_QUOTES); ?>', 
+                                            '<?php echo htmlspecialchars(addslashes($mainTask['ContentTitle'] . ' - ' . $mainTask['Captions']), ENT_QUOTES); ?>', 
+                                            '<?php echo $mainTask['DueDate']; ?>', 
+                                            '<?php echo $mainTask['DueTime']; ?>'
+                                        )">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="buttonDelete" onclick="event.stopPropagation(); deleteTask('<?php echo $mainTask['TaskID']; ?>')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- Render additional rows for other tasks in the group -->
+                        <?php for ($i = 1; $i < count($tasks); $i++): ?>
+                            <?php $subTask = $tasks[$i]; ?>
+                            <tr class="task-row" data-status="<?php echo htmlspecialchars($subTask['Status']); ?>"
+                                onclick="viewTask(
+                                    '<?php echo $subTask['TaskID']; ?>',
+                                    '<?php echo htmlspecialchars(addslashes($subTask['TaskTitle']), ENT_QUOTES); ?>',
+                                    '<?php echo addslashes($subTask['taskContent']); ?>',
+                                    '<?php echo htmlspecialchars(addslashes($subTask['dept_name']), ENT_QUOTES); ?>',
+                                    '<?php echo htmlspecialchars(addslashes($subTask['ContentTitle'] . ' - ' . $subTask['Captions']), ENT_QUOTES); ?>',
+                                    '<?php echo $subTask['DueDate']; ?>',
+                                    '<?php echo $subTask['DueTime']; ?>',
+                                    '<?php echo $subTask['Status']; ?>',
+                                    '<?php echo isset($subTask['ContentID']) ? $subTask['ContentID'] : ''; ?>'
+                                )" style="cursor: pointer;">
+                                <td><?php echo addslashes($subTask['taskContent']); ?></td>
+                                <td><?php echo htmlspecialchars($subTask['dept_name']); ?></td>
+                                <td><?php echo htmlspecialchars($subTask['ContentTitle'] . ' - ' . $subTask['Captions']); ?></td>
+                                <td><?php echo htmlspecialchars(date('M d, Y', strtotime($subTask['DueDate']))); ?></td>
+                                <td><?php echo htmlspecialchars(date('h:i A', strtotime($subTask['DueTime']))); ?></td>
+                                <td style="font-weight:bold; color: <?php echo $subTask['Status'] == 'Assign' ? 'green' : ($subTask['Status'] == 'Schedule' ? 'blue' : 'grey'); ?>;">
+                                    <?php echo htmlspecialchars($subTask['Status']); ?>
+                                </td>
+                                <td>
+                                    <div class="button-group">
+                                        <button class="buttonEdit" 
+                                            onclick="event.stopPropagation(); editTask(
+                                                '<?php echo $subTask['TaskID']; ?>', 
+                                                '<?php echo htmlspecialchars(addslashes($subTask['TaskTitle']), ENT_QUOTES); ?>', 
+                                                '<?php echo htmlspecialchars(addslashes($subTask['taskContent']), ENT_QUOTES); ?>', 
+                                                '<?php echo htmlspecialchars(addslashes($subTask['dept_name']), ENT_QUOTES); ?>', 
+                                                '<?php echo htmlspecialchars(addslashes($subTask['ContentTitle'] . ' - ' . $subTask['Captions']), ENT_QUOTES); ?>', 
+                                                '<?php echo $subTask['DueDate']; ?>', 
+                                                '<?php echo $subTask['DueTime']; ?>'
+                                            )">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="buttonDelete" onclick="event.stopPropagation(); deleteTask('<?php echo $subTask['TaskID']; ?>')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endfor; ?>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="8" style="text-align: center;">No tasks available</td>
                     </tr>
-                <?php endfor; ?>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <tr>
-                <td colspan="8" style="text-align: center;">No tasks available</td>
-            </tr>
-        <?php endif; ?>
-    </tbody>
-</table>
-
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
-     <!-- Pagination for Tasks Tab -->
-     <div class="pagination">
+    <!-- Pagination for Tasks Tab -->
+    <div class="pagination">
         <?php if ($page > 1): ?>
             <a href="?page=1&tab=tasks" class="first-button" title="back to first">
                 <i class='bx bx-chevrons-left'></i>
@@ -1323,133 +1540,10 @@ foreach ($tasks as $task) {
                 <i class='bx bx-chevrons-right'></i>
             </a>
         <?php endif; ?>
-</div>
-
-
-   
-    </div>
-</div>
-<script>
-// Filter by Status
-function filterByStatus() {
-    const statusFilter = document.getElementById('statusFilter').value; // Get selected value
-    const rows = document.querySelectorAll('.task-row'); // Get all task rows
-    
-    rows.forEach(row => {
-        const rowStatus = row.getAttribute('data-status'); // Get the row's status attribute
-        if (statusFilter === '' || rowStatus === statusFilter) {
-            row.style.display = ''; // Show the row
-        } else {
-            row.style.display = 'none'; // Hide the row
-        }
-    });
-}
-</script>
-
-<!-- Pending Task Table (Pending Tab) -->
-<div id="pending" class="tab-content" style="display: <?php echo $active_tab === 'pending' ? 'block' : 'none'; ?>;">
-    <div class="container">
-        <h1 class="header">Pending Tasks</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Content</th>
-                    <th>Grade</th>
-                    <th>Due Date</th>
-                    <th>Due Time</th>
-                    <th>Status</th>
-                    <th>Actions </th>
-                </tr>
-            </thead>
-            <tbody>
-    <?php if (!empty($pending_tasks)): ?>
-        <?php foreach ($pending_tasks as $task): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($task['TaskTitle']); ?></td>
-                <td><p><?php echo addslashes($task['taskContent']); ?></p></td>
-                <td><?php echo htmlspecialchars($task['ContentTitle'] . ' - ' . $task['Captions']); ?></td>
-                <td><?php echo htmlspecialchars(date('M d, Y', strtotime($task['DueDate']))); ?></td>
-                <td><?php echo htmlspecialchars(date('h:i A', strtotime($task['DueTime']))); ?></td>
-                <td style="font-weight:bold; color: <?php echo $task['Status'] == 'Assign' ? 'green' : ($task['Status'] == 'Schedule' ? 'blue' : 'grey'); ?>;">
-                        <?php echo htmlspecialchars($task['Status']); ?>
-                    </td>
-                <td>
-                    <div class="button-group">
-                        <button class="buttonEdit" onclick="editTask('<?php echo $task['TaskID']; ?>', '<?php echo htmlspecialchars(addslashes($task['TaskTitle']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($task['taskContent']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($task['dept_name']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars(addslashes($task['ContentTitle'] . ' - ' . $task['Captions']), ENT_QUOTES); ?>', '<?php echo $task['DueDate']; ?>', '<?php echo $task['DueTime']; ?>')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="buttonDelete" onclick="deleteTask('<?php echo $task['TaskID']; ?>')">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <tr>
-            <td colspan="6" style="text-align: center;">No pending tasks available right now.</td>
-        </tr>
-    <?php endif; ?>
-</tbody>
-
-        </table>
-    </div>
-
-    <!-- Pagination for Pending Tab -->
-    <div class="pagination">
-        <?php if ($page > 1): ?>
-            <a href="?page=1&tab=pending" class="first-button" title="back to first">
-                <i class='bx bx-chevrons-left'></i>
-            </a>
-        <?php endif; ?>
-
-        <?php if ($page > 1): ?>
-            <a href="?page=<?php echo $page - 1; ?>&tab=pending" class="prev-button">
-                <i class='bx bx-chevron-left'></i>
-            </a>
-        <?php endif; ?>
-
-        <?php
-        $start_page = max(1, $page - 2);
-        $end_page = min($total_pages, $page + 2);
-        for ($i = $start_page; $i <= $end_page; $i++):
-        ?>
-            <a href="?page=<?php echo $i; ?>&tab=pending" class="<?php echo $i == $page ? 'active' : ''; ?>"><?php echo $i; ?></a>
-        <?php endfor; ?>
-
-        <?php if ($page < $total_pages): ?>
-            <a href="?page=<?php echo $page + 1; ?>&tab=pending" class="next-button">
-                <i class='bx bx-chevron-right'></i>
-            </a>
-        <?php endif; ?>
-
-        <?php if ($page < $total_pages): ?>
-            <a href="?page=<?php echo $total_pages; ?>&tab=pending" class="last-button">
-                <i class='bx bx-chevrons-right'></i>
-            </a>
-        <?php endif; ?>
     </div>
 </div>
 
-
-
-
-            
-
-<script>
- function switchTab(tab) {
-        // Get the current URL and set page to 1 and tab to the clicked tab
-        let url = new URL(window.location.href);
-        url.searchParams.set('tab', tab);  // Set the new tab parameter
-        url.searchParams.set('page', 1);   // Reset page to 1 when switching tabs
-
-        // Update the browser's address bar without reloading the page
-        window.location.href = url.href;
-    }
-</script>
-
-<!-- Modal -->
+            <!-- Modal -->
             <div id="taskModal" class="modal" >
                 <div class="modal-content"style="width:1200px;">
                     <!-- Header with dropdown and close button -->
@@ -1483,7 +1577,7 @@ function filterByStatus() {
                                             </button>
                                             <div id="titleDropdown" class="title-dropdown-menu">
                                                 <?php while ($row = $result->fetch_assoc()): ?>
-                                                    <button type="button" class="title-dropdown-item" onclick="setTitle('<?php echo htmlspecialchars($row['Title']); ?>', <?php echo $row['TaskID']; ?>)">
+                                                    <button type="button" class="title-dropdown-item" onclick="setTitle('<?php echo htmlspecialchars($row['Title'], ENT_QUOTES, 'UTF-8'); ?>')">
                                                         <?php echo htmlspecialchars($row['Title']); ?>
                                                     </button>
                                                 <?php endwhile; ?>
@@ -1494,10 +1588,7 @@ function filterByStatus() {
                                             <div id="editor"></div>
                                             <textarea id="instructions" name="instructions" rows="4" required></textarea>
                                         </div>
-                                    </div>
-
-
-                                    
+                                    </div>    
                                 </div>
                                 
                                 <div class="form-right">
@@ -1509,8 +1600,7 @@ function filterByStatus() {
                                                 <button class="dropdown-toggle" type="button" onclick="toggleDropdown('departmentDropdown')">Select Department</button>
                                                 <div id="departmentDropdown" class="dropdown-menu" style="width:100%;">
                                                     <div class="checkbox-all-container">
-                                                        <input type="checkbox" id="selectAllDepartments" class="custom-checkbox checkbox-all" onclick="selectAll('departmentDropdown', 'department[]')">
-                                                        <label for="selectAllDepartments">All</label>
+                                                        
                                                     </div>
                                                     <?php foreach ($departments as $dept) : ?>
                                                     <div class="checkbox-container">
@@ -1518,6 +1608,8 @@ function filterByStatus() {
                                                         <label><?= $dept['dept_name'] ?></label>
                                                     </div>
                                                     <?php endforeach; ?>
+                                                    <button type="button" class="dropdown-okay-button" onclick="closeDropdown('departmentDropdown')">Okay</button>
+
                                                 </div>
                                             </div>
                                         </div>
@@ -1527,7 +1619,7 @@ function filterByStatus() {
                                         <div class="form-group">
                                             <div class="dropdown">
                                                 <button class="dropdown-toggle" type="button" onclick="toggleDropdown('gradeDropdown')">Select Grade</button>
-                                                <div id="gradeDropdown" class="dropdown-menu"style="width:100%;">
+                                                <div id="gradeDropdown" class="dropdown-menu"style="width:150%; ">
                                                     <div class="checkbox-all-container">
                                                         <input type="checkbox" class="custom-checkbox checkbox-all" id="selectAllGrades" onclick="selectAll('gradeDropdown', 'grade[]')">
                                                         <label for="selectAllGrades">All</label>
@@ -1535,6 +1627,7 @@ function filterByStatus() {
                                                     <div id="gradesContainer">
                                                         <p>No grades available. Please select a department.</p>
                                                     </div>
+                                                    <button type="button" class="dropdown-okay-button" onclick="closeDropdown('gradeDropdown')">Okay</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1562,8 +1655,6 @@ function filterByStatus() {
                                 </div>
                                 <div id="fileContainer" class="file-container row" ></div>
                             </div>
-
-
                             <!-- Hidden input to track the action -->
                             <input type="hidden" id="taskAction" name="taskAction" value="assign">
                         </form>
@@ -1611,46 +1702,40 @@ function filterByStatus() {
                                 </div>
                                 <div class="form-right">
                                     <div class="form-section">
-                                            <label for="edit_department">Department:</label>
+                                    <label for="edit_department">Department:</label>
                                             <div class="form-group">
                                                 <div class="dropdown">
                                                     <button class="dropdown-toggle" type="button" onclick="toggleDropdown('updatedepartmentDropdown')">Select Department</button>
-                                                    <div id="updatedepartmentDropdown" class="dropdown-menu">
+                                                    <div id="updatedepartmentDropdown" class="dropdown-menu" style = "width: 100%; ">
                                                         <div class="checkbox-all-container">
-                                                            <input type="checkbox" id="selectAllDepartments"  
-                                                            class="custom-checkbox checkbox-all" 
-                                                            onclick="selectAll('updatedepartmentDropdown', 'department[]')">
-                                                            <label for="selectAllDepartments">All</label>
                                                         </div>
                                                         <?php foreach ($departments as $dept) : ?>
-                                                        <div class="checkbox-container">
-                                                            <input type="checkbox" 
-                                                            class="custom-checkbox"
-                                                            name="department[]" 
-                                                            value="<?= $dept['dept_ID'] ?>" 
-                                                            onchange="updateGradesInEditModal()">
-                                                            <label><?= $dept['dept_name'] ?></label>
-                                                        </div>
+                                                            <div class="checkbox-container">
+                                                                <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" onchange="updateGradesInEditModal()">
+                                                                <label><?= $dept['dept_name'] ?></label>
+                                                            </div>
                                                         <?php endforeach; ?>
+                                                        <button type="button" class="dropdown-okay-button" onclick="closeDropdown('updatedepartmentDropdown')">Okay</button>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Update Grade with checkboxes -->
-                                            <label for="update_grade">Grade:</label>
+                                           <!-- Update Grade with checkboxes -->
+                                           <label for="update_grade">Grade:</label>
                                             <div class="form-group">
                                                 <div class="dropdown">
                                                     <button class="dropdown-toggle" type="button" onclick="toggleDropdown('updategradeDropdown')">Select Grade</button>
-                                                    <div id="updategradeDropdown" class="dropdown-menu">
+                                                    <div id="updategradeDropdown" class="dropdown-menu" style = "width: 150%;">
                                                         <div class="checkbox-all-container">
                                                             <input type="checkbox"
                                                             class="custom-checkbox checkbox-all" name="update_grade[]" 
                                                             value="<?= $grade['grade_ID'] ?>" onchange="updateGradesInEditModal()">
-                                                            <label for="selectAllGrades">All</label>
+                                                            <label for="EditselectAllGrades">All</label>
                                                         </div>
                                                         <div id="updategradesContainer">
                                                             <p>No grades available. Please select a department.</p>
                                                         </div>
+                                                        <button type="button" class="dropdown-okay-button" onclick="closeDropdown('updategradeDropdown')">Okay</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1704,91 +1789,155 @@ function filterByStatus() {
                     </div>
                 </div>
             </div>
+        
 
+            <!-- Task View Modal -->
+            <div id="taskViewModal" class="modal">
+                <div class="task-modal-content">
+                    <span class="task-modal-close" onclick="closeViewModal()">&times;</span>
+                    
+                    <div class="task-view-header">
+                        <h2 id="taskViewTitle"></h2>
+                    </div>
+                    
+                    <div class="task-meta-container">
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Status</span>
+                            <span id="taskViewStatus" class="task-meta-value"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Department</span>
+                            <span id="taskViewDepartment" class="task-meta-value"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Grade/Section</span>
+                            <span id="taskViewGradeSection" class="task-meta-value"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Due Date</span>
+                            <span id="taskViewDueDate" class="task-meta-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-content-area">
+                        <h3>Task Details</h3>
+                        <div id="taskViewContent" class="task-view-content"></div>
+                    </div>
+
+                    <div class="task-view-footer">
+                        <button id="viewFullTaskBtn" class="buttonViewFullTask" onclick="viewFullTask()">
+                            <i class="fas fa-external-link-alt"></i> View Full Task
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
      
-     <script>
- function displaySelectedFiles(event) {
-    const fileContainer = document.getElementById('fileContainer');
-    fileContainer.innerHTML = ''; // Clear existing file containers
-
-    for (const file of event.target.files) {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item col-md-3'; // Bootstrap column class
-
-        const fileName = document.createElement('span');
-        fileName.className = 'file-name';
-        fileName.textContent = file.name;
-
-        const removeButton = document.createElement('button');
-        removeButton.className = 'remove-file btn btn-danger btn-sm';
-        removeButton.textContent = 'x';
-        removeButton.onclick = () => removeFile(fileItem);
-
-        fileItem.appendChild(fileName);
-        fileItem.appendChild(removeButton);
-
-        fileContainer.appendChild(fileItem);
-    }
-}
-
-function removeFile(fileItem) {
-    const fileInput = document.getElementById('file');
-    const files = Array.from(fileInput.files);
-    const fileName = fileItem.querySelector('.file-name').textContent;
-
-    // Find index of the file to be removed
-    const index = files.findIndex(file => file.name === fileName);
-    if (index > -1) {
-        // Remove the file from the FileList
-        const dt = new DataTransfer();
-        files.splice(index, 1);
-        files.forEach(file => dt.items.add(file));
-        fileInput.files = dt.files;
-
-        // Remove the file item from the DOM
-        fileItem.remove();
-    }
-}
-
-
-
-     </script>
     <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Get the current date in the required format
-    function getCurrentDate() {
-      const today = new Date();
-      const year = today.getFullYear();
-      let month = today.getMonth() + 1;
-      let day = today.getDate();
+        function setTitle(title) {
+            // Assuming you want to set the selected title in an input field or display it somewhere
+            document.getElementById('selectedTitle').innerText = title; // Adjust based on where you want to display it
+        }
+    </script>
+    <script>
+        // Filter by Status
+        function filterByStatus() {
+            const statusFilter = document.getElementById('statusFilter').value; // Get selected value
+            const rows = document.querySelectorAll('.task-row'); // Get all task rows
+            
+            rows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status'); // Get the row's status attribute
+                if (statusFilter === '' || rowStatus === statusFilter) {
+                    row.style.display = ''; // Show the row
+                } else {
+                    row.style.display = 'none'; // Hide the row
+                }
+            });
+        }
+    </script>
 
-      // Add leading zeros for months and days less than 10
-      month = month < 10 ? '0' + month : month;
-      day = day < 10 ? '0' + day : day;
+    <script>
+        function displaySelectedFiles(event) {
+            const fileContainer = document.getElementById('fileContainer');
+            fileContainer.innerHTML = ''; // Clear existing file containers
 
-      return `${year}-${month}-${day}`;
-    }
+            for (const file of event.target.files) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item col-md-3'; // Bootstrap column class
 
-    // Set the min attribute of the date picker to the current date
-    document.getElementById('due-date').min = getCurrentDate();
+                const fileName = document.createElement('span');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name;
 
-    // Add an event listener to the date picker
-    document.getElementById('due-date').addEventListener('input', function () {
-      // Get the selected date
-      const selectedDate = this.value;
+                const removeButton = document.createElement('button');
+                removeButton.className = 'remove-file btn btn-danger btn-sm';
+                removeButton.textContent = 'x';
+                removeButton.onclick = () => removeFile(fileItem);
 
-      // Check if the selected date is in the past
-      if (selectedDate < getCurrentDate()) {
-        alert('Please select a future date.');
-        this.value = getCurrentDate(); // Reset the value to the current date
-      }
-    });
-  });
-</script>
+                fileItem.appendChild(fileName);
+                fileItem.appendChild(removeButton);
+
+                fileContainer.appendChild(fileItem);
+            }
+        }
+
+        function removeFile(fileItem) {
+            const fileInput = document.getElementById('file');
+            const files = Array.from(fileInput.files);
+            const fileName = fileItem.querySelector('.file-name').textContent;
+
+            // Find index of the file to be removed
+            const index = files.findIndex(file => file.name === fileName);
+            if (index > -1) {
+                // Remove the file from the FileList
+                const dt = new DataTransfer();
+                files.splice(index, 1);
+                files.forEach(file => dt.items.add(file));
+                fileInput.files = dt.files;
+
+                // Remove the file item from the DOM
+                fileItem.remove();
+            }
+        }
+
+
+
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get the current date in the required format
+            function getCurrentDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            let month = today.getMonth() + 1;
+            let day = today.getDate();
+
+            // Add leading zeros for months and days less than 10
+            month = month < 10 ? '0' + month : month;
+            day = day < 10 ? '0' + day : day;
+
+            return `${year}-${month}-${day}`;
+            }
+
+            // Set the min attribute of the date picker to the current date
+            document.getElementById('due-date').min = getCurrentDate();
+
+            // Add an event listener to the date picker
+            document.getElementById('due-date').addEventListener('input', function () {
+            // Get the selected date
+            const selectedDate = this.value;
+
+            // Check if the selected date is in the past
+            if (selectedDate < getCurrentDate()) {
+                alert('Please select a future date.');
+                this.value = getCurrentDate(); // Reset the value to the current date
+            }
+            });
+        });
+    </script>
     <script>
     // JavaScript to switch tabs
         function switchTab(tab) {
@@ -2254,7 +2403,17 @@ function removeFile(fileItem) {
                 }
             }
         }
+// Close the dropdown when "Okay" button is clicked
+function closeDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
 
+            if (dropdown) {
+                dropdown.classList.remove('show');
+                if (currentOpenDropdown === dropdown) {
+                    currentOpenDropdown = null;
+                }
+            }
+        }
 
         function openModal() {
             document.getElementById('taskModal').style.display = 'block';
@@ -2755,9 +2914,93 @@ function removeFile(fileItem) {
             }
         }
     }
+    </script>
 
+    <script>
+        // Global variables to store task data
+        let currentTaskId = null;
+        let currentContentId = null;
 
+        // Function to open task view modal
+        function viewTask(taskId, title, content, department, gradeSection, dueDate, dueTime, status, contentId = '') {
+            console.log('Received ContentID:', contentId);  // Debug line
+            // Store the IDs for the view button
+            currentTaskId = taskId;
+            currentContentId = contentId || '';
+            
+            // Format the date and time if needed
+            const formattedDate = new Date(dueDate).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const formattedTime = new Date(`1970-01-01T${dueTime}`).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
 
+            // Populate the modal with task details
+            document.getElementById('taskViewTitle').textContent = title;
+            document.getElementById('taskViewContent').innerHTML = content;
+            document.getElementById('taskViewDepartment').textContent = department;
+            document.getElementById('taskViewGradeSection').textContent = gradeSection;
+            document.getElementById('taskViewDueDate').textContent = `${formattedDate} at ${formattedTime}`;
+            document.getElementById('taskViewStatus').textContent = status;
+            document.getElementById('taskViewStatus').style.color = 
+                status === 'Assign' ? 'green' : (status === 'Schedule' ? 'blue' : 'grey');
+
+            // Show the modal
+            document.getElementById('taskViewModal').style.display = 'block';
+
+            // Enable/disable view button based on contentId
+            const viewBtn = document.getElementById('viewFullTaskBtn');
+            viewBtn.onclick = function() {
+                viewFullTask(currentTaskId, currentContentId);
+            };
+        }
+
+        // Modified viewFullTask function
+        function viewFullTask(taskId = null, contentId = null) {
+            const useTaskId = taskId || currentTaskId;
+            const useContentId = contentId || currentContentId;
+            
+            if (!useTaskId) return;
+            
+            // Construct URL with parameters
+            let url = `taskdetails.php?task_id=${encodeURIComponent(useTaskId)}`;
+            
+            // Only add content_id if it exists and isn't empty
+            if (useContentId && useContentId.trim() !== '') {
+                url += `&content_id=${encodeURIComponent(useContentId)}`;
+            }
+            
+            // Navigate to the task details page
+            window.location.href = url;
+        }
+
+        // Close modal function
+        function closeViewModal() {
+            currentTaskId = null;
+            currentContentId = null;
+            document.getElementById('taskViewModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskViewModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
+    <script>
+        // Prevent row click when clicking action buttons
+        document.querySelectorAll('.button-group button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="assets/js/script.js"></script>

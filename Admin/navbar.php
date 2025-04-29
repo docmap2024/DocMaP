@@ -8,7 +8,12 @@
 <ul class="side-menu">
 			<li><a href="dash_admin.php" class="active"><i class='bx bxs-dashboard icon' ></i> Dashboard</a></li>
 			<li class="divider" data-text="main">Main</li>
-			<li><a href="departments.php" class="active"><i class='bx bxs-building icon' ></i>Departments</a></li>
+			<li><a href="#"><i class='bx bxs-building icon' ></i>Departments<i class='bx bx-chevron-right icon-right'></i></a>
+				<ul class="side-dropdown">
+					<li><a href="administrative_department.php">Administrative</a></li>
+					<li><a href="departments.php">Academic</a></li>
+				</ul>
+			</li>
 			<li>
 				<a href="#"><i class='bx bx-user icon' ></i> Users Management<i class='bx bx-chevron-right icon-right'></i></a>
 				<ul class="side-dropdown">

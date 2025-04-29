@@ -5,7 +5,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Include your database connection file here
+// Include your database connection file
 include 'connection.php';
 
 // Get user_id from session
@@ -39,11 +39,23 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // Construct the full path to the profile picture
-$profile_picture_path = '../img/UserProfile/' . $profile_picture;
+$profile_picture_path = 'img/UserProfile/' . $profile_picture;
+
+// Query to check if the user's e-signature column (esig) is NULL or not
+$esig_query = "SELECT esig FROM useracc WHERE UserID = $user_id";
+$esig_result = mysqli_query($conn, $esig_query);
+
+// Check e-signature status
+$has_esig = false;
+if ($esig_result && mysqli_num_rows($esig_result) > 0) {
+    $esig_row = mysqli_fetch_assoc($esig_result);
+    $has_esig = !empty($esig_row['esig']); // If esig is not empty or NULL, user has a signature
+}
 
 // Close database connection
 mysqli_close($conn);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -54,7 +66,7 @@ mysqli_close($conn);
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
      <link rel="icon" type="image/png" href="img/Logo/docmap-logo-1.png">
-    <title>DocMaP | Profile</title>
+    <title>Profile</title>
     <style>
 
 
@@ -104,7 +116,7 @@ mysqli_close($conn);
         }
 
         .full-name {
-            font-size: 20px;
+            font-size: 25px;
             font-weight: bold;
             margin-top: 20px;
         }
@@ -151,7 +163,7 @@ mysqli_close($conn);
 
     .modal-illustration {
         flex: 1;
-        background: url("../assets/images/passw.png") no-repeat center center;
+        background: url("assets/images/passw.png") no-repeat center center;
         background-size: cover;
         height: 100%;
         min-height: 500px; /* Ensures a minimum height if the content is smaller */
@@ -299,6 +311,33 @@ mysqli_close($conn);
         .modal {
             z-index: 1050 !important;
         }
+ @keyframes breathing {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.breathing-alert {
+    animation: breathing 2.5s ease-in-out infinite;
+}
+.btn-custom {
+    transition: all 0.3s ease-in-out;
+    background-color: #9b2035; /* Default color */
+    color: #fff;
+    border: none;
+ 
+    border-radius: 50px;
+}
+
+/* Change color on hover */
+.btn-custom:hover {
+    background-color: #7A192A; /* Darker blue */
+    transform: scale(1.05); /* Slight pop effect */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    color:#fff;
+}
+
+
     </style>
 </head>
 
@@ -331,16 +370,53 @@ mysqli_close($conn);
                                     <p class="text-center">No profile picture available.</p>
                                 <?php endif; ?>
 
-                                <div class="button-group text-center mt-3">
-                                    <a href="#" class="btn-edit" data-toggle="modal" data-target="#uploadModal" id="btnedit">
-                                        <i class='bx bxs-edit'></i>
-                                    </a>
-                                    <a href="#" class="btn-custom" data-toggle="modal" data-target="#changePasswordModal">
-                                        Change Credentials
-                                    </a>
+                                <div class="text-center mt-3 full-name"><?php echo $full_name; ?></div>
+                                <div class="container mt-3">
+                                    <div class="row justify-content-center">
+                                        <!-- Existing Buttons -->
+                                        <div class="col-12 text-center mb-3">
+                                            <div class="button-group">
+                                                <a href="#" class="btn-edit btn-custom" data-toggle="modal" data-target="#uploadModal" id="btnedit">
+                                                    <i class='bx bx-image-add' style="font-size:20px;"></i>
+                                                </a>
+                                                <a href="#" class="btn-custom " data-toggle="modal" data-target="#changePasswordModal">
+                                                    Change Credentials
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <!-- New Button -->
+                                       <div class="col-12 text-center">
+                                            <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
+                                            id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
+                                                <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
+                                            </a>
+                                        </div>
+
+                                    </div>
                                 </div>
 
-                                <div class="text-center mt-3 full-name"><?php echo $full_name; ?></div>
+                                <!-- Modal Structure -->
+                                <div class="modal fade" id="eSignatureModal" tabindex="-1" role="dialog" aria-labelledby="eSignatureModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="eSignatureModalLabel">E-Signature</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                <div id="eSignatureBox" class="border p-3">
+                                                    <!-- E-Signature or Placeholder Text will be inserted here -->
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn btn-success" id="uploadNewESignature">Upload New E-Signature</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <p class="text-center mt-3 font-weight-bold">Your Awards</p>
 
                                 <!-- Award Containers -->
@@ -359,6 +435,7 @@ mysqli_close($conn);
                             </div>
                         </div>
 
+                        <!-- Right Column -->
                         <div class="col-md-7 mt-5">
                             <div class="container-content position-relative">
                                 <h4 class="d-flex justify-content-between align-items-center">
@@ -391,7 +468,11 @@ mysqli_close($conn);
                                         </div>
                                         <div class="col-md-5 input-container">
                                             <label for="mobile">Mobile No.</label>
-                                            <input type="text" id="mobile" name="mobile" value="<?php echo $mobile; ?>" readonly>
+                                            <?php 
+                                                // Ensure the mobile number is a 10-digit numeric string before formatting
+                                                $formattedMobile = preg_replace('/(\d{4})(\d{3})(\d{4})/', '$1-$2-$3', $mobile);
+                                            ?>
+                                            <input type="text" id="mobile" name="mobile" value="<?php echo htmlspecialchars($formattedMobile); ?>" readonly>
                                         </div>
                                     </div>
 
@@ -419,7 +500,9 @@ mysqli_close($conn);
                                 </form>
                             </div>
                         </div>
+
                     </div>
+
                     <div class="modal" id="editModal" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
@@ -451,24 +534,25 @@ mysqli_close($conn);
                                             </div>
                                         </div>
                                         <div class="row mb-3">
-                                            <div class="col-sm-6">
+                                            <div class="col-sm-4">
                                                 <label for="editMobile" class="form-label">Mobile</label>
                                                 <input type="text" class="form-control" id="editMobile" />
                                             </div>
-                                            <div class="col-sm-6">
+                                            <div class="col-sm-5">
                                                 <label for="editBday" class="form-label">Birthdate</label>
                                                 <input type="date" class="form-control" id="editBday" />
                                             </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-sm-6">
+                                            <div class="col-sm-3">
                                                 <label for="editSex" class="form-label">Sex</label>
                                                 <select class="form-control" id="editSex">
                                                     <option value="Male">Male</option>
                                                     <option value="Female">Female</option>
                                                 </select>
                                             </div>
-                                            <div class="col-sm-6">
+                                        </div>
+                                        <div class="row mb-3">
+                                            
+                                            <div class="col-sm-12">
                                                 <label for="editAddress" class="form-label">Address</label>
                                                 <input type="text" class="form-control" id="editAddress" />
                                             </div>
@@ -482,6 +566,31 @@ mysqli_close($conn);
                             </div>
                         </div>
                     </div>
+
+
+                    <div class="modal fade" id="uploadESigModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="uploadModalLabel">Upload New E-Signature</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- File Upload Form -->
+                                    <form id="uploadESigForm" enctype="multipart/form-data" >
+                                        <div class="form-group">
+                                            <label for="esignatureFile">Choose an E-Signature Image</label>
+                                            <input type="file" name="esignatureFile" id="esignatureFile" class="form-control" accept="image/*" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Upload</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <!-- Modals -->
                     <!-- Upload Modal -->
@@ -500,7 +609,7 @@ mysqli_close($conn);
                                             <label for="file">Choose file</label>
                                             <input type="file" class="form-control-file" id="file" name="file">
                                         </div>
-                                        <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
+                                        <button type="button" class="btn btn-primary" id="uploadBtn">Upload Picture</button>
                                     </form>
                                 </div>
                             </div>
@@ -566,7 +675,96 @@ mysqli_close($conn);
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function () {
+    $('#viewEsignature').on('click', function () {
+        $.ajax({
+            url: 'fetch_esig.php', // Backend script to fetch the e-signature
+            type: 'POST',
+            dataType: 'json',
+            success: function (response) {
+                if (response.esig) {
+                    // Display the fetched e-signature image
+                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                } else {
+                    // Display "No Image" if the esig column is null
+                    $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
+                }
+            },
+            error: function () {
+                // Handle errors
+                $('#eSignatureBox').html('<p>Error fetching data.</p>');
+            }
+        });
+    });
+
+    // Upload New E-Signature button action
+    
+});
+
+$(document).ready(function () {
+    // SweetAlert for Upload New E-Signature
+    $('#uploadNewESignature').on('click', function () {
+        Swal.fire({
+            title: 'Warning!',
+            html: `Make sure the image has no background.<br>
+                   If your image still has a background, 
+                   <a href="https://www.remove.bg/" target="_blank">click here</a> to remove it.`,
+            icon: 'warning',
+            showCancelButton: false,
+            confirmButtonText: 'Okay',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Open the Upload Modal
+                $('#uploadESigModal').modal('show');
+            }
+        });
+    });
+
+    // Handle the AJAX upload
+    $('#uploadESigForm').on('submit', function (e) {
+        e.preventDefault(); // Prevent default form submission
+
+        // Prepare form data
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: 'upload_esig.php', // The PHP script to handle upload
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                // Handle success response
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Your e-signature has been uploaded successfully.',
+                    icon: 'success',
+                    confirmButtonText: 'Okay'
+                }).then(() => {
+                    location.reload(); // Reload the page or update UI
+                });
+            },
+            error: function () {
+                // Handle error response
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'There was an error uploading your e-signature. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'Okay'
+                });
+            }
+        });
+    });
+});
+
+
+
+</script>
+
+<script>
 document.getElementById('editButton').addEventListener('click', function () {
     // Populate the modal fields with existing data
     const fname = "<?php echo isset($ufname) ? htmlspecialchars($ufname, ENT_QUOTES, 'UTF-8') : ''; ?>";
@@ -692,7 +890,7 @@ $(document).ready(function () {
     var userId = $('#userId').val(); // Assuming you have a hidden input for userId
 
     $.ajax({
-        url: '../changepassword.php',
+        url: 'changepassword.php',
         type: 'POST',
         data: { email: email, userId: userId },
         success: function (response) {

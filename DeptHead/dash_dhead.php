@@ -27,11 +27,11 @@ if ($stmt_user = $conn->prepare($sql_user)) {
     $stmt_user->execute();
     $result_user = $stmt_user->get_result();
 
-    $fname = '';
+    $Fname = '';
     $dept_id = null; // Initialize dept_ID
     if ($result_user->num_rows > 0) {
         $row = $result_user->fetch_assoc();
-        $fname = $row['fname'];
+        $Fname = $row['fname'];
         $dept_id = $row['dept_ID']; // Get dept_ID
     }
     $stmt_user->close();
@@ -457,7 +457,10 @@ if (!$result) {
     width: 100%;                    /* Full width */
     border-collapse: collapse;      /* Remove spacing between cells */
     margin: 20px 0 20px 0;          /* Vertical margin 20px, horizontal margin 0 */
-    text-align: left;               /* Align table text to the left */
+                 /* Align table text to the left */
+    font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-align: center;
 }
 
 
@@ -524,11 +527,7 @@ if (!$result) {
 .expand-row:hover::after {
    
 }   
-.progress {
-    height: 20px; /* Adjust height as needed */
-    background-color: lightgray; /* Default background color */
-    border-radius: 5px;
-}
+
 
 .progress {
     height: 20px;
@@ -672,7 +671,7 @@ if (!$result) {
                         <div class="card" style="height: 150px; padding: 10px; border-radius: 10px; box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.05); position: relative;">
                             <div style="padding: 20px;">
                                 <h1 style="font-weight: bold; color: #9b2035; margin-top: 20px;">
-                                    Hello, <?php echo htmlspecialchars($fname); ?>!
+                                    Hello, <?php echo htmlspecialchars($Fname); ?>!
                                     <img src="img/EYYY.gif" alt="Animated GIF" style="height: 40px; vertical-align: middle;">
                                 </h1>
                             </div>
@@ -682,10 +681,11 @@ if (!$result) {
                         <!-- Task Progress Table -->
                                             <div class="col-md-12" style="margin-top: 70px;">
                                                 <div class="row">
-                                                    <div class="col-md-8">
+                                                    <div class="col-md-7">
                                                         <div class="card" style="max-height: 300px; padding: 15px; border-radius: 10px; box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.05); position: relative;">
                                                             <h5 id="department-name" style="font-weight: bold; color: #9b2035;">Department Name</h5>
-                                                            <select id="year-filter">                    
+                                                            <select id="year-filter">    
+                                                                <option value="">Select Year</option>                
                                                             </select>
                                                             <table class="table1 table-responsive">
                                                                 <thead>
@@ -701,20 +701,44 @@ if (!$result) {
                                                             </table>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-4">
-                                        <div class="card" style="height: 300px; padding: 20px; border-radius: 10px; box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.05);">
-                                            <h5 style="font-weight: bold; color: #9b2035;">Recent Submitted Tasks</h5>
-                                            <div style="margin-top: 20px;">
-                                                <?php
-                                                // Include the file to fetch and display recent tasks
-                                                include 'fetch_recent_docs.php'; 
-                                                ?>
-                                            </div>
-                                        </div>
-                                    </div>
+                                                    <div class="col-md-5">
+    <div class="card" style="height: 300px; padding: 15px; border-radius: 10px; box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.05);">
+        <h5 style="font-weight: bold; color: #9b2035;">MPS Summary</h5>
+        
+        <!-- Filter Container -->
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <!-- School Year Filter -->
+            <div>
+                <select class="form-control" id="schoolYearSelect" name="school_year" style="width: 100px; height: 30px; font-size: 12px; padding: 5px; border: 1px solid black; color: black;">
+                    <?php 
+                    include 'connection.php';
+                    $schoolyearQuery = "SELECT School_Year_ID, Year_Range FROM schoolyear ORDER BY Year_Range DESC";
+                    $schoolyearResult = mysqli_query($conn, $schoolyearQuery);
+                    
+                    while ($row = mysqli_fetch_assoc($schoolyearResult)): ?>
+                        <option value="<?= $row['School_Year_ID'] ?>"><?= $row['Year_Range'] ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
 
+            <!-- Quarter Filter -->
+            <div>
+                <select class="form-control" id="quarterSelect" name="quarter" style="width: 120px; height: 30px; font-size: 12px; padding: 5px; border: 1px solid black; color: black;">
+                    <option value="">Select Quarter</option>
+                    <option value="1">Quarter One</option>
+                    <option value="2">Quarter Two</option>
+                    <option value="3">Quarter Three</option>
+                    <option value="4">Quarter Four</option>
+                </select>
+            </div>
+        </div>
 
-
+        <!-- Chart Container (Replacing Table) -->
+        <div style="flex-grow: 1; max-height: 200px; overflow: hidden; margin-top: 10px;">
+            <canvas id="mpsChart"></canvas>
+        </div>
+    </div>
+</div>
                                                 </div>
                                             </div>
                     <!-- Stats Section -->
@@ -757,13 +781,13 @@ if (!$result) {
 
             <!-- Calendar Section -->
             <div class="col-md-4">
-                <div class="card" style="height: 600px; padding: 20px; border-radius: 10px; box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="card" style="height: 585px; padding: 20px; border-radius: 10px; box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; justify-content: space-between;">
                     <div id="calendar" style="height: 250px; margin-bottom: 20px;"></div>
                     <div id="tasks-container" style="flex-grow: 1; margin-top: 130px;">
-                        <table class="table table-bordered table-striped">
+                        <table class="table1 table-bordered table-striped">
                             <thead>
                                 <tr style="font-size: 15px;">
-                                    <th>Department</th>
+                                    
                                     <th>Tasks Progress</th>
                                 </tr>
                             </thead>
@@ -784,10 +808,8 @@ if (!$result) {
     </section>
     <!-- NAVBAR -->
 
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
 	<script src="assets/js/script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="assets/js/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -797,9 +819,9 @@ if (!$result) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.41/moment-timezone-with-data.min.js"></script>
     <script>
     // Function to load the latest tasks from the server
-    function loadRecentTasks() {
+    function loadRecentMPS() {
         // Fetch the recent tasks from the server
-        fetch('fetch_recent_docs.php')
+        fetch('fetch_mps_record.php')
             .then(response => response.text())
             .then(data => {
                 // Replace the content inside the container with the new data
@@ -811,10 +833,74 @@ if (!$result) {
     }
 
     // Initial load
-    loadRecentTasks();
+    loadRecentMPS();
 
     // Reload the tasks every 5 seconds (5000 milliseconds)
-    setInterval(loadRecentTasks, 5000);
+    setInterval(loadRecentMPS, 5000);
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var schoolYearSelect = document.getElementById("schoolYearSelect");
+    var quarterSelect = document.getElementById("quarterSelect");
+    var chartCanvas = document.getElementById("mpsChart").getContext("2d");
+    var mpsChart;
+
+    if (schoolYearSelect && quarterSelect) {
+        schoolYearSelect.addEventListener("change", updateChart);
+        quarterSelect.addEventListener("change", updateChart);
+        updateChart(); // Load chart initially
+    }
+
+    function updateChart() {
+        var schoolYearID = schoolYearSelect.value;
+        var quarterID = quarterSelect.value;
+
+        // Fetch JSON data
+        fetch(`fetch_mps_record.php?school_year=${encodeURIComponent(schoolYearID)}&quarter=${encodeURIComponent(quarterID)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("Error fetching MPS records:", data.error);
+                    return;
+                }
+
+                var labels = data.map(item => item.grade_section);
+                var values = data.map(item => item.avg_mps);
+
+                // Destroy existing chart if exists
+                if (mpsChart) {
+                    mpsChart.destroy();
+                }
+
+                // Create new Chart.js bar chart
+                mpsChart = new Chart(chartCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Average MPS (%)",
+                            data: values,
+                            backgroundColor: "rgba(155, 32, 53, 0.6)", // Red color matching your theme
+                            borderColor: "rgba(155, 32, 53, 1)",
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error("Error loading MPS data:", error));
+    }
+});
+
 </script>
     <script>
  $(document).ready(function () {
@@ -822,120 +908,129 @@ if (!$result) {
     let yearFilter = new Date().getFullYear(); // Default to current year
 
     // Function to render the table
-    function renderTable(data) {
-        const tbody = $('#teacher-table-body');
-        tbody.empty();
+function renderTable(data) {
+    const tbody = $('#teacher-table-body');
+    tbody.empty();
 
-        if (data.length === 0) {
-            tbody.append('<tr><td colspan="4" class="text-center">No data available for the selected year</td></tr>');
-            return;
-        }
+    if (data.length === 0) {
+        tbody.append('<tr><td colspan="4" class="text-center">No data available for the selected year</td></tr>');
+        return;
+    }
 
-        let totalOnTimePercentage = 0; // To track the sum of on-time percentages
-        const totalTeachers = data.length;
+    let totalOnTimePercentage = 0; // To track the sum of on-time percentages
+    const totalTeachers = data.length;
 
-        data.forEach(teacher => {
-            const totalTasks = teacher.total;
-            const assignedPercentage = (teacher.assigned / totalTasks) * 100 || 0;
-            const missingPercentage = (teacher.missing / totalTasks) * 100 || 0;
-            const submittedPercentage = (teacher.submitted / totalTasks) * 100 || 0;
+    data.forEach(teacher => {
+        const totalTasks = teacher.total;
+        const assignedPercentage = (teacher.assigned / totalTasks) * 100 || 0;
+        const missingPercentage = (teacher.missing / totalTasks) * 100 || 0;
+        const submittedPercentage = (teacher.submitted / totalTasks) * 100 || 0;
 
-            // Colors for progress bars
-            const colors = {
-                assigned: assignedPercentage > 0 ? 'gray' : 'lightgray',
-                missing: missingPercentage > 0 ? 'red' : 'lightgray',
-                submitted: submittedPercentage > 0 ? 'green' : 'lightgray',
-            };
+        // Colors for progress bars
+        const colors = {
+            assigned: assignedPercentage > 0 ? '#E0E0E0' : '#E0E0E0', // Light Gray
+            missing: missingPercentage > 0 ? '#FCA5A5' : '#E0E0E0', // Red
+            submitted: submittedPercentage > 0 ? '#4CAF50' : '#E0E0E0', // Green
+        };
 
-            // Calculate the "on-time submission" performance
-            const onTimePercentage = Math.max(0, submittedPercentage - (assignedPercentage + missingPercentage));
+        // Default profile picture if none is provided
+        const profilePic = teacher.profile ? teacher.profile : 'default_profile.png';
 
-            // Add the on-time percentage to the total
-            totalOnTimePercentage += onTimePercentage;
+        // Calculate the "on-time submission" performance
+        const onTimePercentage = submittedPercentage; // No need to subtract missingPercentage
 
-            const row = `
-                <tr>
-                    <td>${teacher.name}</td>
-                    <td>
-                        <div class="progress" 
-                             title="Submitted: ${submittedPercentage.toFixed(2)}% (${teacher.submitted})
-                                    Missing: ${missingPercentage.toFixed(2)}% (${teacher.missing}) 
-                                    Assigned: ${assignedPercentage.toFixed(2)}% (${teacher.assigned})">
-                            <div class="progress-bar" 
-                                 style="width: 100%; 
-                                        background: linear-gradient(to right, 
-                                        ${colors.submitted} ${submittedPercentage}%, 
-                                        ${colors.missing} ${submittedPercentage + missingPercentage}%, 
-                                        ${colors.assigned} ${submittedPercentage + missingPercentage}%)">
-                            </div>
+
+        // Add the on-time percentage to the total
+        totalOnTimePercentage += onTimePercentage;
+
+        const row = `
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center;">
+                       <img src="../img/UserProfile/${profilePic}" alt="Profile Picture" class="profile-image">
+                        ${teacher.name}
+                    </div>
+                </td>
+                <td>
+                    <div class="progress" 
+                         title="Submitted: ${submittedPercentage.toFixed(2)}% (${teacher.submitted})
+                                Missing: ${missingPercentage.toFixed(2)}% (${teacher.missing}) 
+                                Assigned: ${assignedPercentage.toFixed(2)}% (${teacher.assigned})">
+                        <div class="progress-bar" 
+                             style="width: 100%; 
+                                    background: linear-gradient(to right, 
+                                    ${colors.submitted} ${submittedPercentage}%, 
+                                    ${colors.missing} ${submittedPercentage + missingPercentage}%, 
+                                    ${colors.assigned} ${submittedPercentage + missingPercentage}%)">
                         </div>
-                    </td>
-                    <td>${onTimePercentage.toFixed(0)}%</td>
-                </tr>
-            `;
+                    </div>
+                </td>
+                <td>${onTimePercentage.toFixed(0)}%</td>
+            </tr>
+        `;
 
-            tbody.append(row);
-        });
+        tbody.append(row);
+    });
 
-        // Calculate and display overall performance
-        const overallPerformance = totalTeachers > 0 ? (totalOnTimePercentage / totalTeachers).toFixed(2) : 0;
-        $('#overall-performance').text(overallPerformance + '%');
-    }
+    // Calculate and display overall performance
+    const overallPerformance = totalTeachers > 0 ? (totalOnTimePercentage / totalTeachers).toFixed(2) : 0;
+    $('#overall-performance').text(overallPerformance + '%');
+}
 
-    // Dynamically generate the year dropdown options (recent year at the top)
-    function generateYearOptions() {
-        const currentYear = new Date().getFullYear();
-        const yearDropdown = $('#year-filter');
-        yearDropdown.empty(); // Clear the existing options
+function generateYearOptions() {
+    const currentYear = new Date().getFullYear();
+    const yearDropdown = $('#year-filter');
+    yearDropdown.empty(); // Clear the existing options
 
-        // Fetch the available year ranges and dynamically create the dropdown options
-        $.ajax({
-            url: 'fetch_schoolyear.php', // Assuming this PHP file returns an array of year ranges (e.g., 2023-2024)
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                const yearRanges = response.yearRanges || [];
-                
-                // Loop through the year ranges and append them to the dropdown
-                yearRanges.forEach(function(yearRange) {
-                    const yearOption = new Option(yearRange, yearRange, yearRange === `${currentYear}-${currentYear+1}`, yearRange === `${currentYear}-${currentYear+1}`);
-                    yearDropdown.append(yearOption);
-                });
-            },
-            error: function() {
-                alert('Error fetching year ranges.');
+    $.ajax({
+        url: 'fetch_schoolyear.php', // Assuming this PHP file returns an array of year ranges
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            const yearRanges = response.yearRanges || [];
+            
+            yearRanges.forEach(function(yearRange) {
+                const isSelected = (yearRange === `${yearFilter}-${parseInt(yearFilter) + 1}`); // Match current year filter
+                const yearOption = new Option(yearRange, yearRange, isSelected, isSelected);
+                yearDropdown.append(yearOption);
+            });
+
+            // Ensure the dropdown value matches yearFilter
+            yearDropdown.val(`${yearFilter}-${parseInt(yearFilter) + 1}`);
+        },
+        error: function() {
+            alert('Error fetching year ranges.');
+        }
+    });
+}
+
+function fetchTeacherData(year) {
+    $.ajax({
+        url: 'fetch_teacher_progress.php',
+        type: 'GET',
+        dataType: 'json',
+        data: { year: year }, // Pass the year in the request
+        success: function (response) {
+            $('#department-name').text('Teachers in ' + response.departmentName);
+            
+            if (response.error) {
+                $('#teacher-table-body').html('<tr><td colspan="4" class="text-center">' + response.error + '</td></tr>');
+                return;
             }
-        });
-    }
 
-    // Fetch teacher data with the selected year or year range
-    function fetchTeacherData(year) {
-        $.ajax({
-            url: 'fetch_teacher_progress.php',
-            type: 'GET',
-            dataType: 'json',
-            data: { year: year }, // Pass the year in the request
-            success: function (response) {
-                if (response.error) {
-                    alert(response.error);
-                    return;
-                }
+            teacherData = response.teachers; // Store the data
 
-                $('#department-name').text('Teachers in ' + response.departmentName);
-                teacherData = response.teachers; // Store the data
-
-                // If no data is found for the selected year, use the previously fetched data
-                if (teacherData.length === 0) {
-                    alert('No data available for the selected year. Displaying previous data.');
-                } else {
-                    renderTable(teacherData); // Render the new data
-                }
-            },
-            error: function () {
-                alert('Error fetching teacher data.');
+            if (teacherData.length === 0) {
+                $('#teacher-table-body').html('<tr><td colspan="4" class="text-center">No data found for the selected year.</td></tr>');
+            } else {
+                renderTable(teacherData); // Render the new data
             }
-        });
-    }
+        },
+        error: function () {
+            $('#teacher-table-body').html('<tr><td colspan="4" class="text-center">Error fetching teacher data.</td></tr>');
+        }
+    });
+}
 
     // Load data for the current year by default
     generateYearOptions(); // Generate year options dynamically
@@ -1025,13 +1120,12 @@ $(document).ready(function() {
                 // Loop through departments and create rows dynamically
                 data.forEach(function(department) {
                     var row = '<tr>';
-                    row += '<td>' + department.dept_name + '</td>';
                     row += `
                         <td class="expand-row" data-department-id="${department.dept_ID}">
                              ${department.totalSubmit}/${department.totalAssigned}<br> <!-- Line break -->
                             <span class="expand-text"> (Click to breakdown)</span>
                             <span id="toggle-arrow-${department.dept_ID}" class="toggle-arrow" >
-                                <i class="fas fa-chevron-down"></i> <!-- Down arrow icon -->
+                             
                             </span>
                         </td>
                     `;
@@ -1040,7 +1134,7 @@ $(document).ready(function() {
                     // Add an empty row for task breakdown (hidden initially)
                     row += '<tr class="task-details-row" id="details-row-' + department.dept_ID + '" style="display: none;">' +
                         '<td colspan="3">' +
-                        '<table class="table table-bordered">' +
+                        '<table class="table1 table-bordered">' +
                         '<thead>' +
                         '<tr>' +
                         '<th style="font-size: 12px;">Task Title</th>' +
@@ -1218,8 +1312,6 @@ function formatTime(time) {
         }]
     };
 
-    var chart = new ApexCharts(document.querySelector("#chart1"), options);
-    chart.render();
 
     // Event listener for year selection
     document.getElementById('yearSelect').addEventListener('change', updateChart);
@@ -1266,38 +1358,6 @@ function formatTime(time) {
     
     
 </script>
-
-    <script>
-
-        
-
-       
-
-        // Prepare data for the file type donut chart
-        var fileTypeData = {
-            series: <?php echo json_encode($counts); ?>,
-            chart: {
-                type: 'donut',
-                height: 350
-            },
-            labels: <?php echo json_encode($fileTypes); ?>,
-            legend: {
-                position: 'bottom'
-            },
-            dataLabels: {
-                enabled: true
-            },
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '60%' // Adjust the size of the donut hole
-                    }
-                }
-            }
-        };
-        var fileTypeChart = new ApexCharts(document.querySelector("#fileTypeChart"), fileTypeData);
-        fileTypeChart.render();
-    </script>
      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
      
       <script>
@@ -1305,7 +1365,7 @@ function formatTime(time) {
         <?php if ($loginSuccess === true): ?>
         Swal.fire({
             title: 'Login Successful!',
-            text: 'Welcome back, <?php echo htmlspecialchars($fname); ?>!',
+            text: 'Welcome back, <?php echo htmlspecialchars($Fname); ?>!',
             icon: 'success',
             confirmButtonText: 'OK'
         });

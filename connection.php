@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "docmap2";
+$dbname = "docmap3";
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);

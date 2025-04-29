@@ -5,24 +5,9 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-include 'connection.php'; // Include your database connection file
+include 'connection.php';
 
 $userId = $_SESSION['user_id'];
-
-// Query to fetch fname and lname
-$sql = "SELECT fname, lname FROM useracc WHERE UserID = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $userId); // Bind the UserID parameter
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows > 0) {
-    // Fetch the user's name
-    $row = $result->fetch_assoc();
-    $userFullName = $row['fname'] . ' ' . $row['lname'];
-} else {
-    $userFullName = "Unknown User"; // Fallback if user is not found
-}
 
 
 // Fetch available school years
@@ -39,13 +24,89 @@ if ($schoolYearsResult && $schoolYearsResult->num_rows > 0) {
     }
 }
 
-// Fetch records based on the selected school year
-$selectedYear = isset($_GET['year']) && ctype_digit($_GET['year']) ? $_GET['year'] : "All";
-$records = [];
-if ($selectedYear === "All") {
-    foreach ($schoolYears as $yearId => $year) {
+
+// Fetch preparer information for all performance indicators
+$preparersByYear = [];
+$allPreparers = []; // Store all preparers for "All" years view
+$preparersQuery = "
+    SELECT
+        pi.Performance_ID,   
+        sy.School_Year_ID,
+        sy.Year_Range,
+        CONCAT(u.fname, ' ', u.mname, ' ', u.lname) AS Preparer_Name,
+        u.URank AS Preparer_Rank,
+        u.esig AS Teacher_Signature
+    FROM 
+        Performance_Indicator pi
+    JOIN 
+        useracc u ON pi.UserID = u.UserID
+    JOIN
+        schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
+    ORDER BY
+        sy.Year_Range DESC";
+$preparersResult = $conn->query($preparersQuery);
+
+if ($preparersResult && $preparersResult->num_rows > 0) {
+    while ($row = $preparersResult->fetch_assoc()) {
+        $preparersByYear[$row['School_Year_ID']] = [
+            'name' => $row['Preparer_Name'],
+            'rank' => $row['Preparer_Rank'],
+            'year_range' => $row['Year_Range'],
+            'esig' => $row['Teacher_Signature']
+        ];
+        $allPreparers[] = [
+            'name' => $row['Preparer_Name'],
+            'rank' => $row['Preparer_Rank'],
+            'year_range' => $row['Year_Range'],
+            'esig' => $row['Teacher_Signature']
+        ];
+    }
+}
+
+
+    // Fetch records based on the selected school year
+    $selectedYear = isset($_GET['year']) && ctype_digit($_GET['year']) ? $_GET['year'] : "All";
+    $records = [];
+    if ($selectedYear === "All") {
+        foreach ($schoolYears as $yearId => $year) {
+            $query = "
+                SELECT 
+                    sy.Year_Range,
+                    g.Grade_Level,
+                    e.Enroll_Gross,
+                    e.Enroll_Net,
+                    c.Cohort_Figure,
+                    c.Cohort_Rate,
+                    d.Dropout_Figure,
+                    d.Dropout_Rate,
+                    r.Repeaters_Figure,
+                    r.Repeaters_Rate,
+                    p.Promotion_Figure,
+                    p.Promotion_Rate,
+                    t.Transition_Figure,
+                    t.Transition_Rate,
+                    a.Age_Group_12To15,
+                    n.NAT_Score
+                FROM Performance_Indicator pi
+                JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
+                JOIN Grade g ON pi.Grade_ID = g.Grade_ID
+                JOIN Enroll e ON pi.Enroll_ID = e.Enroll_ID
+                JOIN Dropout d ON pi.Dropout_ID = d.Dropout_ID
+                JOIN Promotion p ON pi.Promotion_ID = p.Promotion_ID
+                JOIN Cohort_Survival c ON pi.Cohort_ID = c.Cohort_ID
+                JOIN Repetition r ON pi.Repetition_ID = r.Repetition_ID
+                JOIN Age a ON pi.Age_ID = a.Age_ID
+                JOIN NAT n ON pi.NAT_ID = n.NAT_ID
+                JOIN Transition t ON pi.Transition_ID = t.Transition_ID
+                WHERE sy.School_Year_ID = $yearId
+                ORDER BY g.Grade_Level";
+            $result = $conn->query($query);
+            $records[$year] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        }
+    } else {
         $query = "
             SELECT 
+                sy.Year_Range,
                 g.Grade_Level,
                 e.Enroll_Gross,
                 e.Enroll_Net,
@@ -72,48 +133,57 @@ if ($selectedYear === "All") {
             JOIN Age a ON pi.Age_ID = a.Age_ID
             JOIN NAT n ON pi.NAT_ID = n.NAT_ID
             JOIN Transition t ON pi.Transition_ID = t.Transition_ID
-            WHERE sy.School_Year_ID = $yearId
-            GROUP BY g.Grade_Level, e.Enroll_Gross, e.Enroll_Net
+            WHERE sy.School_Year_ID = $selectedYear
             ORDER BY g.Grade_Level";
         $result = $conn->query($query);
-        $records[$year] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-    }
-} else {
-    $query = "
-        SELECT 
-            g.Grade_Level,
-            e.Enroll_Gross,
-            e.Enroll_Net,
-            c.Cohort_Figure,
-            c.Cohort_Rate,
-            d.Dropout_Figure,
-            d.Dropout_Rate,
-            r.Repeaters_Figure,
-            r.Repeaters_Rate,
-            p.Promotion_Figure,
-            p.Promotion_Rate,
-            t.Transition_Figure,
-            t.Transition_Rate,
-            a.Age_Group_12To15,
-            n.NAT_Score
-        FROM Performance_Indicator pi
-        JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
-        JOIN Grade g ON pi.Grade_ID = g.Grade_ID
-        JOIN Enroll e ON pi.Enroll_ID = e.Enroll_ID
-        JOIN Dropout d ON pi.Dropout_ID = d.Dropout_ID
-        JOIN Promotion p ON pi.Promotion_ID = p.Promotion_ID
-        JOIN Cohort_Survival c ON pi.Cohort_ID = c.Cohort_ID
-        JOIN Repetition r ON pi.Repetition_ID = r.Repetition_ID
-        JOIN Age a ON pi.Age_ID = a.Age_ID
-        JOIN NAT n ON pi.NAT_ID = n.NAT_ID
-        JOIN Transition t ON pi.Transition_ID = t.Transition_ID
-        WHERE sy.School_Year_ID = $selectedYear
-        GROUP BY g.Grade_Level, e.Enroll_Gross, e.Enroll_Net
-        ORDER BY g.Grade_Level";
-    $result = $conn->query($query);
-    $records[$schoolYears[$selectedYear]] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+        $records[$schoolYears[$selectedYear]] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+// Process records to merge cohort data for grades 7-10
+$processedRecords = [];
+foreach ($records as $year => $yearRecords) {
+    $processedYearRecords = [];
+    $cohort7to10 = ['figure' => 0, 'rate' => 0, 'count' => 0];
+    
+    // First pass to calculate cohort data for grades 7-10
+    foreach ($yearRecords as $record) {
+        if ($record['Grade_Level'] >= 7 && $record['Grade_Level'] <= 10) {
+            $cohort7to10['figure'] += $record['Cohort_Figure'];
+            $cohort7to10['rate'] += $record['Cohort_Rate'];
+            $cohort7to10['count']++;
+        }
+    }
+    
+    
+    
+    // Second pass to create processed records
+    foreach ($yearRecords as $record) {
+        $processedRecord = $record;
+        $processedRecord['isJuniorHigh'] = ($record['Grade_Level'] >= 7 && $record['Grade_Level'] <= 10);
+        $processedRecord['cohort7to10'] = $cohort7to10;
+        $processedYearRecords[] = $processedRecord;
+    }
+    
+    $processedRecords[$year] = $processedYearRecords;
+}
+
+// Determine the preparer name to display in the signature section
+$displayPreparerName = "Unknown Preparer";
+$displayPreparerRank = "";
+$displayTeacherSignature = "";
+
+if ($selectedYear === "All") {
+    // For "All" years, show the most recent preparer
+    if (!empty($allPreparers)) {
+        $displayPreparerName = $allPreparers[0]['name']; // First one is most recent due to ORDER BY DESC
+        $displayPreparerRank = $allPreparers[0]['rank'];
+        $displayTeacherSignature = $allPreparers[0]['esig'];
+    }
+} elseif (isset($preparersByYear[$selectedYear])) {
+    $displayPreparerName = $preparersByYear[$selectedYear]['name'];
+    $displayPreparerRank = $preparersByYear[$selectedYear]['rank'];
+    $displayTeacherSignature = $preparersByYear[$selectedYear]['esig'];
+}
 ?>
 
 <!DOCTYPE html>
@@ -256,7 +326,11 @@ if ($selectedYear === "All") {
         .printbtn:hover{
              background-color: darkgreen;
         }
-
+        
+        .merged-cohort-cell {
+            vertical-align: middle !important;
+            text-align: center !important;
+        }
 
     </style>
 </head>
@@ -275,13 +349,11 @@ if ($selectedYear === "All") {
         <main>
             <div class="header-section">
                 <h1 class="title">Performance Indicator</h1>
-                <!-- Buttons side by side -->
                 <div class="button-group">
-                    <button class="printbtn" id="printButton" onclick="fetchSchoolDetailsAndPrint()">Print</button> <!-- Print button -->
+                    <button class="printbtn" id="printButton" onclick="fetchSchoolDetailsAndPrint()">Print</button>
                 </div>
             </div>
 
-            <!-- Dropdowns Above the Table -->
             <div class="filter-station">
                 <label for="schoolYearFilter">School Year:</label>
                 <select id="schoolYearFilter" class="form-control" onchange="filterByYear()">
@@ -293,8 +365,8 @@ if ($selectedYear === "All") {
                     <?php endforeach; ?>
                 </select>
 
-                <?php if (!empty($records)): ?>
-                    <?php foreach ($records as $year => $yearRecords): ?>
+                <?php if (!empty($processedRecords)): ?>
+                    <?php foreach ($processedRecords as $year => $yearRecords): ?>
                         <h3 class="text-center text-school-year"><?= $year ?></h3>
                         <div class="table-container">
                             <table class="table table-bordered" id="performance_table">
@@ -324,88 +396,96 @@ if ($selectedYear === "All") {
                                         <th>RATE</th>
                                         <th>FIGURE</th>
                                         <th>RATE</th>
-                                        <th  colspan='2'>12-15</th>
+                                        <th colspan='2'>12-15</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (!empty($yearRecords)): ?>
-                                        <?php 
-                                            $totals = [
-                                                'Enroll_Gross' => 0,
-                                                'Enroll_Net' => 0,
-                                                'Cohort_Figure' => 0,
-                                                'Cohort_Rate' => 0,
-                                                'Dropout_Figure' => 0,
-                                                'Dropout_Rate' => 0,
-                                                'Repeaters_Figure' => 0,
-                                                'Repeaters_Rate' => 0,
-                                                'Promotion_Figure' => 0,
-                                                'Promotion_Rate' => 0,
-                                                'Transition_Figure' => 0,
-                                                'Transition_Rate' => 0,
-                                                'Age_Group_12To15' => 0,
-                                                'NAT_Score' => 0
-                                            ];
+                                    <?php 
+                                    $totals = [
+                                        'Enroll_Gross' => 0,
+                                        'Enroll_Net' => 0,
+                                        'Cohort_Figure' => 0,
+                                        'Cohort_Rate' => 0,
+                                        'Dropout_Figure' => 0,
+                                        'Dropout_Rate' => 0,
+                                        'Repeaters_Figure' => 0,
+                                        'Repeaters_Rate' => 0,
+                                        'Promotion_Figure' => 0,
+                                        'Promotion_Rate' => 0,
+                                        'Transition_Figure' => 0,
+                                        'Transition_Rate' => 0,
+                                        'Age_Group_12To15' => 0,
+                                        'NAT_Score' => 0
+                                    ];
 
-                                            foreach ($yearRecords as $record):
-                                                // Calculate totals
-                                                foreach ($totals as $key => $value) {
-                                                    $totals[$key] += $record[$key];
-                                                }
-                                            endforeach;
+                                    // Calculate totals
+                                    foreach ($yearRecords as $record) {
+                                        foreach ($totals as $key => $value) {
+                                            $totals[$key] += $record[$key];
+                                        }
+                                    }
 
-                                            // Calculate Total Cohort Rate
-                                            $totals['Dropout_Rate'] = ($totals['Enroll_Gross'] > 0) 
-                                                ? ($totals['Dropout_Figure'] / $totals['Enroll_Gross']) * 100 
-                                                : 0;
-                                        ?>
+                                    // Calculate rates
+                                    $totals['Dropout_Rate'] = ($totals['Enroll_Gross'] > 0) 
+                                        ? ($totals['Dropout_Figure'] / $totals['Enroll_Gross']) * 100 
+                                        : 0;
+                                    $totals['Repeaters_Rate'] = ($totals['Enroll_Gross'] > 0) 
+                                        ? ($totals['Repeaters_Figure'] / $totals['Enroll_Gross']) * 100 
+                                        : 0;
+                                    ?>
 
-                                        <?php foreach ($yearRecords as $record): ?>
-                                            <tr>
-                                                <td><?= $record['Grade_Level'] ?></td>
-                                                <td><?= $record['Enroll_Gross'] ?></td>
-                                                <td><?= $record['Enroll_Net'] ?></td>
-                                                <td><?= $record['Cohort_Figure'] ?></td>
-                                                <td><?= $record['Cohort_Rate'] ?></td>
-                                                <td><?= $record['Dropout_Figure'] ?></td>
-                                                <td><?= number_format($record['Dropout_Rate'], 2) ?></td>
-                                                <td><?= $record['Repeaters_Figure'] ?></td>
-                                                <td><?= $record['Repeaters_Rate'] ?></td>
-                                                <td><?= $record['Promotion_Figure'] ?></td>
-                                                <td><?= $record['Promotion_Rate'] ?></td>
-                                                <td><?= $record['Transition_Figure'] ?></td>
-                                                <td><?= $record['Transition_Rate'] ?></td>
-                                                <td colspan="2"><?= $record['Age_Group_12To15'] ?></td>
-                                                <td><?= $record['NAT_Score'] ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-
-                                        <!-- Add Total Row -->
-                                        <tr style="font-weight: bold; background-color: #f0f0f0;">
-                                            <td>TOTAL</td>
-                                            <td><?= $totals['Enroll_Gross'] ?></td>
-                                            <td><?= $totals['Enroll_Net'] ?></td>
-                                            <td><?= $totals['Cohort_Figure'] ?></td>
-                                            <td><?= $totals['Cohort_Rate'] ?></td>
-                                            <td><?= $totals['Dropout_Figure'] ?></td>
-                                            <td><?= number_format($totals['Dropout_Rate'], 2) ?></td>
-                                            <td><?= $totals['Repeaters_Figure'] ?></td>
-                                            <td><?= $totals['Repeaters_Rate'] ?></td>
-                                            <td><?= $totals['Promotion_Figure'] ?></td>
-                                            <td><?= $totals['Promotion_Rate'] ?></td>
-                                            <td><?= $totals['Transition_Figure'] ?></td>
-                                            <td><?= $totals['Transition_Rate'] ?></td>
-                                            <td colspan="2"><?= $totals['Age_Group_12To15'] ?></td>
-                                            <td><?= $totals['NAT_Score'] ?></td>
-                                        </tr>
-                                    <?php else: ?>
+                                    <?php 
+                                    $displayedCohort7to10 = false;
+                                    foreach ($yearRecords as $record): 
+                                        $isJuniorHigh = $record['isJuniorHigh'];
+                                    ?>
                                         <tr>
-                                            <td colspan="16" class="text-center">No records found for this school year.</td>
+                                            <td><?= $record['Grade_Level'] ?></td>
+                                            <td><?= $record['Enroll_Gross'] ?></td>
+                                            <td><?= $record['Enroll_Net'] ?></td>
+                                            
+                                            <?php if ($isJuniorHigh): ?>
+                                                <?php if (!$displayedCohort7to10): ?>
+                                                    <td rowspan="4" class="merged-cohort-cell"><?= $record['cohort7to10']['figure'] ?></td>
+                                                    <td rowspan="4" class="merged-cohort-cell"><?= number_format($record['cohort7to10']['rate'], 2) ?></td>
+                                                    <?php $displayedCohort7to10 = true; ?>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <td><?= $record['Cohort_Figure'] ?></td>
+                                                <td><?= number_format($record['Cohort_Rate'], 2) ?></td>
+                                            <?php endif; ?>
+                                            
+                                            <td><?= $record['Dropout_Figure'] ?></td>
+                                            <td><?= number_format($record['Dropout_Rate'], 2) ?></td>
+                                            <td><?= $record['Repeaters_Figure'] ?></td>
+                                            <td><?= number_format($record['Repeaters_Rate'], 2) ?></td>
+                                            <td><?= $record['Promotion_Figure'] ?></td>
+                                            <td><?= $record['Promotion_Rate'] ?></td>
+                                            <td><?= $record['Transition_Figure'] ?></td>
+                                            <td><?= $record['Transition_Rate'] ?></td>
+                                            <td colspan="2"><?= $record['Age_Group_12To15'] ?></td>
+                                            <td><?= $record['NAT_Score'] ?></td>
                                         </tr>
-                                    <?php endif; ?>
+                                    <?php endforeach; ?>
+
+                                    <tr style="font-weight: bold; background-color: #f0f0f0;">
+                                        <td>TOTAL</td>
+                                        <td><?= $totals['Enroll_Gross'] ?></td>
+                                        <td><?= $totals['Enroll_Net'] ?></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td><?= $totals['Dropout_Figure'] ?></td>
+                                        <td><?= number_format($totals['Dropout_Rate'], 2) ?></td>
+                                        <td><?= $totals['Repeaters_Figure'] ?></td>
+                                        <td><?= number_format($totals['Repeaters_Rate'], 2) ?></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td colspan="2"><?= $totals['Age_Group_12To15'] ?></td>
+                                        <td></td>
+                                    </tr>
                                 </tbody>
-
-
                             </table>
                         </div>
                     <?php endforeach; ?>
@@ -414,42 +494,13 @@ if ($selectedYear === "All") {
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
-                                    <th colspan="1">Grade</th>
-                                    <th colspan="2">Enrollment</th>
-                                    <th colspan="2">Cohort</th>
-                                    <th colspan="2">Drop/School Leavers</th>
-                                    <th colspan="2">Repeaters</th>
-                                    <th colspan="2">Graduation</th>
-                                    <th colspan="2">Transition</th>
-                                    <th colspan="2">Age</th>
-                                    <th rowspan="2">NAT</th>
-                                </tr>
-                                <tr>
-                                    <th>Level</th>
-                                    <th>Gross</th>
-                                    <th>Net</th>
-                                    <th>Figure</th>
-                                    <th>Rate</th>
-                                    <th>Figure</th>
-                                    <th>Rate</th>
-                                    <th>Figure</th>
-                                    <th>Rate</th>
-                                    <th>Figure</th>
-                                    <th>Rate</th>
-                                    <th>Figure</th>
-                                    <th>Rate</th>
-                                    <th>12-15</th>
+                                    <th colspan="16" class="text-center">No records available.</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="16" class="text-center">No records available.</td>
-                                </tr>
-                            </tbody>
                         </table>
                     </div>
                 <?php endif; ?>
-
+            </div>
         </main>
     </section>
 
@@ -457,168 +508,319 @@ if ($selectedYear === "All") {
     <script src="assets/js/script.js"></script>
 
     <script>
+
+        function calculateHrWidth(text, fontSize = '1.2rem') {
+            // Create a temporary span element to measure the text width
+            const span = document.createElement('span');
+            span.style.visibility = 'hidden';
+            span.style.position = 'absolute';
+            span.style.fontSize = fontSize;
+            span.style.fontWeight = 'bold'; // Match your name style
+            span.style.fontFamily = "'Times New Roman', serif"; // Match your font
+            span.style.whiteSpace = 'nowrap';
+            span.textContent = text;
+            
+            document.body.appendChild(span);
+            const width = span.offsetWidth;
+            document.body.removeChild(span);
+            
+            // Return width plus some padding (e.g., 20px)
+            return `${width + 20}px`;
+        }
+
         function filterByYear() {
             const selectedYear = document.getElementById("schoolYearFilter").value;
             window.location.href = "?year=" + selectedYear;
         }
 
-    </script>
+            function fetchSchoolDetailsAndPrint() {
+                const isAllYears = <?= $selectedYear === 'All' ? 'true' : 'false' ?>;
+                const yearsData = <?= json_encode(array_keys($processedRecords)) ?>;
+                const selectedYearText = "<?= $selectedYear === 'All' ? '' : $schoolYears[$selectedYear] ?>";
 
-   <script>
-    function fetchSchoolDetailsAndPrint() {
-        const userFullName = "<?= $userFullName ?>"; // Injected PHP variable
-        const selectedYearText = "<?= $selectedYear === 'All' ? '' : $schoolYears[$selectedYear] ?>"; // Only add year if it's not "All"
+                $.ajax({
+                    url: 'getSchoolDetails.php',
+                    method: 'GET',
+                    success: function(data) {
 
-        $.ajax({
-            url: '../getSchoolDetails.php',
-            method: 'GET',
-            success: function(data) {
-                const logo = data.Logo
-                    ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 130px; height: auto;" />`
-                    : '<p>No Logo Available</p>';
+                        // Initialize the variable at the beginning
+                        let tablesToPrint = '';
 
-                const schoolDetails = `
-                    <div class="header-content" style="display: flex; align-items: center; margin-bottom: 20px; width: 100%;">
-                        <div class="logo" style="flex-shrink: 0;  padding-left:290px;">
-                            ${logo}
-                        </div>
-                        <div class="school-details" style="text-align: center; flex: 1 ;padding-right:400px;">
-                            <p style="margin: 0;">Republic of the ${data.Country}</p>
-                            <p style="margin: 0;">${data.Organization}</p>
-                            <p style="margin: 0;">Region ${data.Region}</p>
-                            <p style="margin: 0;">Division of Batangas</p>
-                            <h2 style="font-weight: bold; font-size: 1.2em; margin: 5px 0;">${data.Name}</h2>
-                            <p style="margin: 0;">${data.Address}</p>
-                        </div>
-                    </div>
-                    <hr/>
-                    <br>
-                    
-                    <div class="additional-titles" style="text-align: center; font-family: 'Times New Roman', serif;">
-                        <h3 style="margin: 0;">Performance Indicator</h3>
-                        <span style="margin: 0;">S.Y. ${selectedYearText}</span>
-                    </div>
-                `;
+                        const logo = data.Logo
+                            ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 130px; height: auto;" />`
+                            : '<p>No Logo Available</p>';
+                        
+                        const depedLogo = `
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <img src="../img/Logo/deped_logo.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
+                            </div>
+                        `;
 
-                const signatureSection = `
-                    <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div style="text-align: center; flex: 1;">
-                            <span>PREPARED BY:</span><br/><br/>
-                            <span style="font-weight:bold;"><?= strtoupper($userFullName) ?></span>
-                            <hr style="max-width: 30%; margin: 0 auto;" />
-                        </div>
-                        <div style="text-align: center; flex: 1;">
-                            <span>NOTED:</span><br/><br/>
-                            <span style="font-weight:bold;">${data.Principal_FullName.toUpperCase()}</span>
-                            <hr style="max-width: 30%; margin: 0 auto;" />
-                            <span>PRINCIPAL</span>
-                        </div>
-                    </div>
-                `;
+                        const schoolDetails = `
+                            <div class="header-container">
+                                ${depedLogo}
+                                <div class="school-details" style="text-align: center;">
+                                    <p style='font-family: "Old English Text MT", serif; font-weight:bold; font-size:20px; margin: 0;'>Republic of the ${data.Country || 'Philippines'}</p>
+                                    <p style='font-family: "Old English Text MT", serif;font-weight:bold; font-size:28px; margin: 4px 0 2px 0;'>${data.Organization || 'Department of Education'}</p>
+                                    <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">Region ${data.Region || 'IV-A'}</p>
+                                    <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">Schools Division of Batangas</p>
+                                    <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">${data.Name || 'School Name'}</p>
+                                    <p style="text-transform: uppercase;  font-family: 'Tahoma'; font-size: 16px; margin: 1px;">${data.Address}, ${data.City_Muni}</p>
+                                </div>
+                            </div>
+                            <hr style="max-width:100%; margin: 10px auto; border: 1px solid black;">
 
-                let tablesToPrint = '';
-                document.querySelectorAll('.table-container').forEach((tableContainer, index) => {
-                    const yearHeader = tableContainer.previousElementSibling?.outerHTML || '';
-                    const tableHTML = tableContainer.outerHTML;
-
-                    tablesToPrint += `
-                        <div class="print-section">
-                            ${schoolDetails}
-                            ${yearHeader}
-                            ${tableHTML}
-                            ${signatureSection}
-                        </div>
-                    `;
-                });
-
-                const win = window.open('', '', 'height=700,width=900');
-                win.document.write(`
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Print</title>
-                        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-                        <style>
-                            body {
-                                font-family: 'Times New Roman', serif;
-                                margin: 0;
-                                padding: 0;
-                            }
-
-                            .table-container {
-                                width: 100%;
-                                margin-top: 20px;
-                                border-collapse: collapse;
-                            }
                             
-                            th, td {
-                                text-align: center;
-                                vertical-align: middle;
-                                padding: 10px;
-                                font-size: 1rem;
-                                word-wrap: break-word;
-                            }
+                            <div class="additional-titles" style="text-align: center; font-family: 'Times New Roman', serif;">
+                                <h3 style="margin-top: 10px;">Performance Indicator</h3>
+                                ${!isAllYears ? `<span style="margin: 0; font-size: 1.5rem;">S.Y. ${selectedYearText}</span>` : ''}
+                            </div>
+                        `;
 
-                            th {
-                                background-color: #9B2035;
-                                color: black;
-                                font-weight: bold;
-                            }
+                        // Calculate widths for both names
+                        const preparerName = "<?= strtoupper($displayPreparerName) ?>";
+                        const principalName = data.Principal_FullName.toUpperCase();
+                        
+                        // Get the computed font size from your style (1.2rem)
+                        const fontSize = '1.2rem';
+                        
+                        const preparerHrWidth = calculateHrWidth(preparerName, fontSize);
+                        const principalHrWidth = calculateHrWidth(principalName, fontSize);
 
-                            td {
-                                background-color: #ffffff;
-                            }
+                        const signatureSection = `
+                            <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start; font-size: ${fontSize}">
+                                <div style="text-align: center; flex: 1;">
+                                    <span style="font-weight:bold;">PREPARED BY:</span><br/><br/>
+                                    <div style="margin-bottom: -60px; margin-top: -60px;">
+                                        <img src="../img/e_sig/<?= $displayTeacherSignature ?>" alt="Preparer Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                    </div>
+                                    <span style="font-weight:bold;">${preparerName}</span>
+                                    <hr style="width: ${preparerHrWidth}; margin: 0 auto; border: 1px solid black;">
+                                    <?php if (!empty($displayPreparerRank)): ?>
+                                        <span><?= ($displayPreparerRank) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div style="text-align: center; flex: 1;">
+                                    <span style="font-weight:bold;">NOTED BY:</span><br/><br/>
+                                    <div style="margin-bottom: -55px; margin-top: -65px;">
+                                        <img src="img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                    </div>
+                                    <span style="font-weight:bold;">${principalName}</span>
+                                    <hr style="width: ${principalHrWidth}; margin: 0 auto; border: 1px solid black;">
+                                    <span>${data.Principal_Role}</span>
+                                </div>
+                            </div>
+                        `;
 
-                            .header-content {
-                                display: flex;
-                                align-items: center;
-                                margin-bottom: 20px;
-                                width: 100%;
-                                padding: 0 20px;
-                            }
+                        const footer = `
+                            <div class="footer">
+                                <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
+                                    <div class="footer-logo">
+                                        <img src="  img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                        ${data.Logo ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
+                                    </div>
+                                    <div class="footer-details">
+                                        <p style="margin-bottom: -5px;">${data.Address || ''} ${data.City_Muni || ''} ${data.School_ID ? 'School ID: ' + data.School_ID : ''}</p>
+                                        <p style="margin-bottom: -5px;">${data.Mobile_No ? 'Contact nos.: ' + data.Mobile_No : ''} ${data.landline ? ' Landline: ' + data.landline : ''}</p>
+                                        <p class="footer-underline">${data.Email || ''}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
 
-                            .school-details {
-                                text-align: center;
-                                flex: 1;
-                            }
+                        // Generate content for each year
+                        if (isAllYears) {
+                            // For "All" years, create a separate section for each year
+                            const tableContainers = document.querySelectorAll('.table-container');
+                            
+                            yearsData.forEach((year, index) => {
+                                const yearHeader = `<h4 style="text-align: center; margin: 0 ;">S. Y. ${year}</h4>`;
+                                
+                                // Get the table HTML for this year
+                                const tableHTML = tableContainers[index] ? tableContainers[index].outerHTML : '';
+                                
+                                tablesToPrint += `
+                                    <div class="print-section" style="page-break-after: ${index < yearsData.length - 1 ? 'always' : 'auto'};">
+                                        ${schoolDetails}
+                                        ${yearHeader}
+                                        ${tableHTML}
+                                        ${signatureSection}
+                                        ${footer}
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            // For single year, just use the existing table
+                            const tableHTML = document.querySelector('.table-container') ? document.querySelector('.table-container').outerHTML : '';
+                            tablesToPrint = `
+                                <div class="print-section">
+                                    ${schoolDetails}
+                                    ${tableHTML}
+                                    ${signatureSection}
+                                    ${footer}
+                                </div>
+                            `;
+                        }
 
-                            .school-details p, .school-details h2 {
-                                margin: 0;
-                            }
+                        const win = window.open('', '', 'height=700,width=900');
+                        win.document.write(`
+                            <!DOCTYPE html>
+                            <html lang="en">
+                            <head>
+                                <meta charset="UTF-8">
+                                <meta name="robots" content="noindex, nofollow">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <title>Performance Indicator Report</title>
+                                <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+                                <style>
+                                    @media print {
+                                        @page {
+                                            margin: 5mm 5mm 5mm 5mm; 
+                                            size: auto;
+                                            marks: none; /* Removes crop marks */
+                                        }
+                                        body {
+                                            margin: 0 !important;
+                                            padding: 0;
+                                        }
+                                        .footer {
+                                            position: fixed;
+                                            bottom: 0;
+                                        }
+                                        /* Remove browser-added headers/footers */
+                                        thead { display: table-header-group; }
+                                        tfoot { display: table-footer-group; }
+                                    }
+                                    body {
+                                        font-family: 'Times New Roman', serif;
+                                        margin: 0;
+                                        position: relative;
+                                        padding-bottom: 100px; /* Space for footer */
+                                    }
 
-                            .logo img {
-                                width: 130px;
-                                height: auto;
-                            }
+                                    .table-container table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        margin-top: 20px;
+                                    }
+                                    table {
+                                        max-width: 100%;
+                                        table-layout: fixed;
+                                        border: 2px solid #000 !important; /* Thicker outer border */
+                                    }
+                                    th, td {
+                                        text-align: center;
+                                        vertical-align: middle;
+                                        padding: 6px;
+                                        word-wrap: break-word;
+                                        border: 1.5px solid #000 !important; /* Thicker cell borders */
+                                    }
+                                    th {
+                                        background-color: #9B2035;
+                                        color: black;
+                                        font-weight: bold;
+                                        font-size: 0.8rem;
+                                        border: 2px solid #000 !important; /* Even thicker header borders */
+                                    }
 
-                            .additional-titles {
-                                text-align: center;
-                                font-family: 'Times New Roman', serif;
-                            }
+                                    td {
+                                        background-color: #ffffff;
+                                    }
+                                    
 
-                            .signature-section {
-                                margin-top: 50px;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${tablesToPrint}
-                    </body>
-                    </html>
-                `);
+                                    .header-container {
+                                        margin-bottom: 20px;
+                                    }
 
-                win.document.close();
-                win.onload = function() {
-                    win.print();
-                    win.close();
-                };
+                                    .school-details {
+                                        text-align: center;
+                                    }
+
+                                    .school-details p, .school-details h2 {
+                                        margin: 0;
+                                    }
+
+                                    .logo img {
+                                        width: 130px;
+                                        height: auto;
+                                    }
+
+                                    .additional-titles {
+                                        margin: 20px 0;
+                                    }
+
+                                    .signature-section {
+                                        margin-top: 60px;
+                                        margin-bottom: 100px; /* Space above footer */
+                                        page-break-inside: avoid;
+                                    }
+
+                                    .merged-cohort-cell {
+                                        vertical-align: middle !important;
+                                        text-align: center !important;
+                                        border: 1.5px solid #000 !important;
+                                    }
+                                    hr {
+                                        border-top: 2px solid black;
+                                    }
+                                    /* Add border to the entire table */
+                                    .table-bordered {
+                                        border: 2px solid #000 !important;
+                                    }
+                                    /* Add border to table cells */
+                                    .table-bordered th,
+                                    .table-bordered td {
+                                        border: 1.5px solid #000 !important;
+                                    }
+                                    /* Add thicker border to header cells */
+                                    .table-bordered thead th {
+                                        border-bottom-width: 2px !important;
+                                    }
+
+                                    .footer {
+                                        position: fixed;
+                                        bottom: 0;
+                                        left: 0;
+                                        right: 0;
+                                        width: 100%;
+                                        background-color: white;
+                                        padding: 5px 0;
+                                        border-top: 2.5px solid #000;
+                                        margin-bottom: 15px;
+                                    }
+
+                                    .footer-logo {
+                                        display: flex;
+                                        align-items: center;
+                                        margin-right: 20px;
+                                    }
+
+                                    .footer-details {
+                                        text-align: left;
+                                        font-size: 1.5rem;
+                                        line-height: 1.3;
+                                    }
+
+                                    .footer-underline {
+                                        color: blue;
+                                    }
+                                    
+                                </style>
+                            </head>
+                            <body>
+                                ${tablesToPrint}
+                            </body>
+                            </html>
+                        `);
+
+                        win.document.close();
+                        win.onload = function() {
+                            win.print();
+                            win.close();
+                        };
+                    }
+                });
             }
-        });
-    }
-</script>
-
-
+    </script>
 </body>
 </html>

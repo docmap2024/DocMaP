@@ -1,47 +1,94 @@
 <?php
-session_start(); // Make sure to start the session to access session variables
+session_start();
 include 'connection.php';
 
-$task_id = $_GET['task_id'];
-$content_id = $_GET['content_id'];
-$user_id = $_GET['user_id']; // User ID passed from the modal
-$session_user_id = $_SESSION['user_id']; // User ID from session
-
-// Modify the SQL query to include the timestamp
-$sql = "SELECT comments.Comment, comments.IncomingID, comments.OutgoingID, comments.timestamp, useracc.fname, useracc.lname, useracc.profile
-        FROM comments 
-        JOIN useracc ON comments.IncomingID = useracc.UserID 
-        WHERE comments.ContentID = ? AND comments.TaskID = ? 
-        AND (comments.OutgoingID = ? OR comments.OutgoingID = ?)
-        ORDER BY comments.CommentID";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("iiii", $content_id, $task_id, $user_id, $session_user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$comments = [];
-while ($row = $result->fetch_assoc()) {
-    $profileImagePath = "../img/UserProfile/" . $row['profile']; // Constructing the path to the profile image
-    
-    // Format the timestamp to 'YYYY/MM/DD HH:MM'
-    $timestamp = new DateTime($row['timestamp']);
-    $formattedTimestamp = $timestamp->format('Y/m/d H:i'); // Change format as needed
-    
-    $comments[] = [
-        'Comment' => $row['Comment'],
-        'fname' => $row['fname'],
-        'lname' => $row['lname'],
-        'profile' => $profileImagePath, // Adding the full image path to the response
-        'timestamp' => $formattedTimestamp // Adding formatted timestamp to the response
-    ];
-}
-
-$response = [
-    'success' => true,
-    'comments' => $comments
-];
-
 header('Content-Type: application/json');
-echo json_encode($response);
+
+try {
+    // Verify required parameters
+    if (!isset($_GET['task_id']) || !isset($_GET['user_id'])) {
+        throw new Exception('Missing required parameters: task_id and user_id are required');
+    }
+
+    // Get and validate parameters
+    $task_id = filter_var($_GET['task_id'], FILTER_VALIDATE_INT);
+    $user_id = filter_var($_GET['user_id'], FILTER_VALIDATE_INT);
+    $content_id = isset($_GET['content_id']) ? filter_var($_GET['content_id'], FILTER_VALIDATE_INT) : null;
+    $session_user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+
+    if (!$task_id || !$user_id) {
+        throw new Exception('Invalid parameters: task_id and user_id must be integers');
+    }
+
+    // Prepare the query
+    $sql = "SELECT c.Comment, c.IncomingID, c.OutgoingID, c.timestamp, 
+                   u.fname, u.lname, u.profile
+            FROM comments c
+            JOIN useracc u ON c.IncomingID = u.UserID 
+            WHERE c.TaskID = ? 
+            AND (c.OutgoingID = ? OR c.OutgoingID = ?)";
+
+    // Add content ID condition
+    if ($content_id !== null) {
+        $sql .= " AND c.ContentID = ?";
+    } else {
+        $sql .= " AND c.ContentID IS NULL";
+    }
+
+    $sql .= " ORDER BY c.CommentID";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception('Database error: ' . $conn->error);
+    }
+
+    // Bind parameters
+    if ($content_id !== null) {
+        $stmt->bind_param("iiii", $task_id, $user_id, $session_user_id, $content_id);
+    } else {
+        $stmt->bind_param("iii", $task_id, $user_id, $session_user_id);
+    }
+
+    if (!$stmt->execute()) {
+        throw new Exception('Query execution failed: ' . $stmt->error);
+    }
+
+    $result = $stmt->get_result();
+    $comments = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $comments[] = [
+            'Comment' => htmlspecialchars($row['Comment']),
+            'fname' => htmlspecialchars($row['fname']),
+            'lname' => htmlspecialchars($row['lname']),
+            'profile' => '../img/UserProfile/' . htmlspecialchars($row['profile']),
+            'timestamp' => (new DateTime($row['timestamp']))->format('Y/m/d H:i'),
+            'isCurrentUser' => ($row['IncomingID'] == $session_user_id)
+        ];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'comments' => $comments,
+        'debug' => [
+            'query' => $sql,
+            'params' => [
+                'task_id' => $task_id,
+                'content_id' => $content_id,
+                'user_id' => $user_id,
+                'session_user_id' => $session_user_id
+            ]
+        ]
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'error' => $e->getMessage()
+    ]);
+} finally {
+    if (isset($stmt)) $stmt->close();
+    if (isset($conn)) $conn->close();
+}
 ?>

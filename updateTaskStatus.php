@@ -1,22 +1,27 @@
 <?php
-// Start the session at the beginning of the script
 session_start();
-
-// Include your database connection script
 include 'connection.php';
 
 // Check if the request is a POST request
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Decode the JSON data sent from the front-end
+    // Decode the JSON data
     $data = json_decode(file_get_contents("php://input"));
 
-    // Extract taskID, contentID, and status from the decoded data
-    $taskID = mysqli_real_escape_string($conn, $data->taskID);
-    $contentID = mysqli_real_escape_string($conn, $data->contentID);
-    $status = mysqli_real_escape_string($conn, $data->status);
-    $user_id = $_SESSION['user_id']; // Get user ID from session
+    // Validate required fields
+    if (!isset($data->taskID) || !isset($data->status)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Task ID and status are required'
+        ]);
+        exit();
+    }
 
-    // Prepare SQL statement to get DueDate and DueTime from Tasks table
+    $taskID = mysqli_real_escape_string($conn, $data->taskID);
+    $contentID = isset($data->contentID) && !empty($data->contentID) ? mysqli_real_escape_string($conn, $data->contentID) : null;
+    $status = mysqli_real_escape_string($conn, $data->status);
+    $user_id = $_SESSION['user_id'];
+
+    // Get DueDate and DueTime
     $sqlDueDate = "SELECT DueDate, DueTime FROM Tasks WHERE TaskID = ?";
     $stmtDueDate = $conn->prepare($sqlDueDate);
     $stmtDueDate->bind_param("i", $taskID);
@@ -25,80 +30,73 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($resultDueDate->num_rows > 0) {
         $row = $resultDueDate->fetch_assoc();
-        $dueDate = $row['DueDate'];
-        $dueTime = $row['DueTime'];
-
-        // Combine DueDate and DueTime
-        $dueDateTime = new DateTime($dueDate . ' ' . $dueTime);
+        $dueDateTime = new DateTime($row['DueDate'] . ' ' . $row['DueTime']);
         $currentDateTime = new DateTime();
 
-        // Determine the status based on due date and time
-        if ($currentDateTime < $dueDateTime) {
-            $newStatus = 'Assigned'; // Update status to assigned if not past due
+        $newStatus = ($currentDateTime < $dueDateTime) ? 'Assigned' : 'Missing';
+
+        // Prepare Documents update query (with or without contentID)
+        $sqlUpdateDocuments = "UPDATE Documents SET status = ? WHERE TaskID = ? " . 
+                            ($contentID ? "AND ContentID = ?" : "AND ContentID IS NULL") . 
+                            " AND UserID = ?";
+        
+        $stmtDocuments = $conn->prepare($sqlUpdateDocuments);
+        
+        if ($contentID) {
+            $stmtDocuments->bind_param("siii", $status, $taskID, $contentID, $user_id);
         } else {
-            $newStatus = 'Missing'; // Update status to missing if past due
+            $stmtDocuments->bind_param("sii", $status, $taskID, $user_id);
         }
 
-        // Prepare SQL statements to update task status and user task status
-        $sqlUpdateDocuments = "UPDATE Documents SET status = ? WHERE TaskID = ? AND ContentID = ?";
-        $sqlUpdateTaskUser = "UPDATE task_user SET Status = ? WHERE TaskID = ? AND UserID = ?";
-
-        // Use prepared statements to prevent SQL injection
-        $stmtDocuments = $conn->prepare($sqlUpdateDocuments);
-        $stmtDocuments->bind_param("sii", $status, $taskID, $contentID);
+        // Prepare TaskUser update query
+        $sqlUpdateTaskUser = "UPDATE task_user SET Status = ? WHERE TaskID = ? AND UserID = ? " . 
+                           ($contentID ? "AND ContentID = ?" : "AND ContentID IS NULL");
         
-        if ($stmtDocuments->execute()) {
-            // Update the task_user status
-            $stmtTaskUser = $conn->prepare($sqlUpdateTaskUser);
-            $stmtTaskUser->bind_param("sii", $newStatus, $taskID, $user_id);
-            
-            if ($stmtTaskUser->execute()) {
-                // Return success response
-                $response = [
-                    'success' => true,
-                    'message' => 'Task status updated successfully!'
-                ];
-                echo json_encode($response);
-            } else {
-                // Return error response for task_user update
-                $response = [
-                    'success' => false,
-                    'message' => 'Error updating task_user status: ' . $stmtTaskUser->error
-                ];
-                echo json_encode($response);
-            }
-
-            // Close the task_user statement
-            $stmtTaskUser->close();
+        $stmtTaskUser = $conn->prepare($sqlUpdateTaskUser);
+        
+        if ($contentID) {
+            $stmtTaskUser->bind_param("siii", $newStatus, $taskID, $user_id, $contentID);
         } else {
-            // Return error response for Documents update
+            $stmtTaskUser->bind_param("sii", $newStatus, $taskID, $user_id);
+        }
+
+        // Execute updates
+        $documentsUpdated = $stmtDocuments->execute();
+        $taskUserUpdated = $stmtTaskUser->execute();
+
+        if ($documentsUpdated && $taskUserUpdated) {
+            $response = [
+                'success' => true,
+                'message' => 'Status updated successfully!'
+            ];
+        } else {
+            $errors = [];
+            if (!$documentsUpdated) $errors[] = 'Documents: ' . $stmtDocuments->error;
+            if (!$taskUserUpdated) $errors[] = 'Task User: ' . $stmtTaskUser->error;
+            
             $response = [
                 'success' => false,
-                'message' => 'Error updating document status: ' . $stmtDocuments->error
+                'message' => 'Error updating: ' . implode(', ', $errors)
             ];
-            echo json_encode($response);
         }
 
-        // Close the documents statement
         $stmtDocuments->close();
+        $stmtTaskUser->close();
     } else {
-        // Return error response if task not found
         $response = [
             'success' => false,
             'message' => 'Task not found'
         ];
-        echo json_encode($response);
     }
 
-    // Close the due date statement and connection
     $stmtDueDate->close();
-    $conn->close();
 } else {
-    // Return error if not a POST request
     $response = [
         'success' => false,
         'message' => 'Invalid request method'
     ];
-    echo json_encode($response);
 }
+
+$conn->close();
+echo json_encode($response);
 ?>

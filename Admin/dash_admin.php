@@ -29,17 +29,17 @@ if ($stmt_user = $conn->prepare($sql_user)) {
 }
 
 
-// Fetch distinct School Years and Grades
-$schoolYears = $conn->query("SELECT DISTINCT Year_Range FROM SchoolYear");
-$grades = $conn->query("SELECT DISTINCT Grade_Level FROM Grade");
+// Fetch distinct School Years
+$schoolYears = $conn->query("SELECT DISTINCT Year_Range FROM SchoolYear ORDER BY Year_Range");
+$yearRanges = $conn->query("SELECT DISTINCT Year_Range FROM SchoolYear ORDER BY Year_Range");
 
 // Default filter values
 $selectedYear = $_GET['school_year'] ?? null;
-$selectedGrade = $_GET['grade_level'] ?? null;
+$selectedYearRange = $_GET['year_range'] ?? null;
 
 // Base SQL query with optional filters
 $sql = "
-    SELECT g.Grade_Level, 
+    SELECT sy.Year_Range, 
            SUM(e.Enroll_Gross) AS total_enrollment, 
            AVG(d.Dropout_Rate) AS avg_dropout_rate, 
            AVG(p.Promotion_Rate) AS avg_promotion_rate, 
@@ -61,13 +61,13 @@ $sql = "
 if ($selectedYear) {
     $sql .= " AND sy.Year_Range = '$selectedYear'";
 }
-if ($selectedGrade) {
-    $sql .= " AND g.Grade_Level = '$selectedGrade'";
+if ($selectedYearRange) {
+    $sql .= " AND sy.Year_Range = '$selectedYearRange'";
 }
 
-$sql .= " GROUP BY g.Grade_Level";
-
+$sql .= " GROUP BY sy.Year_Range";
 $result = $conn->query($sql);
+
 
 // Fetch the data
 $data = [];
@@ -105,6 +105,42 @@ $departmentHeadCount = $totalUsersData['department_head_count'] ?? 0;
 $teacherCount = $totalUsersData['teacher_count'] ?? 0;
 
 
+// Fetch MPS data
+$mpsQuery = "
+    SELECT 
+        q.Quarter_Name,
+        sy.Year_Range,
+        AVG(m.MPS) as avg_mps,
+        COUNT(CASE WHEN m.`MPSBelow75` = 'Yes' THEN 1 END) as below_75_count,
+        COUNT(*) as total_count
+    FROM mps m
+    JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
+    JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
+    GROUP BY q.Quarter_ID, sy.Year_Range
+    ORDER BY sy.Year_Range, q.Quarter_Name";
+$mpsResult = $conn->query($mpsQuery);
+$mpsData = [];
+while ($row = $mpsResult->fetch_assoc()) {
+    $mpsData[] = $row;
+}
+
+
+// Fetch total departments and breakdown by type
+$departmentQuery = "
+    SELECT COUNT(*) as total, 
+           SUM(CASE WHEN dept_type = 'Academic' THEN 1 ELSE 0 END) AS academic_count,
+           SUM(CASE WHEN dept_type = 'Administrative' THEN 1 ELSE 0 END) AS administrative_count
+    FROM department";
+$departmentResult = mysqli_query($conn, $departmentQuery);
+$departmentData = mysqli_fetch_assoc($departmentResult);
+
+// Assign PHP variables
+$totalDepartment = $departmentData['total'] ?? 0;
+$academicCount = $departmentData['academic_count'] ?? 0;
+$administrativeCount = $departmentData['administrative_count'] ?? 0;
+
+
+
 $conn->close();
 ?>
 
@@ -120,11 +156,9 @@ $conn->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" />
     <!-- Load Font Awesome CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    
     <title>Dashboard | Home</title>
     <style>
-        .title{
+        .title {
             padding-bottom: 30px;
         }
 
@@ -296,84 +330,280 @@ $conn->close();
             background-color: #e0e0e0;        
         }
 
-        @media (max-width: 767px) {
-            .card {
-                margin-bottom: 10px;
-            }
+        .card-body {
+            position: relative;
+        }
 
-            .carousel-inner canvas {
-                height: auto !important;
-            }
+        .icon1 {
+            color: #9b2035;
+            font-size: 40px;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
 
+        .chart-container {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto;
+            border: none;
+            background-color: transparent;
+            position: relative;
+        }
+
+        .chart-container.top-right {
+            position: absolute;
+            top: -30px;
+            right: 1px;
+        }
+
+        canvas {
+            border: none;
+            background-color: transparent;
+            position: relative;
+        }
+
+        #mpsTrendChart {
+            width: 100% !important;
+            height: 200px !important;
+            padding: 10px;
+        }
+
+        .filter{
+            display: flex-start;  
+            margin-left: auto; 
+            margin-top: -50px;
+        }
+
+        .filter label{
+            align-items: center;
+            margin-right: 10px; 
+            font-weight: bold; 
+            color: #000; 
+            font-size: 18px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1200px) {
+            .col-md-5, .col-md-7 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            
             .carousel-controls {
                 top: -40px;
-                right: 30px;
+                right: 20px;
             }
-
+            
             .circle-button {
                 right: 20px;
-                top: 0;
             }
-
-            .info-data {
+            
+            .info-data > .row > .col-md-12 > .row {
                 flex-direction: column;
-                align-items: center;
             }
+            .filter {
+                margin-top: -40px;
+            }
+        }
 
-            .col-md-7, .col-md-5 {
-                max-width: 100%;
-                flex: 0 0 100%;
+        @media (max-width: 992px) {
+            .card {
+                margin-bottom: 15px;
+            }
+            
+            .carousel-inner canvas {
+                height: 300px !important;
+            }
+            
+            .school-year-selector {
+                margin-left: 0;
+                margin-top: 15px;
+                width: 100%;
+            }
+            
+            .title-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .title {
                 margin-bottom: 15px;
             }
 
+            .filter {
+                margin-top: 10px;
+                margin-left: 0;
+                justify-content: flex-start;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+            
+            .carousel-inner canvas {
+                height: 250px !important;
+            }
+            
+            .carousel-controls {
+                top: -35px;
+                right: 15px;
+            }
+            
+            .circle-button {
+                width: 35px;
+                height: 35px;
+                right: 15px;
+            }
+            
+            .carousel-control-prev,
+            .carousel-control-next {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .icon1 {
+                font-size: 30px;
+            }
+            
+            .chart-container,
+            .chart-container.top-right {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .table {
+                font-size: 14px;
+            }
+            
+            #search-input {
+                width: 200px !important;
+            }
+
+            .filter {
+                margin-top: 15px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .filter label {
+                margin-bottom: 5px;
+                margin-right: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .title {
+                font-size: 24px;
+                padding-bottom: 15px;
+            }
+            
+            .card {
+                padding: 10px;
+            }
+            
+            .carousel-inner canvas {
+                height: 200px !important;
+            }
+            
+            .carousel-controls {
+                top: -30px;
+                right: 10px;
+            }
+            
+            .circle-button {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+                right: 10px;
+            }
+            
+            .carousel-control-prev,
+            .carousel-control-next {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .icon1 {
+                font-size: 25px;
+                top: 10px;
+                right: 10px;
+            }
+            
+            .chart-container,
+            .chart-container.top-right {
+                width: 50px;
+                height: 50px;
+                top: -20px;
+            }
+            
             .table {
                 font-size: 12px;
             }
-
+            
+            #search-input {
+                width: 150px !important;
+                font-size: 12px;
+            }
+            
             .user-container {
                 flex-direction: column;
                 text-align: center;
             }
-
+            
             .user-container h1, .user-container h5 {
                 font-size: 1.2rem;
             }
+            
+            .info-data {
+                flex-direction: column;
+            }
+            
+            .col-md-6, .col-md-5, .col-md-7 {
+                padding-left: 5px;
+                padding-right: 5px;
+            }
 
-        }
-        .card-body {
-            position: relative; /* Ensures the positioning is correct */
-        }
-
-        .icon1 {
-            color: #9b2035; /* Set icon color */
-            font-size: 40px; /* Set icon size */
-            position: absolute; /* Positioning the icon absolutely */
-            top: 15px; /* Distance from the top */
-            right: 15px; /* Distance from the right */
-        }
-        .chart-container {
-            width: 90px; /* Width of the chart container */
-            height: 90px; /* Height of the chart container */
-            margin: 0 auto; /* Center the charts within their columns */
-            border: none; /* No border */
-            background-color: transparent; /* Transparent background */
-            position: relative; /* Allows positioning */
+            .filter {
+                align-items: flex-start;
+            }
+            
+            .filter .form-control {
+                width: 100% !important;
+            }
         }
 
-        .chart-container.top-right {
-            position: absolute; /* Positioning relative to its parent */
-            top: -30px; /* Position from the top */
-            right: -20px; /* Position from the right */
+        @media (max-width: 400px) {
+            .title {
+                font-size: 20px;
+            }
+            
+            .card {
+                padding: 8px;
+            }
+            
+            .carousel-inner canvas {
+                height: 180px !important;
+            }
+            
+            .table {
+                font-size: 11px;
+            }
+            
+            #search-input {
+                width: 120px !important;
+            }
+            
+            .chart-container,
+            .chart-container.top-right {
+                width: 40px;
+                height: 40px;
+            }
         }
-
-        canvas {
-        
-            border: none; /* No border */
-            background-color: transparent; /* Transparent background */
-            position: relative; /* Allows positioning */
-        }
-
-
     </style>
 </head>
 <body>
@@ -416,7 +646,18 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                 <img src="img/EYYY.gif" alt="Animated GIF" style="height: 30px; vertical-align: middle;">
             </h2>
         </div>
-        <div class="info-data">
+        <div class="filter">
+                <label>School Year:</label>
+                <select id="yearRangeFilter" class="form-control" style="width: 200px;">
+                    <option value="">All Year Ranges</option>
+                <?php while ($year = $yearRanges->fetch_assoc()): ?>
+                    <option value="<?= $year['Year_Range'] ?>" <?= ($selectedYearRange == $year['Year_Range']) ? 'selected' : '' ?>>
+                        <?= $year['Year_Range'] ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+        <div class="info-data" style= "margin-top: 10px;">
             <div class="row">
                 <div class="col-md-12">
                     <div class="row">
@@ -430,8 +671,8 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                     <!-- Top Row: Content -->
                                                     <div class="row">
                                                         <div class="col-6">
-                                                            <h1 style="font-weight:bold;"><?php echo $totalUsers; ?></h1>
-                                                            <p style="font-weight: bold;margin-top:20px;">Users</p>
+                                                            <p style="font-weight: bold;margin-top:-20px; font-size: 20px;">Users</p>
+                                                            <h1 style="font-weight:bold; margin-top: -5px; margin-bottom: 25px;"><?php echo $totalUsers; ?></h1>
                                                         </div>
                                                         <div class="col-6 text-end">
                                                             <i class="fa-solid fa-users icon1"></i>
@@ -445,8 +686,8 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                                 <!-- Department Head Count -->
                                                                 <div class="col-6 text-left">
                                                                     <h4 style="font-weight: bold;"><?php echo $departmentHeadCount; ?></h4>
-                                                                    <div class="chart-container top-right">
-                                                                        <canvas id="deptHeadChart"></canvas>
+                                                                    <div class="chart-container top-right"style ="height:70px; width:70px;">
+                                                                        <canvas id="deptHeadChart" ></canvas>
                                                                     </div>
                                                                     <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Dept Head</p>
                                                                 </div>
@@ -454,7 +695,7 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                                 <!-- Teacher Count -->
                                                                 <div class="col-6 text-left">
                                                                     <h4 style="font-weight: bold;"><?php echo $teacherCount; ?></h4>
-                                                                    <div class="chart-container top-right">
+                                                                    <div class="chart-container top-right" style ="height:70px; width:70px;">
                                                                         <canvas id="teacherChart"></canvas>
                                                                     </div>
                                                                     <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Teacher</p>
@@ -469,12 +710,42 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
 
                                         <div class="col-md-6">
                                             <div class="card" style="height:230px;">
-                                                <div class="head">
-                                                    <div>
-                                                        <h1><?php echo $totalDepartment; ?></h1>
-                                                        <p style="font-weight: bold;">Departments</p>
+                                                <div class="card-body">
+                                                    <!-- Top Row: Content -->
+                                                    <div class="row">
+                                                        <div class="col-10">
+                                                            <p style="font-weight: bold; margin-top:-20px; font-size: 20px;">Departments</p>
+                                                            <h1 style="font-weight:bold; margin-top: -5px; margin-bottom: 25px;"><?php echo $totalDepartment; ?></h1>
+                                                        </div>
+                                                        <div class="col-2 text-end">
+                                                            <i class="fa-solid fa-building icon1"></i>
+                                                        </div>
                                                     </div>
-                                                    <i class="fa-solid fa-building icon"></i>
+
+                                                    <!-- Bottom Row: Empty Space -->
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <div class="row">
+                                                                <!-- Academic Department Count -->
+                                                                <div class="col-6 text-left">
+                                                                    <h4 style="font-weight: bold;"><?php echo $academicCount; ?></h4>
+                                                                    <div class="chart-container top-right"style ="height:70px; width:70px;">
+                                                                        <canvas id="academicChart" ></canvas>
+                                                                    </div>
+                                                                    <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Academic</p>
+                                                                </div>
+
+                                                                <!-- Administrative Department Count -->
+                                                                <div class="col-6 text-left">
+                                                                    <h4 style="font-weight: bold;"><?php echo $administrativeCount; ?></h4>
+                                                                    <div class="chart-container top-right" style ="height:70px; width:70px;">
+                                                                        <canvas id="administrativeChart"></canvas>
+                                                                    </div>
+                                                                    <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Administrative</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -483,10 +754,8 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="card" style="height:260px;">
-                                                <h4>Top Performing Teachers</h4>
-                                                <div id="userList" style="max-height: 400px; overflow-y: auto; padding:15px;">
-                                                    <!-- User containers will be dynamically appended here by the script -->
-                                                </div>
+                                                <h4>MPS Performance Trend</h4>
+                                                <canvas id="mpsTrendChart" style="height: 200px;"></canvas>
                                             </div>
                                         </div>
                                     </div>
@@ -537,8 +806,6 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                     </div>
                                 </div>
                             </div>
-
-                            
                         </div>
                     </div>
                 </div>
@@ -595,365 +862,127 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script>
-        $(document).ready(function () {
-            // Overall user count and role-specific counts
-            const totalUsers = <?php echo $totalUsers; ?>;
-            const deptHeadCount = <?php echo $departmentHeadCount; ?>;
-            const teacherCount = <?php echo $teacherCount; ?>;
-
-            // Validate totalUsers to prevent division by zero
-            const deptHeadPercentage = totalUsers > 0 ? (deptHeadCount / totalUsers) * 100 : 0;
-            const teacherPercentage = totalUsers > 0 ? (teacherCount / totalUsers) * 100 : 0;
-
-            // Department Head Chart Data
-            const dataDeptHead = {
-                datasets: [{
-                    data: [deptHeadPercentage, 100 - deptHeadPercentage],
-                    backgroundColor: ['#9b2035', '#cccccc'],
-                    hoverOffset: 4
-                }]
-            };
-
-            // Teacher Chart Data
-            const dataTeacher = {
-                datasets: [{
-                    data: [teacherPercentage, 100 - teacherPercentage],
-                    backgroundColor: ['#9b2035', '#cccccc'],
-                    hoverOffset: 4
-                }]
-            };
-
-            // Render Department Head Pie Chart
-            new Chart(document.getElementById('deptHeadChart').getContext('2d'), {
-                type: 'pie',
-                data: dataDeptHead,
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: true } }
-                }
-            });
-
-            // Render Teacher Pie Chart
-            new Chart(document.getElementById('teacherChart').getContext('2d'), {
-                type: 'pie',
-                data: dataTeacher,
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: true } }
-                }
-            });
-        });
-    </script>
-
-
-
-
-    <script>
-        document.getElementById('search-input').addEventListener('keyup', function() {
-            var input = this.value.toLowerCase();
-            var tableRows = document.querySelectorAll('#department-table-body tr');
-
-            tableRows.forEach(function(row) {
-                var rowText = row.textContent.toLowerCase();
-                if (rowText.includes(input)) {
-                    row.style.display = ''; // Show row if it matches search
-                } else {
-                    row.style.display = 'none'; // Hide row if it doesn't match
-                }
-            });
-        });
-    </script>
-    <script>
-        $(document).ready(function() {
-            $.ajax({
-                url: 'fetch_tasks.php',
-                method: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    console.log(response); // Check the response structure
-                    let tableBody = '';
-                    
-                    $.each(response, function(index, dept) {
-                        let tasks = dept.totalSubmit + " / " + dept.totalAssigned;
-
-                        let userRows = dept.users.map(user => `
-                            <div class="user-row">
-                                <img src="../img/UserProfile/${user.profile}" alt="${user.fullname}" class="profile-image" />
-                                ${user.fullname}
-                            </div>
-                        `).join('');
-
-                        tableBody += `
-                            <tr>
-                                <td>${dept.dept_name}</td>
-                                <td>${userRows}</td>
-                                <td>${tasks}</td>
-                                <td>
-                                    <div class="chart-container">
-                                        <canvas id="trendChart${index}" width="40" height="40"></canvas>
-                                    </div>
-                                </td>
-                            </tr>`;
-                    });
-
-                    $('#department-table-body').html(tableBody);
-
-                    // Initialize charts after the table body is populated
-                    $.each(response, function(index, dept) {
-                        let ctx = document.getElementById(`trendChart${index}`).getContext('2d');
-                        new Chart(ctx, {
-                            type: 'pie',
-                            data: {
-                                labels: ['Submitted', 'Assigned'],
-                                datasets: [{
-                                    data: [dept.totalSubmit, dept.totalAssigned],
-                                    backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                plugins: {
-                                    legend: {
-                                        display: false // Hide the legend
-                                    },
-                                    tooltip: {
-                                        enabled: false // Disable tooltip if desired
-                                    }
-                                },
-                                elements: {
-                                    arc: {
-                                        borderWidth: 1 // Adjust border width if needed
-                                    }
-                                }
-                            }
-                        });
-                    });
-                },
-                error: function(error) {
-                    console.log("Error fetching data", error);
-                }
-            });
-        });
-    </script>
-
-    <script>
-        $(document).ready(function () {
-            $.ajax({
-                url: "fetchTopTeachers.php", // Backend script to fetch data
-                method: "GET",
-                dataType: "json",
-                success: function (response) {
-                    const container = $("#userList");
-                    container.empty();
-
-                    let rank = 1;
-
-                    response.forEach(user => {
-                        const chartId = `chart-${rank}`; // Unique ID for each chart
-
-                        // Determine the rank style
-                        let rankStyle;
-                        if (rank === 1) {
-                            rankStyle = '<i class="fas fa-star" style="color: gold; font-size: 40px;" ></i>';
-                        } else if (rank === 2) {
-                            rankStyle = '<i class="fas fa-star" style="color: silver; font-size: 30px;"></i>';
-                        } else if (rank === 3) {
-                            rankStyle = '<i class="fas fa-star" style="color: #cd7f32; font-size: 42px;"></i>';
-                        } else {
-                            rankStyle = rank;
-                        }
-
-                        // User container with doughnut chart
-                        const userContainer = `
-                            <div class="user-container" >
-                                <!-- Leftmost: Rank -->
-                                <div style="flex: 1; text-align: center; font-weight: bold; font-size: 18px;">
-                                    ${rankStyle}
-                                </div>
-                                
-                                <!-- Middle: Profile and Full Name -->
-                                <div style="flex: 6; display: flex; align-items: center;">
-                                    <img src="../img/UserProfile/${user.profile}" alt="Profile Picture" 
-                                        style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%; margin-right: 15px;">
-                                    <div>
-                                        <h5 style="margin: 0;">${user.full_name}</h5>
-                                    </div>
-                                </div>
-                                
-                                <!-- Rightmost: Doughnut Chart -->
-                                <div class="doughnut-container">
-                                    <canvas id="${chartId}"></canvas>
-                                </div>
-                            </div>
-                        `;
-
-                        container.append(userContainer);
-
-                        // Create the doughnut chart
-                        const ctx = document.getElementById(chartId).getContext("2d");
-                        new Chart(ctx, {
-                            type: "doughnut",
-                            data: {
-                                labels: ["Precision", "Remaining"],
-                                datasets: [{
-                                    data: [user.precision, 100 - user.precision],
-                                    backgroundColor: ["#4CAF50", "#E0E0E0"],
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                responsive: false, // Disable responsiveness for fixed size
-                                maintainAspectRatio: false, // Disable aspect ratio to control size
-                                cutout: "75%", // Adjust inner hole size
-                                plugins: {
-                                    tooltip: { enabled: false },
-                                    legend: { display: false }
-                                }
-                            },
-                            plugins: [createCenterTextPlugin(user.precision)]
-                        });
-
-                        rank++;
-                    });
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error fetching data:", error);
-                }
-            });
-        });
-
-        // Plugin to add percentage in the middle of the doughnut
-        function createCenterTextPlugin(precision) {
-            return {
-                id: "centerText",
-                beforeDraw(chart) {
-                    const { width } = chart;
-                    const { height } = chart;
-                    const ctx = chart.ctx;
-
-                    ctx.restore();
-                    const fontSize = (height / 5).toFixed(2); // Dynamic font size based on height
-                    ctx.font = `${fontSize}px Arial`;
-                    ctx.textBaseline = "middle";
-
-                    const text = `${precision}%`;
-                    const textX = Math.round((width - ctx.measureText(text).width) / 2);
-                    const textY = height / 2;
-
-                    ctx.fillStyle = "#333"; // Text color
-                    ctx.fillText(text, textX, textY);
-                    ctx.save();
-                }
-            };
-        }
-    </script>
-
-
-   <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const data = <?php echo json_encode($data); ?>;
-            const labels = data.map((item) => `Grade ${item.Grade_Level}`);
-            const enrollmentData = data.map((item) => item.total_enrollment);
-            const dropoutData = data.map((item) => item.avg_dropout_rate);
-            const promotionData = data.map((item) => item.avg_promotion_rate);
-            const cohortData = data.map((item) => item.avg_cohort_rate);
-            const repetitionData = data.map((item) => item.avg_repetition_rate);
-            const transitionData = data.map((item) => item.avg_transition_rate);
+            // Store chart instances
+            const charts = {
+                enrollment: null,
+                dropout: null,
+                promotion: null,
+                cohort: null,
+                repetition: null,
+                mpsTrend: null,
+                productivity: null
+            };
+            
+            // Initialize all charts
+            function initializeCharts() {
+                const data = <?php echo json_encode($data); ?>;
+                const mpsData = <?php echo json_encode($mpsData); ?>;
+                const productivityData = <?php echo json_encode($productivityData ?? []); ?>;
+                
+                // Performance charts
+                createPerformanceCharts(data);
+                
+                // MPS Trend Chart
+                createMpsTrendChart(mpsData);
+                
+                // Productivity Chart
+                createProductivityChart(productivityData);
+            }
+            
+            // Create performance charts
+            function createPerformanceCharts(data) {
+                const labels = data.map((item) => `${item.Year_Range}`);
+                
+                charts.enrollment = createChart("enrollmentChart", "Total Enrollment", labels, 
+                    data.map((item) => item.total_enrollment));
+                charts.dropout = createChart("dropoutChart", "Dropout Rate (%)", labels, 
+                    data.map((item) => item.avg_dropout_rate));
+                charts.promotion = createChart("promotionChart", "Promotion Rate (%)", labels, 
+                    data.map((item) => item.avg_promotion_rate));
+                charts.cohort = createChart("cohortChart", "Cohort Survival Rate (%)", labels, 
+                    data.map((item) => item.avg_cohort_rate));
+                charts.repetition = createChart("repetitionChart", "Repetition Rate (%)", labels, 
+                    data.map((item) => item.avg_repetition_rate));
+            }
+            
+            // Create MPS trend chart
+            function createMpsTrendChart(mpsData) {
+                const labels = mpsData.map(item => item.Quarter_Name);
+                const yearRanges = mpsData.map(item => item.Year_Range);
+                const avgMps = mpsData.map(item => item.avg_mps);
+                const below75Percent = mpsData.map(item => (item.below_75_count / item.total_count) * 100 || 0);
 
-            // Function to create a chart
-            function createChart(canvasId, label, labels, data) {
-                const ctx = document.getElementById(canvasId).getContext("2d");
-                new Chart(ctx, {
-                    type: "bar",
+                const ctx = document.getElementById('mpsTrendChart').getContext('2d');
+                charts.mpsTrend = new Chart(ctx, {
+                    type: 'line',
                     data: {
                         labels: labels,
                         datasets: [
                             {
-                                label: label,
-                                data: data,
-                                backgroundColor: "rgba(155, 32, 53, 0.2)", // Change to the desired background color
-                                borderColor: "rgba(155, 32, 53, 1)", // Border color remains the same
-                                borderWidth: 1,
+                                label: 'Average MPS %',
+                                data: avgMps,
+                                borderColor: '#9B2035',
+                                backgroundColor: 'rgba(155, 32, 53, 0.1)',
+                                tension: 0.3,
+                                fill: true
                             },
-                        ],
+                            {
+                                label: 'Below 75% %',
+                                data: below75Percent,
+                                borderColor: '#FF5733',
+                                backgroundColor: 'rgba(255, 87, 51, 0.1)',
+                                borderDash: [5, 5],
+                                tension: 0.3
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         scales: {
                             y: {
-                                beginAtZero: true,
-                            },
+                                beginAtZero: false,
+                                min: 50,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
                         },
-                    },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    beforeTitle: function(context) {
+                                        const dataIndex = context[0].dataIndex;
+                                        return 'Year: ' + yearRanges[dataIndex];
+                                    },
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.raw.toFixed(1) + '%';
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
                 });
             }
-
-            // Initialize charts
-            createChart("enrollmentChart", "Total Enrollment", labels, enrollmentData);
-            createChart("dropoutChart", "Dropout Rate (%)", labels, dropoutData);
-            createChart("promotionChart", "Promotion Rate (%)", labels, promotionData);
-            createChart("cohortChart", "Cohort Survival Rate (%)", labels, cohortData);
-            createChart("repetitionChart", "Repetition Rate (%)", labels, repetitionData);
-            createChart("transitionChart", "Transition Rate (%)", labels, transitionData);
-
-            // Update charts on dropdown change
-            document.querySelectorAll('.form-select').forEach(select => {
-                select.addEventListener('change', () => {
-                    const schoolYear = document.querySelector('select[name="school_year"]').value;
-                    const gradeLevel = document.querySelector('select[name="grade_level"]').value;
-                    const url = new URL(window.location.href);
-                    if (schoolYear) url.searchParams.set('school_year', schoolYear);
-                    else url.searchParams.delete('school_year');
-                    if (gradeLevel) url.searchParams.set('grade_level', gradeLevel);
-                    else url.searchParams.delete('grade_level');
-                    window.location.href = url.toString(); // Automatically reload the page with new parameters
-                });
-            });
-
-            // Update the page URL and reload the page when school year or grade level is changed
-            document.querySelectorAll('.form-select').forEach(dropdown => {
-                dropdown.addEventListener("change", () => {
-                    const schoolYear = document.querySelector('select[name="school_year"]').value;
-                    const gradeLevel = document.querySelector('select[name="grade_level"]').value;
-
-                    const url = new URL(window.location.href);
-
-                    // Update the query parameters
-                    if (schoolYear) {
-                        url.searchParams.set("school_year", schoolYear);
-                    } else {
-                        url.searchParams.delete("school_year");
-                    }
-
-                    if (gradeLevel) {
-                        url.searchParams.set("grade_level", gradeLevel);
-                    } else {
-                        url.searchParams.delete("grade_level");
-                    }
-
-                    // Reload the page with updated parameters
-                    window.location.href = url.toString();
-                });
-            });
-        });
-    </script>
-    <script>
-        // Fetch data from the backend and render the chart
-        fetch('productivity_data.php')
-            .then(response => response.json())
-            .then(data => {
-                // Parse data for the chart
+            
+            // Create productivity chart
+            function createProductivityChart(data) {
                 const labels = data.map(item => item.Month);
                 const submittedTasks = data.map(item => parseInt(item.SubmittedTasks));
                 const approvedTasks = data.map(item => parseInt(item.ApprovedTasks));
 
-                // Create the chart
                 const ctx = document.getElementById('productivityChart').getContext('2d');
-                const productivityChart = new Chart(ctx, {
-                    type: 'line', // Line chart for monthly trends
+                charts.productivity = new Chart(ctx, {
+                    type: 'line',
                     data: {
                         labels: labels,
                         datasets: [
@@ -977,8 +1006,7 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false, // Disable aspect ratio preservation
-                        
+                        maintainAspectRatio: false,
                         scales: {
                             x: {
                                 title: { display: true, text: 'Month' }
@@ -990,10 +1018,297 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                         }
                     }
                 });
-            })
-            .catch(error => {
-                console.error('Error fetching productivity data:', error);
+            }
+            
+            // Generic chart creation function
+            function createChart(canvasId, label, labels, data) {
+                const ctx = document.getElementById(canvasId).getContext("2d");
+                return new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            backgroundColor: "rgba(155, 32, 53, 0.2)",
+                            borderColor: "rgba(155, 32, 53, 1)",
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+            
+            // Update charts with filtered data
+            function updateChartsWithFilter(yearRange) {
+                Swal.fire({
+                    title: 'Loading data...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                
+                fetch(`fetch_dashboard_data.php?year_range=${yearRange || ''}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updatePerformanceCharts(data.performanceData);
+                        updateMpsTrendChart(data.mpsData);
+                        updateProductivityChart(data.productivityData);
+                        Swal.close();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error', 'Failed to load data', 'error');
+                    });
+            }
+            
+            // Update performance charts
+            function updatePerformanceCharts(data) {
+                const labels = data.map((item) => `${item.Year_Range}`);
+                
+                if (charts.enrollment) {
+                    charts.enrollment.data.labels = labels;
+                    charts.enrollment.data.datasets[0].data = data.map((item) => item.total_enrollment);
+                    charts.enrollment.update();
+                }
+                
+                if (charts.dropout) {
+                    charts.dropout.data.labels = labels;
+                    charts.dropout.data.datasets[0].data = data.map((item) => item.avg_dropout_rate);
+                    charts.dropout.update();
+                }
+                
+                if (charts.promotion) {
+                    charts.promotion.data.labels = labels;
+                    charts.promotion.data.datasets[0].data = data.map((item) => item.avg_promotion_rate);
+                    charts.promotion.update();
+                }
+                
+                if (charts.cohort) {
+                    charts.cohort.data.labels = labels;
+                    charts.cohort.data.datasets[0].data = data.map((item) => item.avg_cohort_rate);
+                    charts.cohort.update();
+                }
+                
+                if (charts.repetition) {
+                    charts.repetition.data.labels = labels;
+                    charts.repetition.data.datasets[0].data = data.map((item) => item.avg_repetition_rate);
+                    charts.repetition.update();
+                }
+            }
+            
+            // Update MPS trend chart
+            function updateMpsTrendChart(mpsData) {
+                if (!charts.mpsTrend) return;
+                
+                const labels = mpsData.map(item => item.Quarter_Name);
+                const avgMps = mpsData.map(item => item.avg_mps);
+                const below75Percent = mpsData.map(item => (item.below_75_count / item.total_count) * 100 || 0);
+                
+                charts.mpsTrend.data.labels = labels;
+                charts.mpsTrend.data.datasets[0].data = avgMps;
+                charts.mpsTrend.data.datasets[1].data = below75Percent;
+                charts.mpsTrend.update();
+            }
+            
+            // Update productivity chart
+            function updateProductivityChart(productivityData) {
+                if (!charts.productivity) return;
+                
+                const labels = productivityData.map(item => item.Month);
+                const submittedTasks = productivityData.map(item => parseInt(item.SubmittedTasks));
+                const approvedTasks = productivityData.map(item => parseInt(item.ApprovedTasks));
+                
+                charts.productivity.data.labels = labels;
+                charts.productivity.data.datasets[0].data = submittedTasks;
+                charts.productivity.data.datasets[1].data = approvedTasks;
+                charts.productivity.update();
+            }
+            
+            // Initialize charts on page load
+            initializeCharts();
+            
+            // Handle year range filter changes
+            document.getElementById('yearRangeFilter').addEventListener('change', (e) => {
+                const selectedYearRange = e.target.value;
+                history.pushState({}, '', `?year_range=${selectedYearRange || ''}`);
+                updateChartsWithFilter(selectedYearRange);
             });
+            
+            // Other existing functions (for user cards, etc.)
+            $(document).ready(function() {
+                // Overall user count and role-specific counts
+                const totalUsers = <?php echo $totalUsers; ?>;
+                const deptHeadCount = <?php echo $departmentHeadCount; ?>;
+                const teacherCount = <?php echo $teacherCount; ?>;
+                const totalDepartment = <?php echo $totalDepartment; ?>;
+                const academicCount = <?php echo $academicCount; ?>;
+                const administrativeCount = <?php echo $administrativeCount; ?>;
+
+                // Validate totalUsers to prevent division by zero
+                const deptHeadPercentage = totalUsers > 0 ? (deptHeadCount / totalUsers) * 100 : 0;
+                const teacherPercentage = totalUsers > 0 ? (teacherCount / totalUsers) * 100 : 0;
+                
+                // Validate totalDepartment to prevent division by zero
+                const academicPercentage = totalDepartment > 0 ? (academicCount / totalDepartment) * 100 : 0;
+                const administrativePercentage = totalDepartment > 0 ? (administrativeCount / totalDepartment) * 100 : 0;
+
+                // Department Head Chart Data
+                const dataDeptHead = {
+                    datasets: [{
+                        data: [deptHeadPercentage, 100 - deptHeadPercentage],
+                        backgroundColor: ['#9b2035', '#cccccc'],
+                        hoverOffset: 4
+                    }]
+                };
+
+                // Teacher Chart Data
+                const dataTeacher = {
+                    datasets: [{
+                        data: [teacherPercentage, 100 - teacherPercentage],
+                        backgroundColor: ['#9b2035', '#cccccc'],
+                        hoverOffset: 4
+                    }]
+                };
+                
+                // Academic Department Chart Data
+                const dataAcademic = {
+                    datasets: [{
+                        data: [academicPercentage, 100 - academicPercentage],
+                        backgroundColor: ['#9b2035', '#cccccc'],
+                        hoverOffset: 4
+                    }]
+                };
+                
+                // Administrative Department Chart Data
+                const dataAdministrative = {
+                    datasets: [{
+                        data: [administrativePercentage, 100 - administrativePercentage],
+                        backgroundColor: ['#9b2035', '#cccccc'],
+                        hoverOffset: 4
+                    }]
+                };
+
+                // Render Department Head Pie Chart
+                new Chart(document.getElementById('deptHeadChart').getContext('2d'), {
+                    type: 'pie',
+                    data: dataDeptHead,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: true } }
+                    }
+                });
+
+                // Render Teacher Pie Chart
+                new Chart(document.getElementById('teacherChart').getContext('2d'), {
+                    type: 'pie',
+                    data: dataTeacher,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: true } }
+                    }
+                });
+                
+                // Render Academic Department Pie Chart
+                new Chart(document.getElementById('academicChart').getContext('2d'), {
+                    type: 'pie',
+                    data: dataAcademic,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: true } }
+                    }
+                });
+                
+                // Render Administrative Department Pie Chart
+                new Chart(document.getElementById('administrativeChart').getContext('2d'), {
+                    type: 'pie',
+                    data: dataAdministrative,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: true } }
+                    }
+                });
+            });
+            
+            // Search functionality
+            document.getElementById('search-input').addEventListener('keyup', function() {
+                var input = this.value.toLowerCase();
+                var tableRows = document.querySelectorAll('#department-table-body tr');
+
+                tableRows.forEach(function(row) {
+                    var rowText = row.textContent.toLowerCase();
+                    row.style.display = rowText.includes(input) ? '' : 'none';
+                });
+            });
+            
+            // Task submission table
+            $(document).ready(function() {
+                $.ajax({
+                    url: 'fetch_tasks.php',
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        let tableBody = '';
+                        
+                        $.each(response, function(index, dept) {
+                            let tasks = dept.totalSubmit + " / " + dept.totalAssigned;
+                            let userRows = dept.users.map(user => `
+                                <div class="user-row">
+                                    <img src="../img/UserProfile/${user.profile}" alt="${user.fullname}" class="profile-image" />
+                                    ${user.fullname}
+                                </div>
+                            `).join('');
+
+                            tableBody += `
+                                <tr>
+                                    <td>${dept.dept_name}</td>
+                                    <td>${userRows}</td>
+                                    <td>${tasks}</td>
+                                    <td>
+                                        <div class="chart-container">
+                                            <canvas id="trendChart${index}" width="40" height="40"></canvas>
+                                        </div>
+                                    </td>
+                                </tr>`;
+                        });
+
+                        $('#department-table-body').html(tableBody);
+
+                        // Initialize charts after the table body is populated
+                        $.each(response, function(index, dept) {
+                            let ctx = document.getElementById(`trendChart${index}`).getContext('2d');
+                            new Chart(ctx, {
+                                type: 'pie',
+                                data: {
+                                    labels: ['Submitted', 'Assigned'],
+                                    datasets: [{
+                                        data: [dept.totalSubmit, dept.totalAssigned],
+                                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                                        borderWidth: 1
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: { enabled: false }
+                                    },
+                                    elements: { arc: { borderWidth: 1 } }
+                                }
+                            });
+                        });
+                    },
+                    error: function(error) {
+                        console.log("Error fetching data", error);
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

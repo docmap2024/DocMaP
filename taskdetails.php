@@ -24,9 +24,9 @@ if (isset($_GET['task_id'])) {
     $user_id = $_SESSION['user_id']; // Get user ID from session
 
     // Query to fetch task details based on TaskID and join with useracc to get user's full name
-    $sql_task_details = "SELECT tasks.*, useracc.fname, useracc.lname ,fc.ContentColor as contentcolor
+    $sql_task_details = "SELECT tasks.*, useracc.fname, useracc.lname ,useracc.sex, fc.ContentColor as contentcolor
                          FROM tasks 
-                        JOIN feedcontent fc ON tasks.ContentID = fc.ContentID
+                         LEFT JOIN feedcontent fc ON tasks.ContentID = fc.ContentID
                          LEFT JOIN useracc ON tasks.UserID = useracc.UserID
                          WHERE tasks.TaskID = '$task_id' ";
     $result_task_details = mysqli_query($conn, $sql_task_details);
@@ -36,12 +36,14 @@ if (isset($_GET['task_id'])) {
         $row_task_details = mysqli_fetch_assoc($result_task_details);
         $task_title = $row_task_details['Title'];
         $task_posted = $row_task_details['TimeStamp'];
-        $task_color = $row_task_details['contentcolor'];
+        $task_color = $row_task_details['contentcolor'] ?? '#9b2035'; // Use '#9b2035' as the default color if contentcolor is not set
         $task_description = $row_task_details['taskContent'];
         $task_type = $row_task_details['Type'];
         $task_due_date = $row_task_details['DueDate']; // Assuming DueDate is the column name
         $task_due_time = $row_task_details['DueTime'];
-        $user_fullname = $row_task_details['fname'] . ' ' . $row_task_details['lname']; // Concatenate fname and lname
+         // Check sex and prepend "Mr." or "Mrs."
+        $prefix = ($row_task_details['sex'] === 'Male') ? 'Mr.' : (($row_task_details['sex'] === 'Female') ? 'Mrs.' : '');
+        $user_fullname = $prefix . ' ' . $row_task_details['fname'] . ' ' . $row_task_details['lname']; // Concatenate with prefix
     } else {
         echo "Task details not found.";
         exit(); // Exit if task details are not found
@@ -284,153 +286,211 @@ mysqli_close($conn);
             margin-bottom: 10px;
             align-self: flex-start; /* Aligns the title to the leftmost side */
         }
-        .message-container {
-    
-        align-items: flex-start;
-        justify-content: flex-end;
-        margin-bottom: 5px;
-        position: relative;
+       
+        .message {
+            max-width: 90%;
+            margin-bottom: 15px;
+            position: relative;
+            padding: 10px;
+            border-radius: 8px;
+            word-wrap: break-word;
         }
 
-    .message {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        margin-bottom: 10px;
-        position: relative; /* To position profile pic */
-        padding: 10px;
-        background-color: #f9f9f9; /* Light background for messages */
-        border-radius: 8px;
-        padding-right:70px;
-    }
+        /* Incoming messages (other users) - left side */
+        .message.incoming {
+            align-self: flex-end;
+            background-color: #e3f2fd; /* Light blue background  */
+            margin-left: auto;
+            padding-left: 60px; /* Space for profile pic */
+        }
 
-    .profile-pic {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: #ccc; /* Placeholder color if image doesn't load */
-    }
+        /* Outgoing messages (current user) - right side */
+        .message.outgoing {
+            align-self: flex-start;
+            background-color: #f1f1f1; /* Grey background */
+            margin-right: auto;
+            padding-left: 60px;
+        }
 
-    /* Ensure specificity */
-    .message .user-name {
-        font-weight: bold;
-        margin-bottom: 5px;
-        color: black; /* Set text color to black */
-    }
+        /* Profile picture positioning */
+        .message.incoming .profile-pic {
+            margin-top: 10px;
+            left: -40px;
+            right: auto;
+        }
+
+        .message.outgoing .profile-pic {
+            margin-top: 10px;
+            left: -40px;
+            right: auto;
+        }
+
+        /* Message content styling */
+        .message-content {
+            padding: 8px 12px;
+        }
+
+        /* Keep your existing styles below */
+        .message-container {
+            align-items: flex-start;
+            justify-content: flex-end;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            background-color: #ccc;
+        }
+
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: black;
+        }
+
+        .message-text {
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: left;
+        }
+
+        .task-user-message + .message-timestamp {
+            text-align: right;
+            padding-right: 1rem;
+        }
 
 
+        .submit-button {
+            margin-top: 10px;
+        }
+        /* Container for attachments */
+        .Attachment-container {
+            max-width: 100%; /* Adjust as needed */
+        
+            margin-bottom:20px;
+        }
 
-    .message-text {
-        margin-bottom: 10px;
-        word-wrap: break-word; /* Handle long words */
-    }
+        /* Individual attachment item */
+        .file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            color: #333;
+            margin-top: 10px;
+        }
 
-    .incoming {
-        background-color: transparent;
-    }
+        /* File name */
+        .file span {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex: 1;
+            padding-right: 10px; /* Space for the pin icon */
+            white-space: nowrap; /* Prevents text wrapping */
+            overflow: hidden; /* Ensures overflow content is hidden */
+            text-overflow: ellipsis; /* Adds ellipsis for overflow content */
+        }
 
-    .outgoing {
-        background-color: transparent;
-    }
+        /* Pin icon container */
+        .file .pin-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin:5px;
+        }
 
+        /* Pin icon styles */
+        .file .pin-icon i {
+            font-size: 16px;
+            color: #fff;
+        }
 
-    .submit-button {
-        margin-top: 10px;
-    }
-/* Container for attachments */
-.Attachment-container {
-    max-width: 100%; /* Adjust as needed */
-   
-    margin-bottom:20px;
-}
+        .task-user-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 2px solid #ccc; /* Default border */
+            width: 100%;
+        }
 
-/* Individual attachment item */
-.file {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    background: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    color: #333;
-    margin-top: 10px;
-}
+        .task-user-badge {
+            font-weight: bold;
+            margin-right: 5px;
+        }
 
-/* File name */
-.file span {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex: 1;
-    padding-right: 10px; /* Space for the pin icon */
-    white-space: nowrap; /* Prevents text wrapping */
-    overflow: hidden; /* Ensures overflow content is hidden */
-    text-overflow: ellipsis; /* Adds ellipsis for overflow content */
-}
+        .dot-icon {
+            font-size: 16px;
+            margin-left: 5px;
+            margin-right: 5px;
+        }
 
-/* Pin icon container */
-.file .pin-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    margin:5px;
-}
+        .task-user-date {
+            font-size: 12px;
+            color: #888;
+        }
 
-/* Pin icon styles */
-.file .pin-icon i {
-    font-size: 16px;
-    color: #fff;
-}
+        .task-user-text {
+            font-size: 14px;
+            margin-top: 5px;
+        }
 
-.task-user-message {
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    border: 2px solid #ccc; /* Default border */
-    width: 100%;
-}
+        /* Optional: You can add more specific styles for Approved or Rejected status */
+        .task-user-message.Approved {
+            background-color: #e0f7e0;
+            border-color: #81c784;
+        }
 
-.task-user-badge {
-    font-weight: bold;
-    margin-right: 5px;
-}
+        .task-user-message.Rejected {
+            background-color: #ffebee;
+            border-color: #e57373;
+        }
 
-.dot-icon {
-    font-size: 16px;
-    margin-left: 5px;
-    margin-right: 5px;
-}
+        .date-divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
 
-.task-user-date {
-    font-size: 12px;
-    color: #888;
-}
+        .date-divider span {
+            background: #f0f0f0;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: #666;
+            font-size: 0.9em;
+            position: relative;
+            z-index: 1;
+        }
 
-.task-user-text {
-    font-size: 14px;
-    margin-top: 5px;
-}
+        .date-divider:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ddd;
+            z-index: 0;
+        }
 
-/* Optional: You can add more specific styles for Approved or Rejected status */
-.task-user-message.Approved {
-    background-color: #e0f7e0;
-    border-color: #81c784;
-}
-
-.task-user-message.Rejected {
-    background-color: #ffebee;
-    border-color: #e57373;
-}
 
     </style>
 </head>
@@ -459,9 +519,6 @@ mysqli_close($conn);
                 switch ($task_type) {
                     case 'Task':
                         $iconClass = 'document-outline';
-                        break;
-                    case 'Reminder':
-                        $iconClass = 'calendar-clear-outline';
                         break;
                     case 'Announcement':
                         $iconClass = 'notifications-outline';
@@ -617,124 +674,201 @@ mysqli_close($conn);
         });
 
         function fetchConversationMessages() {
-    const content_id = document.querySelector('input[name="content_id"]').value;
-    const task_id = document.querySelector('input[name="task_id"]').value;
+            const content_id = document.querySelector('input[name="content_id"]').value;
+            const task_id = document.querySelector('input[name="task_id"]').value;
 
-    fetch(`get_conversation.php?content_id=${content_id}&task_id=${task_id}`)
-        .then(response => response.json())
-        .then(data => {
-            const conversationMessages = document.getElementById('conversationMessages');
-            conversationMessages.innerHTML = '';
+            fetch(`get_conversation.php?content_id=${content_id}&task_id=${task_id}`)
+                .then(response => response.json())
+                .then(data => {
+                    const conversationMessages = document.getElementById('conversationMessages');
+                    conversationMessages.innerHTML = '';
 
-            if (data.error) {
-                conversationMessages.innerText = data.error;
-            } else {
-                data.messages.forEach(message => {
-                    // Skip display if the comment is empty
-                    if (!message.Comment) return;
-
-                    const messageElement = document.createElement('div');
-                    messageElement.classList.add('message');
-
-                    // Create elements for task_user comment
-                    if (message.source === 'task_user') {
-                        const taskUserContainer = document.createElement('div');
-                        taskUserContainer.classList.add('task-user-message'); // New class name for task_user
-
-                        // Set background color based on Status
-                        if (message.Status === 'Approved') {
-                            taskUserContainer.style.backgroundColor = '#e0f7e0'; // Green tint
-                            taskUserContainer.style.borderColor = '#81c784'; // Lighter green border
-                        } else if (message.Status === 'Rejected') {
-                            taskUserContainer.style.backgroundColor = '#ffebee'; // Red tint
-                            taskUserContainer.style.borderColor = '#e57373'; // Lighter red border
-                        }
-
-                        // Full name with dot icon
-                        const userNameBadge = document.createElement('span');
-                        userNameBadge.classList.add('task-user-badge');
-                        userNameBadge.innerText = message.FullName;
-
-                        const dotIcon = document.createElement('span');
-                        dotIcon.classList.add('dot-icon');
-                        dotIcon.innerHTML = '&bull;'; // Dot icon
-
-                        // Dates (Approve or Reject Date)
-                        const dateText = document.createElement('span');
-                        dateText.classList.add('task-user-date');
-                        let date = '';
-                        if (message.Status === 'Approved' && message.ApproveDate) {
-                            date = new Date(message.ApproveDate).toLocaleString('en-GB', { 
-                                year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                            });
-                            dateText.innerText = ` ${date}`;
-                        } else if (message.Status === 'Rejected' && message.RejectDate) {
-                            date = new Date(message.RejectDate).toLocaleString('en-GB', { 
-                                year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                            });
-                            dateText.innerText = ` ${date}`;
-                        }
-
-                        // Append full name, dot, and date to taskUserContainer
-                        taskUserContainer.appendChild(userNameBadge);
-                        taskUserContainer.appendChild(dotIcon);
-                        taskUserContainer.appendChild(dateText);
-
-                        // Comment text
-                        const messageText = document.createElement('p');
-                        messageText.classList.add('task-user-text');
-                        messageText.innerText = message.Comment;
-
-                        // Append message text to taskUserContainer
-                        taskUserContainer.appendChild(messageText);
-
-                        // Append taskUserContainer to messageElement
-                        messageElement.appendChild(taskUserContainer);
-                    } else {
-                        // Elements for normal comments with profile picture and standard layout
-                        const profilePic = document.createElement('img');
-                        profilePic.src = `img/UserProfile/${message.profile}`;
-                        profilePic.alt = `${message.FullName}'s profile picture`;
-                        profilePic.classList.add('profile-pic');
-
-                        const userName = document.createElement('p');
-                        userName.classList.add('user-name');
-                        userName.innerText = message.FullName;
-
-                        const messageText = document.createElement('p');
-                        messageText.classList.add('message-text');
-                        messageText.innerText = message.Comment;
-
-                        // Append elements to messageElement
-                        messageElement.appendChild(profilePic);
-                        messageElement.appendChild(userName);
-                        messageElement.appendChild(messageText);
+                    if (data.error) {
+                        conversationMessages.innerText = data.error;
+                        return;
                     }
 
-                    // Apply appropriate class for message type (incoming or outgoing)
-                    if (message.IncomingID == <?php echo json_encode($_SESSION['user_id']); ?>) {
-                        messageElement.classList.add('incoming');
-                    } else {
-                        messageElement.classList.add('outgoing');
+                    if (!data.messages || !Array.isArray(data.messages)) {
+                        console.error('Invalid messages data:', data);
+                        return;
                     }
 
-                    conversationMessages.appendChild(messageElement);
+                    // Sort messages by timestamp in ascending order (oldest first)
+                    const sortedMessages = [...data.messages].sort((a, b) => {
+                        const dateA = new Date(a.Timestamp || a.ApproveDate || a.RejectDate || 0);
+                        const dateB = new Date(b.Timestamp || b.ApproveDate || b.RejectDate || 0);
+                        return dateA - dateB;
+                    });
+
+                    // Group messages by date
+                    const groupedMessages = {};
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+
+                    sortedMessages.forEach(message => {
+                        if (!message.Comment && !message.Status) return;
+
+                        const messageDate = new Date(message.Timestamp || message.ApproveDate || message.RejectDate);
+                        const dateKey = messageDate.toDateString();
+                        
+                        if (!groupedMessages[dateKey]) {
+                            groupedMessages[dateKey] = [];
+                        }
+                        groupedMessages[dateKey].push(message);
+                    });
+
+                    // Create date dividers and messages
+                    Object.keys(groupedMessages).forEach(dateKey => {
+                        const messages = groupedMessages[dateKey];
+                        const messageDate = new Date(dateKey);
+
+                        // Create date divider
+                        const dateDivider = document.createElement('div');
+                        dateDivider.classList.add('date-divider');
+                        
+                        let dividerText;
+                        if (messageDate.toDateString() === today.toDateString()) {
+                            dividerText = 'Today';
+                        } else if (messageDate.toDateString() === yesterday.toDateString()) {
+                            dividerText = 'Yesterday';
+                        } else {
+                            dividerText = messageDate.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                        }
+
+                        dateDivider.innerHTML = `<span>${dividerText}</span>`;
+                        conversationMessages.appendChild(dateDivider);
+
+                        // Add messages for this date
+                        messages.forEach(message => {
+                            if (!message.Comment && !message.Status) return;
+
+                            const messageElement = document.createElement('div');
+                            messageElement.classList.add('message');
+
+                            // Create timestamp element
+                            const timestamp = document.createElement('div');
+                            timestamp.classList.add('message-timestamp');
+                            
+                            const messageDate = message.Timestamp || message.ApproveDate || message.RejectDate;
+                            if (messageDate) {
+                                const date = new Date(messageDate);
+                                timestamp.innerText = date.toLocaleString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                            }
+
+                            if (message.source === 'task_user') {
+                                const taskUserContainer = document.createElement('div');
+                                taskUserContainer.classList.add('task-user-message');
+
+                                if (message.Status === 'Approved') {
+                                    taskUserContainer.style.backgroundColor = '#e0f7e0';
+                                    taskUserContainer.style.borderColor = '#81c784';
+                                } else if (message.Status === 'Rejected') {
+                                    taskUserContainer.style.backgroundColor = '#ffebee';
+                                    taskUserContainer.style.borderColor = '#e57373';
+                                }
+
+                                const userNameBadge = document.createElement('span');
+                                userNameBadge.classList.add('task-user-badge');
+                                userNameBadge.innerText = message.FullName;
+
+                                const dotIcon = document.createElement('span');
+                                dotIcon.classList.add('dot-icon');
+                                dotIcon.innerHTML = '&bull;';
+
+                                const dateText = document.createElement('span');
+                                dateText.classList.add('task-user-date');
+                                let date = '';
+                                if (message.Status === 'Approved' && message.ApproveDate) {
+                                    date = new Date(message.ApproveDate).toLocaleString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric', 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: true
+                                    });
+                                    dateText.innerText = ` ${date}`;
+                                } else if (message.Status === 'Rejected' && message.RejectDate) {
+                                    date = new Date(message.RejectDate).toLocaleString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric', 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: true
+                                    });
+                                    dateText.innerText = ` ${date}`;
+                                }
+
+                                taskUserContainer.appendChild(userNameBadge);
+                                taskUserContainer.appendChild(dotIcon);
+                                taskUserContainer.appendChild(dateText);
+
+                                const messageText = document.createElement('p');
+                                messageText.classList.add('task-user-text');
+                                messageText.innerText = message.Comment || `${message.Status} by ${message.FullName}`;
+
+                                taskUserContainer.appendChild(messageText);
+                                messageElement.appendChild(taskUserContainer);
+                            } else {
+                                const messageContainer = document.createElement('div');
+                                messageContainer.classList.add('message-container');
+
+                                const profilePic = document.createElement('img');
+                                profilePic.src = `img/UserProfile/${message.profile}`;
+                                profilePic.alt = `${message.FullName}'s profile picture`;
+                                profilePic.classList.add('profile-pic');
+
+                                const messageContent = document.createElement('div');
+                                messageContent.classList.add('message-content');
+
+                                const userName = document.createElement('p');
+                                userName.classList.add('user-name');
+                                userName.innerText = message.FullName;
+
+                                const messageText = document.createElement('p');
+                                messageText.classList.add('message-text');
+                                messageText.innerText = message.Comment;
+
+                                messageContent.appendChild(userName);
+                                messageContent.appendChild(timestamp);
+                                messageContent.appendChild(messageText);
+
+                                messageContainer.appendChild(profilePic);
+                                messageContainer.appendChild(messageContent);
+
+                                messageElement.appendChild(messageContainer);
+                            }
+
+                            if (message.IncomingID == <?php echo json_encode($_SESSION['user_id']); ?>) {
+                                messageElement.classList.add('incoming');
+                            } else {
+                                messageElement.classList.add('outgoing');
+                            }
+
+                            conversationMessages.appendChild(messageElement);
+                        });
+                    });
+
+                    // Scroll to bottom to show newest messages
+                    conversationMessages.scrollTop = conversationMessages.scrollHeight;
+                })
+                .catch(error => {
+                    console.error('Error fetching conversation messages:', error);
                 });
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching conversation messages:', error);
-        });
-}
-
+        }
 
     </script>
-
-
-
-
-
-
 
 
 <script>

@@ -1,5 +1,25 @@
-<?php session_start(); ?>
+<?php 
+session_start(); 
 
+include "connection.php";
+
+
+$deptID = $_GET['deptID']; // Get the deptID from the query string or session
+
+// Database connection (ensure $conn is properly set)
+$sql = "SELECT dept_name FROM department WHERE dept_ID = '$deptID'";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // Fetch department name
+    $row = $result->fetch_assoc();
+    $dept_name = $row['dept_name'];
+} else {
+    // Default value or handle error if dept not found
+    $dept_name = "Unknown Department"; // Or handle it accordingly
+}
+
+?>
 
 
 <!DOCTYPE html>
@@ -7,19 +27,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grades</title>
-    <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
-
+    <title>Grade</title>
+        <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    
     <link rel="stylesheet" href="assets/css/styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
 
-   .container {
+        .container {
             width: 100%; /* Ensure full width for responsiveness */
             border-radius: 20px;
             margin: 0 auto;
@@ -110,7 +130,7 @@
         .modal {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 10;
             left: 0;
             top: 0;
             width: 100%;
@@ -320,6 +340,44 @@ button:hover {
     background-color: #B52A46;
 }
 
+.color-circle {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin: 0 5px;
+    border: 2px solid transparent; /* Default border */
+    cursor: pointer;
+    transition: border 0.2s ease-in-out;
+}
+
+.color-circle.selected {
+    border-color: black; /* Black border for the selected radio button */
+}
+
+.profile-pictures {
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
+    margin-bottom: 20px;
+    margin-left: 10px;
+}
+
+.profile-pictures .profile-img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid white;
+    margin-left: -10px; /* Overlap effect */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+.profile-pictures .more-users {
+    font-size: 13px;
+    color: grey;
+    margin-left: 10px;
+    position: relative;
+    top: 2px;
+}
 
     </style>
 </head>
@@ -336,8 +394,14 @@ button:hover {
 
         <!-- MAIN -->
         <main>
+
+
+        
             <div class="header">
-                <h1 class ="title">Grades</h1>
+                <h1 class ="title">Grades<i class="fas fa-angle-right" style="margin: 0 8px; color: #9B2035;"></i> 
+                    <i class='fas fa-building' style ="font-size:20px; color: grey;margin-right:10px;"></i><?php echo htmlspecialchars($dept_name); ?>
+                </h1>
+                 
                 <button id="openModalBtn" class="icon-button">
                     <i class='bx bx-plus'></i>
                 </button>
@@ -371,20 +435,26 @@ button:hover {
                     <label for="color">Select Color:</label><br>
                     
                     <div class="color-selection">
-                        <input type="radio" id="blue" name="color" value="#0000FF" required>
-                        <label for="blue" class="color-circle" style="background-color: #0000FF;"></label>
+                        <input type="radio" id="Blueberry" name="color" value="#4285F4" required>
+                        <label for="Blueberry" class="color-circle" style="background-color: #4285F4;"></label>
                         
-                        <input type="radio" id="green" name="color" value="#008000">
-                        <label for="green" class="color-circle" style="background-color: #008000;"></label>
+                        <input type="radio" id="Celtic Blue" name="color" value="#1967D2">
+                        <label for="Celtic Blue" class="color-circle" style="background-color: #1967D2;"></label>
                         
-                        <input type="radio" id="orange" name="color" value="#FFA500">
-                        <label for="orange" class="color-circle" style="background-color: #FFA500;"></label>
+                        <input type="radio" id="Selective Yellow" name="color" value="#FBBC04">
+                        <label for="Selective Yellow" class="color-circle" style="background-color: #FBBC04;"></label>
                         
-                        <input type="radio" id="greyish-black" name="color" value="#2e2e2e">
-                        <label for="greyish-black" class="color-circle" style="background-color: #2e2e2e;"></label>
+                        <input type="radio" id="Pigment Red" name="color" value="#F72A25">
+                        <label for="Pigment Red" class="color-circle" style="background-color: #F72A25;"></label>
                         
-                        <input type="radio" id="peach" name="color" value="#FFDAB9">
-                        <label for="peach" class="color-circle" style="background-color: #FFDAB9;"></label>
+                        <input type="radio" id="Sea Green" name="color" value="#34A853">
+                        <label for="Sea Green" class="color-circle" style="background-color: #34A853;"></label>
+
+                        <input type="radio" id="Dark Spring Green" name="color" value="#34A853">
+                        <label for="Dark Spring Green" class="color-circle" style="background-color: #188038;"></label>
+
+                        <input type="radio" id="System Color" name="color" value="#9b2035">
+                        <label for="System Color" class="color-circle" style="background-color: #9b2035;"></label>
                     </div>
                     
                     <button type="submit">Create</button>
@@ -405,29 +475,57 @@ button:hover {
                     <input type="text" id="editTitle" name="title" required><br>
                     <label for="editCaption">Section:</label><br>
                     <input type="text" id="editCaption" name="caption" required><br>
+
+                    <!-- Color Selection (Radio Buttons as Circles) -->
+                    <label for="editColor">Select Color:</label><br>
+                    <div class="color-selection">
+                        <input type="radio" id="editBlueberry" name="editColor" value="#4285F4">
+                        <label for="editBlueberry" class="color-circle" style="background-color: #4285F4;"></label>
+
+                        <input type="radio" id="editCelticBlue" name="editColor" value="#1967D2">
+                        <label for="editCelticBlue" class="color-circle" style="background-color: #1967D2;"></label>
+
+                        <input type="radio" id="editSelectiveYellow" name="editColor" value="#FBBC04">
+                        <label for="editSelectiveYellow" class="color-circle" style="background-color: #FBBC04;"></label>
+
+                        <input type="radio" id="editPigmentRed" name="editColor" value="#F72A25">
+                        <label for="editPigmentRed" class="color-circle" style="background-color: #F72A25;"></label>
+
+                        <input type="radio" id="editSeaGreen" name="editColor" value="#34A853">
+                        <label for="editSeaGreen" class="color-circle" style="background-color: #34A853;"></label>
+
+                        <input type="radio" id="editDarkSpringGreen" name="editColor" value="#188038">
+                        <label for="editDarkSpringGreen" class="color-circle" style="background-color: #188038;"></label>
+
+                        <input type="radio" id="editSystemColor" name="editColor" value="#9b2035">
+                        <label for="editSystemColor" class="color-circle" style="background-color: #9b2035;"></label>
+                    </div>
+
+
                     <button type="submit">Update</button>
                 </form>
             </div>
         </div>
     </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
-
-
- document.addEventListener('click', function (event) {
-    const dropdowns = document.querySelectorAll('.dropdown');
-    dropdowns.forEach(dropdown => {
-        const toggle = dropdown.querySelector('.dropdown-toggle');
-        const menu = dropdown.querySelector('.dropdown-menu');
-        
-        // Check if the clicked element is the dropdown toggle
-        if (event.target === toggle) {
-            dropdown.classList.toggle('active'); // Toggle the active class to show/hide the menu
-        } else {
-            dropdown.classList.remove('active'); // Close the dropdown if clicking outside
-        }
-    });
-});
-</script>
+        document.addEventListener('click', function (event) {
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                
+                // Check if the clicked element is the dropdown toggle
+                if (event.target === toggle) {
+                    dropdown.classList.toggle('active'); // Toggle the active class to show/hide the menu
+                } else {
+                    dropdown.classList.remove('active'); // Close the dropdown if clicking outside
+                }
+            });
+        });
+    </script>
 
 
     <script>
@@ -462,52 +560,72 @@ button:hover {
         });
 
         function loadGrades(deptID) {
-    fetch(`grades_management.php?action=read&deptID=${deptID}`)
-        .then(response => response.json())
-        .then(data => {
-            const container = document.querySelector('#gradesContainer .row'); // Select the row
-            container.innerHTML = '';
-            if (data.feedcontent && data.feedcontent.length) {
-                data.feedcontent.forEach(title => {
-                    const colDiv = document.createElement('div');
-                    colDiv.classList.add('col-lg-4', 'col-md-6', 'col-12', 'mb-4');
+            fetch(`grades_management.php?action=read&deptID=${deptID}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.querySelector('#gradesContainer .row'); // Select the row
+                    container.innerHTML = '';
+                    if (data.feedcontent && data.feedcontent.length) {
+                        data.feedcontent.forEach(title => {
+                            const colDiv = document.createElement('div');
+                            colDiv.classList.add('col-lg-4', 'col-md-6', 'col-12', 'mb-4');
 
-                    const gradeDiv = document.createElement('div');
-                    gradeDiv.classList.add('title', 'rounded-container', 'p-3', 'border'); // Add classes for styling
+                            const gradeDiv = document.createElement('div');
+                            gradeDiv.classList.add('title', 'rounded-container', 'p-3', 'border'); // Add classes for styling
 
-                    gradeDiv.innerHTML = `
-                        <div class="top" style="margin-top:5px;">
-                            <h3>${title.Title}</h3>
-                            <p>Section: ${title.Captions}</p> 
+                            // Generate profile picture HTML
+                            let profileImages = '';
+                            if (title.users && title.users.length) {
+                                profileImages = `<div class="profile-pictures d-flex align-items-center" >`;
+                                title.users.slice(0, 5).forEach((user, index) => {
+                                    profileImages += `<img src="${user.profile}" alt="User ${user.UserID}" class="profile-img" style="z-index:${5 - index}; "title="${user.fullname}">`;
+                                });
+                                if (title.users.length > 5) {
+                                    profileImages += `<span class="more-users">+${title.users.length - 5} more</span>`;
+                                }
+                                profileImages += `</div>`;
+                            }
+
+                            gradeDiv.innerHTML = `
+                                <div class="top" style="margin-top:;">
+                                    <h3 style="margin-right: 10px; display: inline-flex; align-items: center;">
+                                            ${title.Title}
+                                            <span 
+                                                style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; 
+                                                    margin-left: 8px; background-color: ${title.ContentColor};">
+                                            </span>
+                                        </h3>
+                                    <p style="margin-bottom:10px;">Section: ${title.Captions}</p> 
+                                </div>
+                                <!-- User Icon and Count Section -->
+                                <div class="user-info d-flex align-items-center">
+                                    <span style="font-size: 13px;  color: grey;">${title.user_count} Teacher/s</span>
+                                </div>
+                                ${profileImages}
+                                <div class="dropdown">
+                                    <button class=" dropdown-toggle" data-bs-toggle="dropdown"></button>
+                                    <ul class="dropdown-menu">
+                                        <li><button class="dropdown-item" onclick="editGrade(${title.ContentID}, '${title.Title}', '${title.Captions}')"><i class='bx bx-edit-alt'></i>Edit</button></li>
+                                        <li><button class="dropdown-item" onclick="deleteGrade(${title.ContentID})"><i class='bx bx-trash'></i>Delete</button></li>
+                                    </ul>
+                                </div>
+                                <a href="content.php?ContentID=${title.ContentID}&Title=${encodeURIComponent(title.Title)}&Captions=${encodeURIComponent(title.Captions)}" class="arrow-link text-decoration-none">
+                                    <i class='bx bx-right-arrow-alt'></i>
+                                </a>
+                            `;
                             
-                        </div>
-                         <!-- User Icon and Count Section -->
-                        <div class="user-info mt-2 d-flex align-items-center">
-                            <i class="bx bxs-user-circle" style="font-size: 1.2rem; margin-right: 5px;"></i>
-                            <span style="font-size: 13px;">${title.user_count} Users</span>
-                        </div>
-                        <div class="dropdown">
-                            <button class=" dropdown-toggle" data-bs-toggle="dropdown"></button>
-                            <ul class="dropdown-menu">
-                                <li><button class="dropdown-item" onclick="editGrade(${title.ContentID}, '${title.Title}', '${title.Captions}')"><i class='bx bx-edit-alt'></i>Edit</button></li>
-                            </ul>
-                        </div>
-                        <a href="content.php?ContentID=${title.ContentID}&Title=${encodeURIComponent(title.Title)}&Captions=${encodeURIComponent(title.Captions)}" class="arrow-link text-decoration-none">
-                            <i class='bx bx-right-arrow-alt'></i>
-                        </a>
-                    `;
-                    
-                    colDiv.appendChild(gradeDiv);
-                    container.appendChild(colDiv);
+                            colDiv.appendChild(gradeDiv);
+                            container.appendChild(colDiv);
 
-                    // Load department name for this grade
-                    loadDepartmentName(title.deptID, title.ContentID);
+                            // Load department name for this grade
+                            loadDepartmentName(title.deptID, title.ContentID);
+                        });
+                    } else {
+                        container.innerHTML = '<p>No grades found.</p>';
+                    }
                 });
-            } else {
-                container.innerHTML = '<p>No grades found.</p>';
-            }
-        });
-}
+        }
+
 
 
 
@@ -532,23 +650,43 @@ button:hover {
 
             fetch('grades_management.php?action=create', {
                 method: 'POST',
-                body: JSON.stringify({ title, caption, deptID }),
+                body: JSON.stringify({ title, caption, deptID, color }),
                 headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    loadGrades(deptID);
-                    document.getElementById('createGradeForm').reset();
-                    document.getElementById('createModal').style.display = 'none';
+                    Swal.fire('Success!', 'Grade created successfully!', 'success').then(() => {
+                        loadGrades(deptID);
+                        document.getElementById('createGradeForm').reset();
+                        document.getElementById('createModal').style.display = 'none';
+                    });
                 } else {
-                    alert('Error creating grade: ' + (data.message || 'Unknown error'));
+                    Swal.fire('Error!', data.message || 'Unknown error occurred.', 'error');
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => Swal.fire('Error!', 'An unexpected error occurred.', 'error'));
         }
 
-        function editGrade(ContentID, titleValue, captionValue) {
+
+        // Add event listeners to all radio buttons
+        document.querySelectorAll('input[name="editColor"]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                // Remove the 'selected' class from all labels
+                document.querySelectorAll('.color-circle').forEach((label) => {
+                    label.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the label of the checked radio button
+                const selectedLabel = document.querySelector(`label[for="${radio.id}"]`);
+                if (selectedLabel) {
+                    selectedLabel.classList.add('selected');
+                }
+            });
+        });
+
+        // Function to ensure the color is pre-selected with a black border
+        function editGrade(ContentID, titleValue, captionValue, colorValue) {
             const editModal = document.getElementById('editModal');
             const editTitleInput = document.getElementById('editTitle');
             const editCaptionInput = document.getElementById('editCaption');
@@ -558,12 +696,17 @@ button:hover {
             editCaptionInput.value = captionValue;
             editContentIDInput.value = ContentID;
 
-            editModal.style.display = 'flex';
+            // Get the radio button with the matching color value
+            const selectedRadio = document.querySelector(`input[name="editColor"][value="${colorValue}"]`);
 
-            document.getElementById('editGradeForm').addEventListener('submit', function (event) {
-                event.preventDefault();
-                updateGrade();
-            });
+            if (selectedRadio) {
+                selectedRadio.checked = true; // Check the selected radio button
+
+                // Trigger the 'change' event to apply the selected class
+                selectedRadio.dispatchEvent(new Event('change'));
+            }
+
+            editModal.style.display = 'flex';
         }
 
         function updateGrade() {
@@ -571,38 +714,57 @@ button:hover {
             const ContentID = document.getElementById('editContentID').value;
             const title = document.getElementById('editTitle').value;
             const caption = document.getElementById('editCaption').value;
+            // Get the selected color from edit radio buttons
+            const editColor = document.querySelector('input[name="editColor"]:checked').value;
 
-            fetch(`update_grade.php?id=${ContentID}`, {
+            fetch(`grades_management.php?action=update&id=${ContentID}`, {
                 method: 'POST',
-                body: JSON.stringify({ title, caption, deptID }),
+                body: JSON.stringify({ Title: title, Captions: caption, deptID, ContentColor: editColor }), // Send color
                 headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    loadGrades(deptID);
-                    document.getElementById('editModal').style.display = 'none';
+                    Swal.fire('Success!', 'Grade updated successfully!', 'success').then(() => {
+                        loadGrades(deptID);
+                        document.getElementById('editModal').style.display = 'none';
+                    });
                 } else {
-                    alert('Error updating grade: ' + (data.message || 'Unknown error'));
+                    Swal.fire('Error!', data.message || 'Failed to update grade.', 'error');
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => Swal.fire('Error!', 'An unexpected error occurred.', 'error'));
         }
 
-        function deleteGrade(id) {
+
+        function deleteGrade(contentID) {
             const deptID = new URLSearchParams(window.location.search).get('deptID');
-
-            fetch(`grades_management.php?action=delete&id=${id}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        loadGrades(deptID);
-                    } else {
-                        alert('Error deleting grade');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This action cannot be undone!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'No, cancel!',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`grades_management.php?action=delete&id=${contentID}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                Swal.fire('Deleted!', 'The grade has been deleted.', 'success')
+                                    .then(() => loadGrades(deptID));
+                            } else {
+                                Swal.fire('Error!', data.message || 'Failed to delete grade.', 'error');
+                            }
+                        })
+                        .catch(error => Swal.fire('Error!', 'An unexpected error occurred.', 'error'));
+                }
+            });
         }
+
+
+
 
     </script>
 

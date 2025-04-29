@@ -6,41 +6,55 @@
 
   
 
-    
     <a href="#" class="nav-link" id="notification-link">
-        <?php
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-        include 'connection.php';
+    <?php
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    include 'connection.php';
 
-        if (isset($_SESSION['user_id'])) {
-            $user_id = $_SESSION['user_id'];
+    if (isset($_SESSION['user_id'])) {
+        $user_id = $_SESSION['user_id'];
+
+        // Query to count unread notifications
+        $countQuery = "SELECT COUNT(*) FROM notif_user nu INNER JOIN notifications ts ON nu.NotifID = ts.NotifID WHERE nu.UserID = ? AND nu.Status = 1";
+        $stmt = $conn->prepare($countQuery);
+        $stmt->bind_param("s", $user_id);
+        $stmt->execute();
+        $stmt->bind_result($unreadCount);
+        $stmt->fetch();
+        $stmt->close();
         ?>
+
+        <!-- Bell Icon -->
         <i class='bx bxs-bell icon' id="notification-icon"></i>
+
+        <!-- Notification Count Badge -->
+        <?php if ($unreadCount > 0): ?>
+            <span class="notification-badge"><?php echo $unreadCount; ?></span>
+        <?php endif; ?>
 
         <!-- Modal Structure for Notifications -->
         <div id="notifications-modal" class="modal">
             <div class="modal-content">
                 <!-- Close Button -->
-                <span class="close">&times;</span> 
+                <span class="close"></span> 
                 <h2 style="font-weight:bold;color:#9B2035; margin-bottom: 20px;">Notifications</h2>
                 <ul class="notifications-list">
                     <?php
                     // Query to get the notifications where the user is the recipient (NotifUserID = session user_id)
                     $sql = "SELECT ts.NotifID, ts.TaskID, ts.ContentID, ts.UserID, ts.Title, ts.Content, nu.Status, ts.TimeStamp, ua.fname, ua.lname
-FROM notifications ts
-INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
-INNER JOIN useracc ua ON ts.UserID = ua.UserID
-WHERE nu.UserID = ?
-GROUP BY ts.Title, ts.Content  -- Group by the Title, TaskID, and ContentID to avoid duplicates
-ORDER BY 
-    CASE 
-        WHEN ts.Status = 1 THEN 1 
-        ELSE 2 
-    END, 
-    ts.TimeStamp DESC;
-";
+                    FROM notifications ts
+                    INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
+                    INNER JOIN useracc ua ON ts.UserID = ua.UserID
+                    WHERE nu.UserID = ?
+                    GROUP BY ts.Title, ts.Content  -- Group by the Title, TaskID, and ContentID to avoid duplicates
+                    ORDER BY 
+                        CASE 
+                            WHEN ts.Status = 1 THEN 1 
+                            ELSE 2 
+                        END, 
+                        ts.TimeStamp DESC;";
 
                     // Prepare and execute the SQL statement
                     $stmt = $conn->prepare($sql);
@@ -68,8 +82,9 @@ ORDER BY
                 </ul>
             </div>
         </div>
-        <?php } ?>
-    </a>
+    <?php } ?>
+</a>
+
 
     <span class="divider" ></span>
     <div class="profile">
@@ -83,7 +98,7 @@ ORDER BY
         include 'connection.php';
 
         // Check if user is logged in
-        if (isset($_SESSION['user_id'])) {
+       if (isset($_SESSION['user_id'])) {
             $userId = $_SESSION['user_id'];
 
             // Query to fetch profile image filename and user name
@@ -98,7 +113,7 @@ ORDER BY
                 $stmt->close(); // Close statement after fetching results
 
                 // Build path to profile image
-                $profileImagePath = "../img/UserProfile/" . $profileImage;
+                $profileImagePath = "img/UserProfile/" . $profileImage;
 
                 // Check if the profile image exists
                 if (file_exists($profileImagePath)) {
@@ -115,7 +130,6 @@ ORDER BY
         } else {
             echo "User not logged in.";
         }
-
         // Close database connection at the end of the script
         $conn->close();
         ?>
@@ -127,7 +141,22 @@ ORDER BY
 </nav>
 
 <style>
-    /* ... Your existing styles ... */
+    .notification-badge {
+        background-color: red;
+        color: white;
+        font-size: 10px; /* Reduced font size */
+        font-weight: bold;
+        padding: 2px 5px; /* Smaller padding */
+        min-width: 16px; /* Ensures a circular shape */
+        min-height: 16px;
+        line-height: 16px;
+        text-align: center;
+        border-radius: 50%;
+        position: absolute;
+        top: 5px; /* Adjusted position */
+        right: 5px;
+    }
+
 
     .profile {
         display: flex;
@@ -297,38 +326,65 @@ ORDER BY
 </style>
 
 <script>
-    // Get modal element
-    var modal = document.getElementById("notifications-modal");
+    setInterval(() => {
+    fetch('get_unread_notifications.php')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const badge = document.querySelector('.notification-badge');
+                if (data.unreadCount > 0) {
+                    if (badge) {
+                        badge.textContent = data.unreadCount;
+                    } else {
+                        // Create badge if it doesn't exist
+                        const bell = document.getElementById('notification-icon');
+                        const newBadge = document.createElement('span');
+                        newBadge.className = 'notification-badge';
+                        newBadge.textContent = data.unreadCount;
+                        bell.parentNode.appendChild(newBadge);
+                    }
+                } else {
+                    if (badge) badge.remove();
+                }
+            }
+        });
+}, 5000); // refresh every 5 seconds
+
+
+var modal = document.getElementById("notifications-modal");
+    var closeBtn = document.querySelector(".close");
 
     // Get the notification icon to open the modal
     var notificationIcon = document.getElementById("notification-icon");
-
-    // Get the close button within the modal
-    var closeBtn = document.querySelector(".close");
-
-    // Get the notification link
     var notificationLink = document.getElementById("notification-link");
 
-    // When the user clicks the notification icon or link, open the modal and apply background blur
+    // Show modal when clicking the notification icon
     notificationIcon.onclick = notificationLink.onclick = function() {
         modal.style.display = "block";
-        document.body.classList.add("modal-open"); // Add blur effect
-    }
+        document.body.classList.add("modal-open"); // Optional: background blur effect
+    };
 
-    // When the user clicks the close button, close the modal and remove background blur
+    // Hide modal when clicking the close button (×)
     closeBtn.onclick = function() {
         modal.style.display = "none";
         document.body.classList.remove("modal-open"); // Remove blur effect
-    }
+    };
 
-    // Close the modal when clicking outside of it
+    // Hide modal when clicking outside of the modal content
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = "none";
-            document.body.classList.remove("modal-open"); // Remove blur effect
+            document.body.classList.remove("modal-open");
         }
-    }
+    };
 
+    // Optional: Close the modal when pressing the ESC key
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && modal.style.display === "block") {
+            modal.style.display = "none";
+            document.body.classList.remove("modal-open");
+        }
+    });
     // Add a function to handle notification clicks
     function handleNotificationClick(notifId, taskId, contentId) {
         // Update notification status via AJAX

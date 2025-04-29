@@ -15,6 +15,7 @@ if ($loginSuccess) {
 include 'connection.php';
 
 $user_id = $_SESSION['user_id'];
+
 // Ensure dept_ID is available in the session
 if (!isset($_SESSION['dept_ID'])) {
     echo "Department ID not found in session.";
@@ -49,6 +50,7 @@ if ($resultDeptName->num_rows > 0) {
 
 // Prepare SQL query for teachers' tasks data
 $sql = "SELECT 
+        ua.profile,  -- Include profile
         ua.UserID,
         CONCAT(ua.fname, ' ', ua.lname) AS name,
         COUNT(tu.Task_User_ID) AS totalTasks,
@@ -65,6 +67,7 @@ $sql = "SELECT
         feedcontent fc ON t.ContentID = fc.ContentID
     WHERE 
         ua.role = 'Teacher'
+        AND tu.Status IN ('Missing', 'Assigned', 'Submitted', 'Approved')
         AND fc.dept_ID = ?  -- dept_ID placeholder
         AND (
             YEAR(t.TimeStamp) = ? OR  -- Year placeholder for task timestamp
@@ -72,11 +75,11 @@ $sql = "SELECT
             YEAR(tu.RejectDate) = ? OR 
             YEAR(tu.ApproveDate) = ? 
         )
+        AND t.Type = 'Task'  -- Additional condition to filter tasks by type
     GROUP BY 
         ua.UserID
     ORDER BY 
         submittedTasks DESC;
-
 ";
 
 // Prepare the statement
@@ -105,6 +108,7 @@ if (!$result) {
 $teachers = [];
 while ($row = $result->fetch_assoc()) {
     $teachers[] = [
+        'profile' => $row['profile'],  // Added profile field
         'name' => $row['name'],
         'assigned' => $row['assignedTasks'],
         'missing' => $row['missingTasks'],

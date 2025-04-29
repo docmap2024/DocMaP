@@ -3,7 +3,7 @@
     <form action="#">
         <!-- Your form content here if needed -->
     </form>
-    <a href="#" class="nav-link">
+    <div class="notification-container">
         <?php
         // Ensure session is started at the beginning of the script if not already started
         if (session_status() == PHP_SESSION_NONE) {
@@ -16,36 +16,74 @@
         // Check if user is logged in
         if (isset($_SESSION['user_id'])) {
             $user_id = $_SESSION['user_id'];
+            
+            // Count unread notifications
+            $count_sql = "SELECT COUNT(*) 
+                            FROM notif_user nu 
+                            INNER JOIN notifications ts 
+                            ON nu.NotifID = ts.NotifID 
+                            WHERE nu.UserID = ? 
+                            AND nu.Status = 1";
+            $count_stmt = $conn->prepare($count_sql);
+            $count_stmt->bind_param("s", $user_id);
+            $count_stmt->execute();
+            $count_stmt->bind_result($unread_count);
+            $count_stmt->fetch();
+            $count_stmt->close();
         ?>
-        <i class='bx bxs-bell icon' id="notification-icon"></i>
-        <div class="dropdown-menu" id="notifications-dropdown">
-            <h4 style="font-weight:bold;color:#9B2035">Notifications</h4>
+        <i class='bx bxs-bell notification-icon' id="notification-icon">
+            <?php if ($unread_count > 0): ?>
+                <span class="notification-badge"><?php echo $unread_count; ?></span>
+            <?php endif; ?>
+        </i>
+        <div class="notification-dropdown" id="notifications-dropdown">
+            <div class="notification-dropdown-header">
+                <span>Notifications</span>
+                <span class="mark-all-read">Mark all as read</span>
+            </div>
             <?php
                 // Query to fetch notifications
-                $sql = "SELECT ts.NotifID, ts.TaskID, ts.ContentID, ts.UserID, ts.Title, ts.Content, ts.Status, ts.TimeStamp, CONCAT(ua.fname, ' ', ua.lname) as fullname
+                $sql = "SELECT ts.NotifID, ts.TaskID, ts.ContentID, ts.UserID, ts.Title, ts.Content, nu.Status, ts.TimeStamp, ua.fname, ua.lname
                         FROM notifications ts
-                        INNER JOIN usercontent uc ON ts.ContentID = uc.ContentID
+                        INNER JOIN notif_user nu ON ts.NotifID = nu.NotifID
                         INNER JOIN useracc ua ON ts.UserID = ua.UserID
-                        WHERE uc.UserID = ? 
-                        ORDER BY ts.TimeStamp DESC";
+                        WHERE nu.UserID = ?
+                        GROUP BY ts.Title, ts.Content  -- Group by the Title, TaskID, and ContentID to avoid duplicates
+                        ORDER BY 
+                        CASE 
+                            WHEN ts.Status = 1 THEN 1 
+                            ELSE 2 
+                        END, 
+                        ts.TimeStamp DESC;";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param("s", $user_id);
                 $stmt->execute();
-                $stmt->bind_result($id, $taskID, $contentID, $notifUserID, $title, $content, $status, $timestamp, $fullname);
+                $stmt->bind_result($id, $taskID, $contentID, $notifUserID, $title, $content, $status, $timestamp, $fname, $lname);
 
                 echo "<ul class='notifications-list'>";
 
+                $has_notifications = false;
                 while ($stmt->fetch()) {
-                    $title_color = $status == 1 ? 'red' : 'gray';
+                    $has_notifications = true;
                     $notif_status_class = $status == 1 ? 'new-notification' : '';
-                    echo "<li class='notification-item {$notif_status_class}'>";
-                    //echo "<a href='tasks.php?content_id={$contentID}' style='text-decoration: none; color: inherit;'>"; 
-                    echo "<div class='notif-header'><strong>{$fullname}</strong></div>";
-                    echo "<div class='notif-title' style='font-weight:bold;'>{$title}</div>";
-                    echo "<div class='notif-content'>{$content}</div>";
-                    echo "<div class='notif-timestamp'>{$timestamp}</div>";
+                    $fullname = $fname . ' ' . $lname;
+                    echo "<li class='notification-item {$notif_status_class}' 
+                          data-notif-id='{$id}'
+                          data-task-id='{$taskID}'
+                          data-content-id='{$contentID}'>";
+                    echo "<div class='notification-header'>";
+                    echo "<span class='notification-sender'>{$fullname}</span>";
+                    echo "<span class='notification-timestamp'>{$timestamp}</span>";
+                    echo "</div>";
+                    echo "<div class='notification-title'>{$title}</div>";
+                    echo "<div class='notification-content'>{$content}</div>";
                     echo "</li>";
                 }
+                
+                if (!$has_notifications) {
+                    echo '<div class="notification-empty">No notifications found</div>';
+                }
+                
                 echo "</ul>";
 
                 $stmt->close(); // Close statement after fetching results
@@ -57,11 +95,7 @@
             $conn->close();
             ?>
         </div>
-    </a>
-    <a href="#" class="nav-link">
-        <i class='bx bxs-notepad icon'></i>
-        <!-- Notepad icon content -->
-    </a>
+    </div>
     <span class="divider"></span>
     <div class="profile">
         <?php
@@ -125,111 +159,327 @@
         align-items: center;
     }
     .user-name {
-        margin-right: 10px; /* Adjust the space between the name and image */
+        margin-right: 10px;
         font-weight: bold;
-        color: #9B2035; /* Underline color */
+        color: #9B2035;
     }
     .profile-image {
-        width: 40px; /* Adjust the width as needed */
-        height: 40px; /* Adjust the height as needed */
-        border-radius: 50%; /* Make the image round */
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
     }
-    .nav-link {
-    position: relative; /* Ensure the dropdown is positioned relative to this parent */
-}
+    
+    /* Notification System - Consistent Styles */
+    .notification-container {
+        position: relative;
+        display: inline-block;
+        margin-right: -10px;
+        z-index: 1001; /* Ensure it stays above other elements */
+    }
 
-.dropdown-menu {
-    display: none; /* Hidden by default */
-    position: absolute;
-    top: 100%; /* Position dropdown below the parent */
-    right: 0; /* Align dropdown to the right edge of the parent */
-    background-color: white;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    width: 430px; /* Adjust the width as needed */
-    z-index: 1000; /* Ensure it appears above other content */
-    border-radius: 10px; /* Add rounded corners */
-    overflow: hidden; /* Ensure contents stay within rounded corners */
-    padding: 10px; /* Add padding to the dropdown menu */
-}
+    .notification-icon {
+        position: relative;
+        cursor: pointer;
+        font-size: 1.5rem;
+        color: #333;
+        padding: 0.5rem;
+        transition: all 0.3s ease;
+    }
 
-.notifications-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 400px; /* Set the maximum height */
-    overflow-y: auto; /* Enable vertical scrolling */
-}
+    .notification-icon:hover {
+        color: #9B2035;
+    }
 
-.notification-item {
-    padding: 15px; /* Add padding to each notification item */
-    margin-bottom: 10px; /* Add space between notification items */
-    border-radius: 10px; /* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Add shadow */
-    background-color: white; /* Background color */
-    position: relative; /* Required for the pseudo-element and timestamp */
-    transition: background-color 0.3s, box-shadow 0.3s; /* Smooth transition for hover effect */
-    border-style: solid;
-    border-width: 1px;
-    border-color: grey;
-}
+    .notification-icon .notification-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-color: #9B2035;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
 
-.notification-item:hover {
-    background-color: #f5f5f5; /* Change background color on hover */
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Intensify shadow on hover */
-}
+    .notification-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background-color: white;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        width: 430px;
+        max-width: 90vw;
+        z-index: 1002;
+        border-radius: 10px;
+        overflow: visible;
+        padding: 0;
+        border: 1px solid #e0e0e0;
+    }
 
-.notif-header {
-    font-weight: bold;
-}
+    .notification-dropdown-header {
+        font-weight: bold;
+        color: #9B2035;
+        padding: 15px;
+        margin: 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #f9f9f9;
+    }
 
-.notif-title {
-    margin-top: 5px;
-}
+    .notification-dropdown-header .mark-all-read {
+        font-size: 12px;
+        color: #9B2035;
+        cursor: pointer;
+        text-decoration: underline;
+    }
 
-.notif-content {
-    margin-top: 5px;
-    color: #555;
-}
+    .notifications-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 500px;
+        overflow-y: auto;
+    }
 
-.notif-timestamp {
-    position: absolute;
-    top: 10px; /* Adjust as needed */
-    right: 15px; /* Adjust as needed */
-    font-size: 12px;
-    color: #999;
-}
+    .notification-item {
+        padding: 15px;
+        margin: 0;
+        border-bottom: 1px solid #f0f0f0;
+        background-color: white;
+        position: relative;
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e0e0e0;
+        max-height: 200px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin: 10px;
+    }
 
-.new-notification::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-    width: 10px;
-    height: 10px;
-    background-color: #9B2035; /* Dot color */
-    border-radius: 50%;
-}
+    .notification-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
 
+    .notification-item:hover {
+        background-color: #f9f9f9;
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Specific styles for new and old notifications */
+    .notification-item.new-notification {
+        border-left: 3px solid #9B2035;
+        background-color: #ffffff;
+        border: 1px solid #9B2035;
+    }
+
+    .notification-item.old-notification {
+        background-color: #f0f0f0;
+        border: 1px solid #e0e0e0;
+        color: gray;
+    }
+
+    /* Update notification content and timestamp color for old notifications */
+    .notification-item.old-notification .notification-content,
+    .notification-item.old-notification .notification-timestamp {
+        color: gray;
+    }
+
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .notification-sender {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .notification-title {
+        font-weight: bold;
+        margin: 5px 0;
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .notification-content {
+        margin: 5px 0;
+        color: #555;
+        font-size: 0.85rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+    }
+
+    .notification-timestamp {
+        font-size: 0.75rem;
+        color: #999;
+        align-self: flex-end;
+    }
+
+    .notification-empty {
+        text-align: center;
+        padding: 20px;
+        color: #777;
+        font-style: italic;
+    }
+
+    /* Animation for new notifications */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .new-notification {
+        animation: pulse 0.5s ease;
+    }
+
+    body, html {
+        overflow-x: visible;
+    }
+
+    nav {
+        position: relative;
+        z-index: 1000; /* Lower than notification dropdown */
+    }
 </style>
 
 <script>
-    document.getElementById('notification-icon').addEventListener('click', function() {
-        var dropdown = document.getElementById('notifications-dropdown');
-        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-            dropdown.style.display = 'block';
-        } else {
+    // Notification dropdown toggle
+    document.getElementById('notification-icon').addEventListener('click', function(e) {
+        e.stopPropagation();
+        const dropdown = document.getElementById('notifications-dropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function() {
+        const dropdown = document.getElementById('notifications-dropdown');
+        if (dropdown.style.display === 'block') {
             dropdown.style.display = 'none';
         }
     });
 
-    // Close the dropdown if clicked outside
-    window.onclick = function(event) {
-        if (!event.target.matches('.icon')) {
-            var dropdown = document.getElementById('notifications-dropdown');
-            if (dropdown.style.display === 'block') {
-                dropdown.style.display = 'none';
+    // Prevent dropdown from closing when clicking inside
+    document.getElementById('notifications-dropdown').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Mark all as read functionality
+    document.querySelector('.mark-all-read').addEventListener('click', function() {
+        // AJAX call to mark all notifications as read
+        fetch('mark_notifications_read.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: <?php echo isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'null'; ?> })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove new notification styles and update badge
+                document.querySelectorAll('.new-notification').forEach(item => {
+                    item.classList.remove('new-notification');
+                    item.classList.add('old-notification');
+                });
+                const badge = document.querySelector('.notification-badge');
+                if (badge) badge.remove();
             }
-        }
+        });
+    });
+
+    function handleNotificationClick(notifId, taskId, contentId) {
+        console.log("Notification clicked:", {notifId, taskId, contentId});
+        
+        // Update notification status via AJAX
+        fetch('update_notification_status.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                notifId: notifId,
+                taskId: taskId,
+                contentId: contentId
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                // Build URL based on available parameters
+                let url = `taskdetails.php?task_id=${encodeURIComponent(taskId)}`;
+                
+                // Only add content_id if it exists and is not empty/null
+                if (contentId && contentId !== 'null' && contentId !== '') {
+                    url += `&content_id=${encodeURIComponent(contentId)}`;
+                }
+                
+                window.location.href = url;
+            } else {
+                console.error('Failed to update notification status');
+                alert('Failed to update notification status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating notification');
+        });
     }
+
+    // Add click handlers to all notification items
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationItems = document.querySelectorAll('.notification-item');
+        notificationItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const notifId = this.getAttribute('data-notif-id');
+                const taskId = this.getAttribute('data-task-id');
+                const contentId = this.getAttribute('data-content-id');
+                
+                // Only require taskId to be present
+                if (!taskId) {
+                    console.error("Missing Task ID:", {notifId, taskId, contentId});
+                    alert('This notification is missing required task information');
+                    return;
+                }
+                
+                handleNotificationClick(notifId, taskId, contentId);
+            });
+        });
+    });
+
+    // Logout functionality with SweetAlert
+    document.getElementById('logout').addEventListener('click', function(e) {
+        e.preventDefault();
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You will be logged out of your account!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, log me out!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = this.getAttribute('href');
+            }
+        });
+    });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

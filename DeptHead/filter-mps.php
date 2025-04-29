@@ -25,8 +25,7 @@ $instructor = isset($_POST['instructor']) ? $_POST['instructor'] : ''; // Get in
 // Build the base query
 $queryMPS = "SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_Name, 
                     CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
-                    m.TotalNumOfStudents, m.TotalNumTested, m.HighestScore, 
-                    m.LowestScore, m.MPS, sy.Year_Range AS SY,
+                    m.TotalNumOfStudents, m.TotalNumTested, m.MPS, sy.Year_Range AS SY,
                     CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
              FROM mps m
              INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID

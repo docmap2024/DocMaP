@@ -22,6 +22,70 @@ ini_set('error_log', __DIR__ . '/logfile.log');
 
 write_log("Database connected successfully.");
 
+// Function to send SMS via Semaphore API
+function send_bulk_sms($conn, $ContentID, $notificationTitle, $Title, $DueDate, $DueTime) {
+    $mobileQuery = $conn->prepare("
+        SELECT ua.mobile, UPPER(CONCAT(ua.fname, ' ', ua.lname)) AS FullName, sex 
+        FROM feedcontent fc  
+        JOIN usercontent uc ON fc.ContentID = uc.ContentID
+        JOIN useracc ua ON uc.UserID = ua.UserID 
+        WHERE uc.ContentID = ?
+    ");
+    $mobileQuery->bind_param("i", $ContentID);
+    $mobileQuery->execute();
+    $mobileResult = $mobileQuery->get_result();
+
+    if ($mobileResult->num_rows > 0) {
+        $mobileNumbers = [];
+        $messages = [];
+
+        while ($row = $mobileResult->fetch_assoc()) {
+            $mobileNumbers[] = $row['mobile']; // Add mobile number to the array
+            $messages[] = "NEW TASK ALERT!\n\nHi " . $row['FullName'] . "! " . $notificationTitle . " \"" . $Title . "\" Due on " . $DueDate . " at " . $DueTime . ". Don't miss it! Have a nice day!";
+        }
+
+        // Create comma-separated list of mobile numbers
+        $mobileNumbersList = implode(",", $mobileNumbers);
+
+        // Log the message and mobile numbers
+        write_log("Mobile numbers for ContentID $ContentID: $mobileNumbersList");
+        write_log("Messages to be sent: " . implode(" | ", $messages));
+
+        // Send SMS using Semaphore API (example)
+        $api_url = "https://api.semaphore.co/api/v4/messages"; // Semaphore API URL
+        $api_key = "d796c0e11273934ac9d789536133684a"; // Your Semaphore API key
+
+        foreach ($messages as $index => $message) {
+            $number = $mobileNumbers[$index]; // Get the corresponding mobile number
+
+            // Prepare POST data
+            $postData = [
+                'apikey' => $api_key,
+                'number' => $number, // Individual number
+                'message' => $message
+            ];
+
+            // Initialize cURL session
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $api_url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+            // Execute cURL request
+            $response = curl_exec($ch);
+            if (curl_errno($ch)) {
+                write_log("Error sending SMS to number ($number): " . curl_error($ch));
+            } else {
+                write_log("SMS sent successfully to number: $number");
+            }
+            curl_close($ch);
+        }
+    } else {
+        write_log("No mobile numbers found for ContentID $ContentID");
+    }
+}
+
 // Get data from form
 $UserID = $_SESSION['user_id'];
 $ContentIDs = isset($_POST['grade']) ? $_POST['grade'] : []; // Get all selected ContentIDs as an array
@@ -31,7 +95,7 @@ $DueDate = $_POST['due-date'];
 $taskContent = $_POST['instructions'];
 $DueTime = $_POST['due-time'];
 $timeStamp = date('Y-m-d H:i:s'); // Current timestamp
-$ApprovalStatus = "Pending"; // Set ApprovalStatus to Approved
+$ApprovalStatus = "Approved"; // Set ApprovalStatus to Approved (no approval required)
 
 // Get schedule date and time from POST if the action is schedule
 if ($_POST['taskAction'] === 'Schedule') {
@@ -133,6 +197,71 @@ foreach ($ContentIDs as $ContentID) {
                 }
                 $docuStmt->close();
             }
+
+            // Fetch associated users for the ContentID
+            $userContentQuery = $conn->prepare("SELECT ua.UserID FROM usercontent uc 
+                                                JOIN useracc ua ON uc.UserID = ua.UserID 
+                                                WHERE uc.ContentID = ?");
+            $userContentQuery->bind_param("i", $ContentID);
+            $userContentQuery->execute();
+            $userResult = $userContentQuery->get_result();
+
+            if ($userResult) {
+                while ($row = $userResult->fetch_assoc()) {
+                    $userInContentId = $row['UserID'];
+
+                    // Insert into task_user table
+                    $taskUserSql = "INSERT INTO task_user (ContentID, TaskID, UserID, Status, SubmitDate) VALUES (?, ?, ?, 'Assigned', ?)";
+                    $taskUserStmt = $conn->prepare($taskUserSql);
+                    $submitDate = date("Y-m-d H:i:s"); // Current timestamp for SubmitDate
+                    $taskUserStmt->bind_param("ssss", $ContentID, $TaskID, $userInContentId, $submitDate);
+
+                    if (!$taskUserStmt->execute()) {
+                        write_log("Error inserting into task_user: " . $taskUserStmt->error);
+                    }
+                    $taskUserStmt->close();
+                }
+            }
+
+            // Notification logic
+            $creatorName = $_SESSION['username']; // Assuming the creator's name is stored in the session
+            $notificationTitle = "$creatorName Posted a new Task! ($Title)";
+            $notificationContent = "$Title: $taskContent";
+            $status = 1;
+
+            $notifStmt = $conn->prepare("INSERT INTO notifications (UserID, TaskID, ContentID, Title, Content, Status) VALUES (?, ?, ?, ?, ?, ?)");
+            $notifStmt->bind_param("sssssi", $UserID, $TaskID, $ContentID, $notificationTitle, $notificationContent, $status);
+
+            if ($notifStmt->execute()) {
+                $notifID = $notifStmt->insert_id;
+
+                // Insert into notif_user for each associated user
+                $userContentQuery->execute(); // Re-execute the query to fetch users again
+                $userResult = $userContentQuery->get_result();
+
+                while ($row = $userResult->fetch_assoc()) {
+                    $userInContentId = $row['UserID'];
+                    $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                    $timestamp = date("Y-m-d H:i:s");
+                    $notifUserStmt->bind_param("iiss", $notifID, $userInContentId, $status, $timestamp);
+
+                    if (!$notifUserStmt->execute()) {
+                        write_log("Error inserting into notif_user: " . $notifUserStmt->error);
+                        mysqli_rollback($conn);
+                        return false;
+                    }
+                    $notifUserStmt->close();
+                }
+
+                // Call the SMS sending function
+                send_bulk_sms($conn, $ContentID, $notificationTitle, $Title, $DueDate, $DueTime);
+            } else {
+                write_log("Error inserting into notifications: " . $notifStmt->error);
+                mysqli_rollback($conn);
+                return false;
+            }
+
+            $notifStmt->close();
         } else {
             write_log("Error inserting into tasks: " . $stmt->error);
         }

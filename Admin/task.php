@@ -11,20 +11,26 @@ if (isset($_POST['department_ids'])) {
     $department_ids = explode(',', $_POST['department_ids']); // Convert comma-separated string to array
 
     if (!empty($department_ids)) {
-        // Fetch data for the selected departments
         $placeholders = implode(',', array_fill(0, count($department_ids), '?'));
-        $sql = "SELECT DISTINCT ContentID, Title, LEFT(Captions, 50) AS Captions FROM feedcontent WHERE dept_ID IN ($placeholders)";
+        $sql = "SELECT d.dept_name, fc.ContentID, fc.Title, LEFT(fc.Captions, 50) AS Captions 
+                FROM feedcontent fc
+                INNER JOIN department d ON fc.dept_ID = d.dept_ID
+                WHERE fc.dept_ID IN ($placeholders)";
         $stmt = $conn->prepare($sql);
         $types = str_repeat('i', count($department_ids));
         $stmt->bind_param($types, ...$department_ids);
         $stmt->execute();
         $result = $stmt->get_result();
-
+    
         $grades = array();
         while ($row = $result->fetch_assoc()) {
-            $grades[] = $row;
+            $dept_name = $row['dept_name'];
+            if (!isset($grades[$dept_name])) {
+                $grades[$dept_name] = array();
+            }
+            $grades[$dept_name][] = $row;
         }
-
+    
         // Return JSON response
         echo json_encode($grades);
     } else {
@@ -33,15 +39,20 @@ if (isset($_POST['department_ids'])) {
     exit;
 }
 
-
-// Fetch departments for checkboxes
-$sql = "SELECT dept_ID, dept_name FROM department";
+//Fetch departments for checkboxes
+$sql = "SELECT dept_ID, dept_name, dept_type FROM department";
 $result = $conn->query($sql);
 $departments = array();
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $departments[] = $row;
     }
+}
+
+// Group departments by type
+$groupedDepartments = [];
+foreach ($departments as $dept) {
+    $groupedDepartments[$dept['dept_type']][] = $dept;
 }
 
 
@@ -56,15 +67,38 @@ $offset = ($page - 1) * $rows_per_page;
 
 
 // Fetch tasks for display, ordered by timestamp (newest first)
-$sql = "SELECT t.TaskID AS TaskID, t.Title AS TaskTitle, t.Status, t.taskContent, t.DueDate, t.DueTime, d.dept_name, fc.Title AS ContentTitle, fc.Captions
-        FROM tasks t
-        LEFT JOIN feedcontent fc ON t.ContentID = fc.ContentID
-        LEFT JOIN department d ON fc.dept_ID = d.dept_ID
-        WHERE t.Type = 'Task' AND t.ApprovalStatus = 'Approved'
-        ORDER BY t.TimeStamp DESC  
-        LIMIT $rows_per_page OFFSET $offset";
+$sql = "
+    SELECT 
+        t.TaskID AS TaskID, 
+        t.Title AS TaskTitle, 
+        t.Status, 
+        t.taskContent, 
+        t.DueDate, 
+        t.DueTime, 
+        COALESCE(
+            GROUP_CONCAT(DISTINCT d.dept_name SEPARATOR ', '), 
+            GROUP_CONCAT(DISTINCT d2.dept_name SEPARATOR ', ')
+        ) AS DepartmentNames, 
+        fc.Title AS ContentTitle, 
+        fc.Captions, 
+        fc.ContentID,
+        COALESCE(
+            GROUP_CONCAT(DISTINCT d.dept_ID SEPARATOR ', '), 
+            GROUP_CONCAT(DISTINCT d2.dept_ID SEPARATOR ', ')
+        ) AS dept_IDs  -- Fetch dept_IDs from both d and d2
+    FROM tasks t
+    LEFT JOIN feedcontent fc ON t.ContentID = fc.ContentID
+    LEFT JOIN task_department td ON t.TaskID = td.TaskID
+    LEFT JOIN department d ON td.dept_ID = d.dept_ID
+    LEFT JOIN department d2 ON fc.dept_ID = d2.dept_ID
+    WHERE t.Type = 'Task' AND t.ApprovalStatus = 'Approved'
+    GROUP BY t.TaskID, t.Title, t.Status, t.taskContent, t.DueDate, t.DueTime, fc.Title, fc.Captions, fc.ContentID
+    ORDER BY t.TimeStamp DESC
+    LIMIT $rows_per_page OFFSET $offset";
+
 $result = $conn->query($sql);
 $tasks = array();
+
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $tasks[] = $row;
@@ -98,9 +132,22 @@ if (isset($_POST['task_id'])) {
     exit;
 }
 
-//Fetch title
+// Fetch title
 $query = "SELECT DISTINCT Title FROM tasks WHERE Type='Task'";
 $result = $conn->query($query);
+
+// Fetch instructions based on the selected title
+if (isset($_GET['title'])) {
+    $selectedTitle = $_GET['title'];
+    $query = "SELECT taskContent FROM tasks WHERE Title = ? AND Type='Task'";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $selectedTitle);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    echo json_encode($row);
+    exit();
+}
 
 ?>
 <!DOCTYPE html>
@@ -117,11 +164,10 @@ $result = $conn->query($query);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-    
+
 
     <style>
         .container {
-            
             margin: 0 auto;
             padding: 20px;
         }
@@ -379,7 +425,7 @@ $result = $conn->query($query);
             border: 1px solid #888;
             width: 70vw; /* 100% of viewport width */
             max-width: 1200px; /* Optional: maximum width */
-            height: 75vh; /* 70% of viewport height */
+            height: 65vh; /* 70% of viewport height */
             max-height: 800px; /* Optional: maximum height */
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -475,19 +521,15 @@ $result = $conn->query($query);
         }
         .button-group2 {
             display: flex; /* Align buttons in a row */
-             float:right;
+            float:right;
             margin-bottom:10px;
-
-            
-            
+            margin-top: -20px;
         }
        
         .button-group {
             display: flex; /* Align buttons in a row */
-            
             float:right;
             margin-bottom: 10px;
-            
         }
 
         .buttonEdit,
@@ -561,43 +603,43 @@ $result = $conn->query($query);
         }
 
         .dropdown-menu {
-        display: none;
-        position: absolute;
-        background-color: white; /* Set background to white */
-        max-width: 230px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        z-index: 1;
-        margin-top: 5px;
-        border-radius: 4px;
-        /* Remove the gradient */
-        /* background: linear-gradient(to bottom, #f0f0f0, #e0e0e0); */
+            display: none;
+            position: absolute;
+            background-color: white; /* Set background to white */
+            max-width: 230px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            margin-top: 5px;
+            border-radius: 4px;
+            /* Remove the gradient */
+            /* background: linear-gradient(to bottom, #f0f0f0, #e0e0e0); */
         }
 
         .dropdown-menu.show {
-        display: block;
-        max-height: 380px; /* Adjust this value as needed */
-        overflow-y: auto;
-        scroll-behavior: smooth;
-        background-color: white; /* Set background to white */
+            display: block;
+            max-height: 380px; /* Adjust this value as needed */
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            background-color: white; /* Set background to white */
         }
 
         .checkbox-container, .checkbox-all-container {
-        padding: 4px 2px;
-        border-bottom: 1px solid #ddd;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+            padding: 4px 2px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .checkbox-container input, .checkbox-all-container input {
-        cursor: pointer;
-        outline: none;
-        border: none;
+            cursor: pointer;
+            outline: none;
+            border: none;
         }
 
         .checkbox-container label, .checkbox-all-container label {
-        margin: 0;
-        font-weight: 500;
+            margin: 0;
+            font-weight: 500;
         }
 
         .custom-checkbox {
@@ -709,7 +751,7 @@ $result = $conn->query($query);
         }
 
         /* Show dropdown menu when toggle is clicked */
-        .submitdropdown.show .submitdropdown-menu {
+        .submitdropdown.show  {
             display: block; /* Show menu */
         }
 
@@ -1076,18 +1118,215 @@ $result = $conn->query($query);
         font-weight: bold;
         text-align: center;
         color:#fff;
-    }
-    .info-message {
- 
-    margin-top: 5px; /* Space between title and message */
-   
-}
+        }
+        .info-message {
+            margin-top: 5px; /* Space between title and message */
+        }
 
-.info-message p {
-    font-size: 16px; /* Font size for the message */
-    color: #555; /* Color for the message text */
-    margin: 0; /* Remove default margin */
-}
+        .info-message p {
+            font-size: 16px; /* Font size for the message */
+            color: #555; /* Color for the message text */
+            margin: 0; /* Remove default margin */
+        }
+
+        .dropdown-okay-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .dropdown-okay-button:hover {
+            background-color: #45a049;
+        }
+
+        .department-container {
+            margin-bottom: 20px;
+        }
+
+        .department-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        /* Style for department groups */
+        .department-group {
+            margin-bottom: 15px;
+        }
+
+        .department-group-title {
+            font-weight: bold;
+            color:rgb(17, 16, 16);
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        /* Task View Modal - Specific Styles */
+        #taskViewModal {
+            display: none;
+            position: fixed;
+            z-index: 1050; /* Higher than your existing modal */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        #taskViewModal .task-modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 25px;
+            border: none;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: taskModalFadeIn 0.3s;
+        }
+
+        @keyframes taskModalFadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        #taskViewModal .task-modal-close {
+            color: #6c757d;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: -10px;
+            margin-right: -10px;
+        }
+
+        #taskViewModal .task-modal-close:hover,
+        #taskViewModal .task-modal-close:focus {
+            color:rgb(0, 0, 0);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Task View Header */
+        #taskViewModal .task-view-header {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        #taskViewModal #taskViewTitle {
+            margin: 0;
+            color:rgb(0, 0, 0);
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Task Meta Information */
+        #taskViewModal .task-meta-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #taskViewModal .task-meta-item {
+            margin-bottom: 5px;
+        }
+
+        #taskViewModal .task-meta-label {
+            display: block;
+            font-size: 13px;
+            color:rgb(0, 0, 0);
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+
+        #taskViewModal .task-meta-value {
+            font-size: 15px;
+            color: #343a40;
+            font-weight: 500;
+        }
+
+        #taskViewModal #taskViewStatus {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Task Content Area */
+        #taskViewModal .task-content-area {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        #taskViewModal .task-content-area h3 {
+            margin-top: 0;
+            color:rgb(0, 0, 0);
+            font-size: 18px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        #taskViewModal #taskViewContent {
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        #taskViewModal #taskViewContent p {
+            margin-bottom: 15px;
+        }
+
+        #taskViewModal #taskViewContent img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        /* View Full Task Button Styles */
+        .task-view-footer {
+            margin-top: 20px;
+            text-align: right;
+            border-top: 1px solid #e9ecef;
+            padding-top: 15px;
+        }
+
+        .buttonViewFullTask {
+            background-color: #4a6fdc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .buttonViewFullTask:hover {
+            background-color: #3a5bc7;
+        }
+
+        .buttonViewFullTask i {
+            margin-right: 5px;
+        }
+
 
     </style>
 </head>
@@ -1149,30 +1388,49 @@ $result = $conn->query($query);
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($tasks as $task): ?>
-                                    <tr>
+                                    <?php
+                                    // Debugging: Check if ContentID exists
+                                    if (!isset($task['ContentID'])) {
+                                        $task['ContentID'] = ''; // Set a default value if not defined
+                                    }
+                                    ?>
+                                    <tr onclick="viewTask(
+                                        '<?php echo $task['TaskID']; ?>',
+                                        '<?php echo htmlspecialchars(addslashes($task['TaskTitle']), ENT_QUOTES); ?>',
+                                        '<?php echo addslashes($task['taskContent']); ?>',
+                                        '<?php echo htmlspecialchars(addslashes($task['DepartmentNames']), ENT_QUOTES); ?>',
+                                        '<?php echo htmlspecialchars(addslashes($task['ContentTitle'] . ' - ' . $task['Captions']), ENT_QUOTES); ?>',
+                                        '<?php echo $task['DueDate']; ?>',
+                                        '<?php echo $task['DueTime']; ?>',
+                                        '<?php echo $task['Status']; ?>',
+                                        '<?php echo isset($task['ContentID']) ? $task['ContentID'] : ''; ?>'
+                                    )" style="cursor: pointer;">
                                         <td><?php echo htmlspecialchars($task['TaskTitle']); ?></td>
-                                        <td><p><?php echo $task['taskContent']; // Direct output to render HTML content ?></p></td>
-                                        <td><?php echo htmlspecialchars($task['dept_name']); ?></td>
+                                        <td><p><?php echo $task['taskContent']; ?></p></td>
+                                        <td><?php echo htmlspecialchars($task['DepartmentNames']); ?></td>
                                         <td><?php echo htmlspecialchars($task['ContentTitle'] . ' - ' . $task['Captions']); ?></td>
                                         <td><?php echo htmlspecialchars(date('M d, Y', strtotime($task['DueDate']))); ?></td>
                                         <td><?php echo htmlspecialchars(date('h:i A', strtotime($task['DueTime']))); ?></td>
                                         <td style="font-weight:bold; color: <?php echo $task['Status'] == 'Assign' ? 'green' : ($task['Status'] == 'Schedule' ? 'blue' : 'grey'); ?>;">
                                             <?php echo htmlspecialchars($task['Status']); ?>
                                         </td>
-
                                         <td>
                                             <div class="button-group">
                                                 <button class="buttonEdit" 
-                                                    onclick="editTask(
+                                                    onclick="event.stopPropagation(); editTask(
                                                         '<?php echo $task['TaskID']; ?>', 
                                                         '<?php echo htmlspecialchars(addslashes($task['TaskTitle']), ENT_QUOTES); ?>', 
                                                         '<?php echo addslashes($task['taskContent']);  ?>', 
-                                                        '<?php echo htmlspecialchars(addslashes($task['dept_name']), ENT_QUOTES); ?>',
-                                                        '<?php echo htmlspecialchars(addslashes($task['ContentTitle'] . ' - ' . $task['Captions']), ENT_QUOTES); ?>',
+                                                        '<?php echo $task['dept_IDs']; ?>',
+                                                        '<?php echo $task['ContentID']; ?>',
                                                         '<?php echo $task['DueDate']; ?>',
                                                         '<?php echo $task['DueTime']; ?>' 
-                                                    )" ><i class="fas fa-edit"></i></button>
-                                                <button class="buttonDelete" onclick="deleteTask('<?php echo $task['TaskID']; ?>')"><i class="fas fa-trash-alt"></i></button>
+                                                    )">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="buttonDelete" onclick="event.stopPropagation(); deleteTask('<?php echo $task['TaskID']; ?>')">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -1180,8 +1438,6 @@ $result = $conn->query($query);
                             <?php endif; ?>
                         </tbody>
                     </table>
-
-
                 </div>
             
 
@@ -1298,7 +1554,7 @@ $result = $conn->query($query);
                                             </button>
                                             <div id="titleDropdown" class="title-dropdown-menu">
                                                 <?php while ($row = $result->fetch_assoc()): ?>
-                                                    <button type="button" class="title-dropdown-item" onclick="setTitle('<?php echo htmlspecialchars($row['Title']); ?>', <?php echo $row['TaskID']; ?>)">
+                                                    <button type="button" class="title-dropdown-item" onclick="setTitle('<?php echo htmlspecialchars($row['Title']); ?>')">
                                                         <?php echo htmlspecialchars($row['Title']); ?>
                                                     </button>
                                                 <?php endwhile; ?>
@@ -1309,10 +1565,7 @@ $result = $conn->query($query);
                                             <div id="editor"></div>
                                             <textarea id="instructions" name="instructions" rows="4" required></textarea>
                                         </div>
-                                    </div>
-
-
-                                    
+                                    </div>    
                                 </div>
                                 
                                 <div class="form-right">
@@ -1320,19 +1573,48 @@ $result = $conn->query($query);
                                     <div class="form-section">
                                         <label for="department">Department:</label>
                                         <div class="form-group">
+                                            <!-- Hidden input to store selected department IDs -->
+                                            <input type="hidden" id="dept_ID" name="dept_ID" value="">
+
                                             <div class="dropdown">
                                                 <button class="dropdown-toggle" type="button" onclick="toggleDropdown('departmentDropdown')">Select Department</button>
                                                 <div id="departmentDropdown" class="dropdown-menu">
                                                     <div class="checkbox-all-container">
-                                                        <input type="checkbox" id="selectAllDepartments" class="custom-checkbox checkbox-all" onclick="selectAll('departmentDropdown', 'department[]')">
+                                                        <input type="checkbox" id="selectAllDepartments" class="custom-checkbox checkbox-all" onclick="selectAll('departmentDropdown', 'department[]')" checked>
                                                         <label for="selectAllDepartments">All</label>
                                                     </div>
-                                                    <?php foreach ($departments as $dept) : ?>
-                                                    <div class="checkbox-container">
-                                                        <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" onchange="updateGrades()">
-                                                        <label><?= $dept['dept_name'] ?></label>
+
+                                                    <!-- Academic Departments -->
+                                                    <div class="department-group">
+                                                        <h4 class="department-group-title">Academic Departments</h4>
+                                                        <?php if (!empty($groupedDepartments['Academic'])) : ?>
+                                                            <?php foreach ($groupedDepartments['Academic'] as $dept) : ?>
+                                                                <div class="checkbox-container">
+                                                                    <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" data-dept-type="Academic" onchange="updateGrades()" checked>
+                                                                    <label><?= $dept['dept_name'] ?></label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else : ?>
+                                                            <p>No academic departments found.</p>
+                                                        <?php endif; ?>
                                                     </div>
-                                                    <?php endforeach; ?>
+
+                                                    <!-- Administrative Departments -->
+                                                    <div class="department-group">
+                                                        <h4 class="department-group-title">Administrative Departments</h4>
+                                                        <?php if (!empty($groupedDepartments['Administrative'])) : ?>
+                                                            <?php foreach ($groupedDepartments['Administrative'] as $dept) : ?>
+                                                                <div class="checkbox-container">
+                                                                    <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" data-dept-type="Administrative" onchange="updateGrades()" checked>
+                                                                    <label><?= $dept['dept_name'] ?></label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else : ?>
+                                                            <p>No administrative departments found.</p>
+                                                        <?php endif; ?>
+                                                    </div>
+
+                                                    <button type="button" class="dropdown-okay-button" onclick="closeDropdown('departmentDropdown')">Okay</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1344,12 +1626,13 @@ $result = $conn->query($query);
                                                 <button class="dropdown-toggle" type="button" onclick="toggleDropdown('gradeDropdown')">Select Grade</button>
                                                 <div id="gradeDropdown" class="dropdown-menu">
                                                     <div class="checkbox-all-container">
-                                                        <input type="checkbox" class="custom-checkbox checkbox-all" id="selectAllGrades" onclick="selectAll('gradeDropdown', 'grade[]')">
+                                                        <input type="checkbox" class="custom-checkbox checkbox-all" id="selectAllGrades" onclick="selectAll('gradeDropdown', 'grade[]')" checked>
                                                         <label for="selectAllGrades">All</label>
                                                     </div>
                                                     <div id="gradesContainer">
                                                         <p>No grades available. Please select a department.</p>
                                                     </div>
+                                                    <button type="button" class="dropdown-okay-button" onclick="closeDropdown('gradeDropdown')">Okay</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1370,7 +1653,7 @@ $result = $conn->query($query);
                                 
                             </div>
                             <!-- Attachment -->
-                            <label for="file">Attachment: <span style ="font-size:12px; color: grey;">(optional)</span></label>
+                            <label for="file">Attachment: <span style ="font-size:12px; color: grey;">(Attachment is optional)</span></label>
                             <div class="form-section attachment">
                                 <div class="form-group ">
                                     <input type="file" id="file" name="file[]" multiple onchange="displaySelectedFiles(event)"style="background-color:transparent;">                                   
@@ -1432,21 +1715,16 @@ $result = $conn->query($query);
                                                     <button class="dropdown-toggle" type="button" onclick="toggleDropdown('updatedepartmentDropdown')">Select Department</button>
                                                     <div id="updatedepartmentDropdown" class="dropdown-menu">
                                                         <div class="checkbox-all-container">
-                                                            <input type="checkbox" id="selectAllDepartments"  
-                                                            class="custom-checkbox checkbox-all" 
-                                                            onclick="selectAll('updatedepartmentDropdown', 'department[]')">
-                                                            <label for="selectAllDepartments">All</label>
+                                                            <input type="checkbox" id="EditselectAllDepartments" class="custom-checkbox checkbox-all" onclick="selectAll('updatedepartmentDropdown', 'department[]')">
+                                                            <label for="EditselectAllDepartments">All</label>
                                                         </div>
                                                         <?php foreach ($departments as $dept) : ?>
-                                                        <div class="checkbox-container">
-                                                            <input type="checkbox" 
-                                                            class="custom-checkbox"
-                                                            name="department[]" 
-                                                            value="<?= $dept['dept_ID'] ?>" 
-                                                            onchange="updateGradesInEditModal()">
-                                                            <label><?= $dept['dept_name'] ?></label>
-                                                        </div>
+                                                            <div class="checkbox-container">
+                                                                <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" onchange="updateGradesInEditModal()">
+                                                                <label><?= $dept['dept_name'] ?></label>
+                                                            </div>
                                                         <?php endforeach; ?>
+                                                        <button type="button" class="dropdown-okay-button" onclick="closeDropdown('updatedepartmentDropdown')">Okay</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1461,11 +1739,12 @@ $result = $conn->query($query);
                                                             <input type="checkbox"
                                                             class="custom-checkbox checkbox-all" name="update_grade[]" 
                                                             value="<?= $grade['grade_ID'] ?>" onchange="updateGradesInEditModal()">
-                                                            <label for="selectAllGrades">All</label>
+                                                            <label for="EditselectAllGrades">All</label>
                                                         </div>
                                                         <div id="updategradesContainer">
                                                             <p>No grades available. Please select a department.</p>
                                                         </div>
+                                                        <button type="button" class="dropdown-okay-button" onclick="closeDropdown('updategradeDropdown')">Okay</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1520,89 +1799,130 @@ $result = $conn->query($query);
                 </div>
             </div>
 
+            <!-- Task View Modal -->
+            <div id="taskViewModal" class="modal">
+                <div class="task-modal-content">
+                    <span class="task-modal-close" onclick="closeViewModal()">&times;</span>
+                    
+                    <div class="task-view-header">
+                        <h2 id="taskViewTitle"></h2>
+                    </div>
+                    
+                    <div class="task-meta-container">
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Status</span>
+                            <span id="taskViewStatus" class="task-meta-value"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Department</span>
+                            <span id="taskViewDepartment" class="task-meta-value"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Grade/Section</span>
+                            <span id="taskViewGradeSection" class="task-meta-value"></span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Due Date</span>
+                            <span id="taskViewDueDate" class="task-meta-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-content-area">
+                        <h3>Task Details</h3>
+                        <div id="taskViewContent" class="task-view-content"></div>
+                    </div>
+
+                    <div class="task-view-footer">
+                        <button id="viewFullTaskBtn" class="buttonViewFullTask">
+                            <i class="fas fa-external-link-alt"></i> View Full Task
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </main>
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
      <script>
- function displaySelectedFiles(event) {
-    const fileContainer = document.getElementById('fileContainer');
-    fileContainer.innerHTML = ''; // Clear existing file containers
+        function displaySelectedFiles(event) {
+            const fileContainer = document.getElementById('fileContainer');
+            fileContainer.innerHTML = ''; // Clear existing file containers
 
-    for (const file of event.target.files) {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item col-md-3'; // Bootstrap column class
+            for (const file of event.target.files) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item col-md-3'; // Bootstrap column class
 
-        const fileName = document.createElement('span');
-        fileName.className = 'file-name';
-        fileName.textContent = file.name;
+                const fileName = document.createElement('span');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name;
 
-        const removeButton = document.createElement('button');
-        removeButton.className = 'remove-file btn btn-danger btn-sm';
-        removeButton.textContent = 'x';
-        removeButton.onclick = () => removeFile(fileItem);
+                const removeButton = document.createElement('button');
+                removeButton.className = 'remove-file btn btn-danger btn-sm';
+                removeButton.textContent = 'x';
+                removeButton.onclick = () => removeFile(fileItem);
 
-        fileItem.appendChild(fileName);
-        fileItem.appendChild(removeButton);
+                fileItem.appendChild(fileName);
+                fileItem.appendChild(removeButton);
 
-        fileContainer.appendChild(fileItem);
-    }
-}
+                fileContainer.appendChild(fileItem);
+            }
+        }
 
-function removeFile(fileItem) {
-    const fileInput = document.getElementById('file');
-    const files = Array.from(fileInput.files);
-    const fileName = fileItem.querySelector('.file-name').textContent;
+        function removeFile(fileItem) {
+            const fileInput = document.getElementById('file');
+            const files = Array.from(fileInput.files);
+            const fileName = fileItem.querySelector('.file-name').textContent;
 
-    // Find index of the file to be removed
-    const index = files.findIndex(file => file.name === fileName);
-    if (index > -1) {
-        // Remove the file from the FileList
-        const dt = new DataTransfer();
-        files.splice(index, 1);
-        files.forEach(file => dt.items.add(file));
-        fileInput.files = dt.files;
+            // Find index of the file to be removed
+            const index = files.findIndex(file => file.name === fileName);
+            if (index > -1) {
+                // Remove the file from the FileList
+                const dt = new DataTransfer();
+                files.splice(index, 1);
+                files.forEach(file => dt.items.add(file));
+                fileInput.files = dt.files;
 
-        // Remove the file item from the DOM
-        fileItem.remove();
-    }
-}
+                // Remove the file item from the DOM
+                fileItem.remove();
+            }
+        }
 
 
 
-     </script>
+    </script>
     <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Get the current date in the required format
-    function getCurrentDate() {
-      const today = new Date();
-      const year = today.getFullYear();
-      let month = today.getMonth() + 1;
-      let day = today.getDate();
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get the current date in the required format
+            function getCurrentDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            let month = today.getMonth() + 1;
+            let day = today.getDate();
 
-      // Add leading zeros for months and days less than 10
-      month = month < 10 ? '0' + month : month;
-      day = day < 10 ? '0' + day : day;
+            // Add leading zeros for months and days less than 10
+            month = month < 10 ? '0' + month : month;
+            day = day < 10 ? '0' + day : day;
 
-      return `${year}-${month}-${day}`;
-    }
+            return `${year}-${month}-${day}`;
+            }
 
-    // Set the min attribute of the date picker to the current date
-    document.getElementById('due-date').min = getCurrentDate();
+            // Set the min attribute of the date picker to the current date
+            document.getElementById('due-date').min = getCurrentDate();
 
-    // Add an event listener to the date picker
-    document.getElementById('due-date').addEventListener('input', function () {
-      // Get the selected date
-      const selectedDate = this.value;
+            // Add an event listener to the date picker
+            document.getElementById('due-date').addEventListener('input', function () {
+            // Get the selected date
+            const selectedDate = this.value;
 
-      // Check if the selected date is in the past
-      if (selectedDate < getCurrentDate()) {
-        alert('Please select a future date.');
-        this.value = getCurrentDate(); // Reset the value to the current date
-      }
-    });
-  });
-</script>
+            // Check if the selected date is in the past
+            if (selectedDate < getCurrentDate()) {
+                alert('Please select a future date.');
+                this.value = getCurrentDate(); // Reset the value to the current date
+            }
+            });
+        });
+    </script>
     <script>
     // JavaScript to switch tabs
         function switchTab(tab) {
@@ -1611,7 +1931,7 @@ function removeFile(fileItem) {
             window.location.search = urlParams.toString();
         }
     </script>
-   <script>
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
             const selectAllCheckbox = document.getElementById('selectAll');
 
@@ -1633,7 +1953,7 @@ function removeFile(fileItem) {
 
                         if (tasks.length === 0) {
                             const noTaskMessage = document.createElement('tr');
-                            noTaskMessage.innerHTML = '<td colspan="6" style="text-align: center; color: grey;">No Pending Task Available</td>';
+                            noTaskMessage.innerHTML = '<td colspan="8" style="text-align: center; color: grey;">No Pending Task Available</td>';
                             taskTableBody.appendChild(noTaskMessage);
                         } else {
                             tasks.forEach(task => {
@@ -1747,22 +2067,57 @@ function removeFile(fileItem) {
     </script>
 
     <script>
+        // Initialize CKEditor
         ClassicEditor
             .create(document.querySelector('#editor'), {
                 placeholder: 'Enter details here...' // Set placeholder text
             })
             .then(editor => {
+                window.editor = editor; // Make the editor instance globally available
+
                 // Sync editor data to the hidden textarea
                 editor.model.document.on('change:data', () => {
                     document.querySelector('#instructions').value = editor.getData();
                 });
-                
+
                 // Apply a fixed width to the editor's outermost container
                 editor.ui.view.editable.element.closest('.ck-editor').style.maxWidth = '560px';
             })
             .catch(error => {
-                console.error(error);
+                console.error('Error initializing CKEditor:', error);
             });
+
+        // Function to set the selected title and fetch taskContent
+        function setTitle(title) {
+            document.getElementById('title').value = title;
+            titletoggleDropdown('titleDropdown');
+
+            // Fetch instructions for the selected title
+            fetch(`?title=${encodeURIComponent(title)}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Fetched data:", data); // Debugging
+                    if (data && data.taskContent) {
+                        console.log("Updating instructions field with:", data.taskContent); // Debugging
+
+                        // Update the CKEditor content
+                        if (typeof editor !== 'undefined') {
+                            editor.setData(data.taskContent) // Set the content in CKEditor
+                                .then(() => {
+                                    console.log("CKEditor content updated successfully");
+                                })
+                                .catch(error => {
+                                    console.error("Error updating CKEditor content:", error);
+                                });
+                        } else {
+                            console.error("CKEditor instance is not available");
+                        }
+                    } else {
+                        console.log("No taskContent found in the response"); // Debugging
+                    }
+                })
+                .catch(error => console.error('Error fetching instructions:', error));
+        }
     </script>
     
 
@@ -1778,6 +2133,17 @@ function removeFile(fileItem) {
 
             // Close the dropdown after selection
             toggleDropdown('submitDropdown');
+
+            // Get the selected department IDs
+            const selectedDepartments = Array.from(document.querySelectorAll('input[name="department[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            // Set the dept_ID value in the hidden input
+            document.getElementById('dept_ID').value = selectedDepartments;
+
+            // Log the selected department IDs for debugging
+            console.log("Selected Department IDs:", selectedDepartments);
 
             // Check if the action is assign, draft, or schedule
             if (action === 'Assign') {
@@ -1847,23 +2213,44 @@ function removeFile(fileItem) {
         }
 
 
-        // Function to select/deselect all checkboxes and trigger updateGrades
+        // Function to select/deselect all checkboxes and update the hidden input
         function selectAll(containerId, checkboxName) {
             const container = document.getElementById(containerId);
             const checkboxes = container.querySelectorAll(`input[name="${checkboxName}"]`);
             const selectAllCheckbox = container.querySelector('.checkbox-all');
 
+            // Toggle all checkboxes
             checkboxes.forEach(checkbox => {
                 checkbox.checked = selectAllCheckbox.checked;
             });
 
+            // Update the hidden input with selected department IDs
+            updateDeptIDInput();
+
+            // If department checkboxes are being updated, trigger updateGrades
             if (checkboxName === 'department[]') {
                 updateGrades();
             }
         }
 
-        // Function to fetch and update available grades based on selected departments
+        // Function to update the hidden input with selected department IDs
+        function updateDeptIDInput() {
+            const selectedDepartments = Array.from(document.querySelectorAll('input[name="department[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            // Set the value of the hidden input
+            document.getElementById('dept_ID').value = selectedDepartments;
+
+            // Log the selected department IDs for debugging
+            console.log("Selected Department IDs:", selectedDepartments);
+        }
+
+        // Function to update grades based on selected departments
         function updateGrades() {
+            // Update the hidden input with selected department IDs
+            updateDeptIDInput();
+
             const selectAllDepartmentsCheckbox = document.getElementById('selectAllDepartments');
             let selectedDepartments;
 
@@ -1895,17 +2282,29 @@ function removeFile(fileItem) {
                     return response.json();
                 })
                 .then(data => {
-                    gradesContainer.innerHTML = ''; // Clear existing grades
+                    gradesContainer.innerHTML = '';  // Clear existing grades
 
-                    if (data.length > 0) {
-                        data.forEach(grade => {
-                        const checkbox = document.createElement('div');
-                        checkbox.className = 'checkbox-container'; 
-                        checkbox.innerHTML = `
-                            <input type="checkbox" class="custom-checkbox" name="grade[]" value="${grade.ContentID}">
-                            <label class="grade-title">${grade.Title} - ${grade.Captions}</label> 
-                        `;
-                        gradesContainer.appendChild(checkbox);
+                    if (Object.keys(data).length > 0) {
+                        Object.entries(data).forEach(([deptName, grades]) => {
+                            const deptContainer = document.createElement('div');
+                            deptContainer.className = 'department-container';
+
+                            const deptLabel = document.createElement('h3');
+                            deptLabel.className = 'department-label';
+                            deptLabel.textContent = deptName;
+                            deptContainer.appendChild(deptLabel);
+
+                            grades.forEach(grade => {
+                                const checkbox = document.createElement('div');
+                                checkbox.className = 'checkbox-container'; 
+                                checkbox.innerHTML = `
+                                    <input type="checkbox" class="custom-checkbox" name="grade[]" value="${grade.ContentID}" checked>
+                                    <label class="grade-title">${grade.Title} - ${grade.Captions}</label>
+                                `;
+                                deptContainer.appendChild(checkbox);
+                            });
+
+                            gradesContainer.appendChild(deptContainer);
                         });
                     } else {
                         gradesContainer.innerHTML = '<p>No grades available for the selected departments.</p>';
@@ -1919,6 +2318,15 @@ function removeFile(fileItem) {
                 gradesContainer.innerHTML = '<p>No grades available. Please select a department.</p>';
             }
         }
+
+        // Automatically trigger the updateGrades function when the page loads
+        window.addEventListener('load', () => {
+            updateGrades();  // Populate grades based on the default selection
+        });
+
+
+        
+
 
         function submitTaskForm() {
             // Get form data
@@ -2065,26 +2473,65 @@ function removeFile(fileItem) {
             });
         }
 
+        /*--------------------------------------------Dropdown Function---------------------------*/
+
+        let currentOpenDropdown = null; // Track the currently open dropdown
 
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
+
+            // Close the currently open dropdown if it's not the clicked one
+            if (currentOpenDropdown && currentOpenDropdown !== dropdown) {
+                currentOpenDropdown.classList.remove('show');
+            }
+
+            // Toggle the clicked dropdown
             dropdown.classList.toggle('show');
+
+            // Update the current open dropdown
+            currentOpenDropdown = dropdown.classList.contains('show') ? dropdown : null;
         }
 
+        // Close the dropdown if the user clicks outside of the dropdown container
+        document.addEventListener("click", function (event) {
+            const dropdowns = document.querySelectorAll(".dropdown-menu");
+            const toggles = document.querySelectorAll(".dropdown-toggle");
+            let isInsideDropdown = false;
 
+            // Check if the click happened inside a dropdown or on its toggle
+            dropdowns.forEach((dropdown) => {
+                if (dropdown.contains(event.target)) {
+                    isInsideDropdown = true;
+                }
+            });
 
-        // Close the dropdown if the user clicks outside of it
-        window.onclick = function(event) {
-            if (!event.target.matches('.dropdown-toggle')) {
-                const dropdowns = document.getElementsByClassName("dropdown-menu");
-                for (let i = 0; i < dropdowns.length; i++) {
-                    const openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
+            toggles.forEach((toggle) => {
+                if (toggle.contains(event.target)) {
+                    isInsideDropdown = true;
+                }
+            });
+
+            // Close all dropdowns if the click is outside
+            if (!isInsideDropdown) {
+                dropdowns.forEach((dropdown) => {
+                    dropdown.classList.remove("show");
+                });
+                currentOpenDropdown = null;
+            }
+        });
+
+        // Close the dropdown when "Okay" button is clicked
+        function closeDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+
+            if (dropdown) {
+                dropdown.classList.remove('show');
+                if (currentOpenDropdown === dropdown) {
+                    currentOpenDropdown = null;
                 }
             }
         }
+
 
 
         function openModal() {
@@ -2099,8 +2546,8 @@ function removeFile(fileItem) {
 
 
 
-        function updateGradesInEditModal(selectedGrades = []) {
-            const selectAllDepartmentsCheckbox = document.getElementById('selectAllDepartments');
+        function updateGradesInEditModal(selectedGradeIDs = []) {
+            const selectAllDepartmentsCheckbox = document.getElementById('EditselectAllDepartments');
             let selectedDepartments;
 
             // Determine which departments to include based on "Select All" checkbox
@@ -2118,7 +2565,7 @@ function removeFile(fileItem) {
 
             if (selectedDepartments) {
                 // Fetch grades based on selected departments
-                fetch('', { 
+                fetch('', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ department_ids: selectedDepartments })
@@ -2130,26 +2577,37 @@ function removeFile(fileItem) {
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Fetched Grades:', data);
                     updategradesContainer.innerHTML = ''; // Clear existing grades
-                    if (data.length > 0) {
-                        data.forEach(grade => {
-                            const isChecked = selectedGrades.includes(grade.Title) ? 'checked' : ''; // Check if this grade is selected
-                            const checkbox = document.createElement('div');
-                            checkbox.className = 'checkbox-container';
-                            checkbox.innerHTML = `
-                                <input type="checkbox" name="grade[]" value="${grade.ContentID}" ${isChecked} 
-                                style="outline: none !important; box-shadow: none !important;">
-                                <label style="font-weight: bold;">${grade.Title} - ${grade.Captions}</label>`;
-                            updategradesContainer.appendChild(checkbox);
-                        });
 
-                        const selectAllGradesCheckbox = document.getElementById('selectAllGrades');
-                        if (!selectAllGradesCheckbox) {
-                            const selectAllLabel = document.createElement('label');
-                            selectAllLabel.innerHTML = `
-                                <input type="checkbox" id="selectAllGrades" onclick="selectAll('updategradesContainer', 'grade[]')"> All Grades`;
-                            updategradesContainer.insertBefore(selectAllLabel, updategradesContainer.firstChild);
-                        }
+                    if (Object.keys(data).length > 0) {
+                        // Iterate through each department and its grades
+                        Object.entries(data).forEach(([deptName, grades]) => {
+                            // Create a container for the department
+                            const deptContainer = document.createElement('div');
+                            deptContainer.className = 'department-container';
+
+                            // Add a label for the department
+                            const deptLabel = document.createElement('h3');
+                            deptLabel.className = 'department-label';
+                            deptLabel.textContent = deptName;
+                            deptContainer.appendChild(deptLabel);
+
+                            // Add checkboxes for each grade in the department
+                            grades.forEach(grade => {
+                                const isChecked = selectedGradeIDs.includes(grade.ContentID.toString()) ? 'checked' : '';
+                                const checkbox = document.createElement('div');
+                                checkbox.className = 'checkbox-container';
+                                checkbox.innerHTML = `
+                                    <input type="checkbox" name="grade[]" value="${grade.ContentID}" ${isChecked} 
+                                    style="outline: none !important; box-shadow: none !important;">
+                                    <label>${grade.Title} - ${grade.Captions}</label>`;
+                                deptContainer.appendChild(checkbox);
+                            });
+
+                            // Append the department container to the grades container
+                            updategradesContainer.appendChild(deptContainer);
+                        });
                     } else {
                         updategradesContainer.innerHTML = '<p>No grades available for the selected departments.</p>';
                     }
@@ -2162,6 +2620,8 @@ function removeFile(fileItem) {
                 updategradesContainer.innerHTML = '<p>No grades available. Please select a department.</p>';
             }
         }
+
+
 
 
         function updateconfirmSchedule() {
@@ -2220,33 +2680,45 @@ function removeFile(fileItem) {
         }
 
 
-        function editTask(taskID, title, content, deptName, gradeTitles, dueDate) {
-    document.getElementById('update_task_id').value = taskID;
-    document.getElementById('update_title').value = title;
+        function editTask(taskID, title, content, deptIDs, gradeID, dueDate, dueTime) {
+            console.log('Task ID:', taskID);
+            console.log('Title:', title);
+            console.log('Content:', content);
+            console.log('Department IDs:', deptIDs);
+            console.log('Grade ID:', gradeID); 
+            console.log('Due Date:', dueDate);
+            console.log('Due Time:', dueTime);
 
-    // Strip HTML tags and newline characters from the content
-    const sanitizedContent = content.replace(/<[^>]*>/g, '').replace(/\n/g, ''); // Remove all HTML tags and newlines
-    document.getElementById('update_instructions').value = sanitizedContent;
+            // Set the task ID, title, and instructions
+            document.getElementById('update_task_id').value = taskID;
+            document.getElementById('update_title').value = title;
 
-    // Set the due date and time
-    const dueDateObj = new Date(dueDate);
-    document.getElementById('update_due_date').value = dueDateObj.toISOString().split('T')[0]; // Format to YYYY-MM-DD
-    document.getElementById('update_due_time').value = dueDateObj.toTimeString().split(' ')[0]; // Format to HH:mm:ss
+            // Strip HTML tags and newline characters from the content
+            const sanitizedContent = content.replace(/<[^>]*>/g, '').replace(/\n/g, ''); // Remove all HTML tags and newlines
+            document.getElementById('update_instructions').value = sanitizedContent;
 
-    // Set selected department and update grades
-    const departmentSelect = document.querySelectorAll('input[name="department[]"]');
-    departmentSelect.forEach(option => {
-        option.checked = false; // Clear previous selections
-        if (option.nextElementSibling.innerText.trim() === deptName) {
-            option.checked = true; // Check this department
+            // Set the due date and time
+            document.getElementById('update_due_date').value = dueDate; // Format to YYYY-MM-DD
+            document.getElementById('update_due_time').value = dueTime; // Format to HH:mm:ss
+
+            // Set the selected departments
+            const departmentCheckboxes = document.querySelectorAll('#updatedepartmentDropdown input[name="department[]"]');
+            const deptIDArray = deptIDs.split(','); // Split comma-separated string into an array
+
+            departmentCheckboxes.forEach(checkbox => {
+                if (deptIDArray.includes(checkbox.value)) { // Check if the checkbox value is in the deptIDArray
+                    checkbox.checked = true; // Check the matching department
+                } else {
+                    checkbox.checked = false; // Uncheck other departments
+                }
+            });
+
+            // Trigger the updateGradesInEditModal function with the selected grade ID
+            updateGradesInEditModal([gradeID]); // Pass the grade ID as an array
+
+            // Show the edit modal
+            document.getElementById('editModal').style.display = 'block';
         }
-    });
-
-    // Pass the selected grades to the function
-    updateGradesInEditModal(gradeTitles);
-
-    document.getElementById('editModal').style.display = 'block'; // Show the edit modal
-}
 
 
 
@@ -2272,13 +2744,27 @@ function removeFile(fileItem) {
             // Set the action type
             document.getElementById('actionType').value = actionType;
 
+            // Get selected departments and grades
+            const selectedDepartments = Array.from(document.querySelectorAll('#updatedepartmentDropdown input[name="department[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            const selectedGrades = Array.from(document.querySelectorAll('#updategradeDropdown input[name="grade[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            // Create a FormData object and append all necessary data
+            const formData = new FormData(form);
+            formData.append('selectedDepartments', selectedDepartments);
+            formData.append('selectedGrades', selectedGrades);
+
             // Handle form submission based on the action (Assign, Draft, Schedule)
             if (actionType === 'Assign') {
                 form.action = 'update_task.php';
-                updateTask(); // Submit the form for Assign
+                updateTask(formData); // Submit the form for Assign
             } else if (actionType === 'Draft') {
                 form.action = 'update_task.php';
-                updateTask_Draft(); // Submit the form for Draft
+                updateTask_Draft(formData); // Submit the form for Draft
             } else if (actionType === 'Schedule') {
                 // Open the schedule modal for scheduling
                 openUpdateScheduleModal();
@@ -2485,19 +2971,34 @@ function removeFile(fileItem) {
             searchBar.style.display = searchBar.style.display === 'none' || searchBar.style.display === '' ? 'block' : 'none';
         }
 
-        document.getElementById('searchInput').addEventListener('input', function() {
-            var searchValue = this.value.trim().toLowerCase();
-            var rows = document.querySelectorAll('#taskTableBody tr');
+        document.getElementById('searchInput').addEventListener('input', function () {
+            var searchValue = this.value.trim().toLowerCase(); // Get the search term and convert to lowercase
+            var rows = document.querySelectorAll('#taskTableBody tr'); // Get all table rows
 
-            rows.forEach(function(row) {
-                var title = row.getElementsByTagName('td')[0]; // Assuming title is the first column
-                if (title) {
-                    var textValue = title.textContent || title.innerText;
-                    if (textValue.toLowerCase().indexOf(searchValue) > -1) {
-                        row.style.display = ''; // Show row if the search term matches
-                    } else {
-                        row.style.display = 'none'; // Hide row if no match
-                    }
+            rows.forEach(function (row) {
+                var title = row.getElementsByTagName('td')[0]; // Title column
+                var content = row.getElementsByTagName('td')[1]; // Content column
+                var department = row.getElementsByTagName('td')[2]; // Department column
+                var grade = row.getElementsByTagName('td')[3]; // Grade column
+                var dueDate = row.getElementsByTagName('td')[4]; // Due Date column
+                var dueTime = row.getElementsByTagName('td')[5]; // Due Time column
+                var status = row.getElementsByTagName('td')[6]; // Due Time column
+
+                // Check if any of the columns contain the search term
+                var match =
+                    (title && (title.textContent || title.innerText).toLowerCase().includes(searchValue)) ||
+                    (content && (content.textContent || content.innerText).toLowerCase().includes(searchValue)) ||
+                    (department && (department.textContent || department.innerText).toLowerCase().includes(searchValue)) ||
+                    (grade && (grade.textContent || grade.innerText).toLowerCase().includes(searchValue)) ||
+                    (dueDate && (dueDate.textContent || dueDate.innerText).toLowerCase().includes(searchValue)) ||
+                    (dueTime && (dueTime.textContent || dueTime.innerText).toLowerCase().includes(searchValue)) ||
+                    (status && (status.textContent || status.innerText).toLowerCase().includes(searchValue));
+
+                // Show or hide the row based on the match
+                if (match) {
+                    row.style.display = ''; // Show the row
+                } else {
+                    row.style.display = 'none'; // Hide the row
                 }
             });
         });
@@ -2554,27 +3055,6 @@ function removeFile(fileItem) {
         document.getElementById(dropdownId).classList.toggle("show");
     }
 
-    
-    function setTitle(title, taskID) {
-        document.getElementById('title').value = title;
-        // Store the TaskID in a hidden input if needed
-        var taskIDInput = document.createElement('input');
-        taskIDInput.type = 'hidden';
-        taskIDInput.name = 'taskID';
-        taskIDInput.value = taskID;
-        document.getElementById('titleDropdown').appendChild(taskIDInput);
-
-        // Close the dropdown after setting the title
-        var dropdowns = document.getElementsByClassName("title-dropdown-menu");
-        for (var i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            if (openDropdown.classList.contains('show')) {
-                openDropdown.classList.remove('show');
-            }
-        }
-    }
-
-
     window.onclick = function(event) {
         if (!event.target.closest('.title-dropdown-container')) {
             var dropdowns = document.getElementsByClassName("title-dropdown-menu");
@@ -2586,10 +3066,91 @@ function removeFile(fileItem) {
             }
         }
     }
-
-
-
     </script>
+
+    <script>
+        // Global variables to store task data
+        let currentTaskId = null;
+        let currentContentId = null;
+
+        // Function to open task view modal
+        function viewTask(taskId, title, content, department, gradeSection, dueDate, dueTime, status, contentId = '') {
+            
+            // Store the IDs for the view button
+            currentTaskId = taskId;
+            currentContentId = contentId || '';
+            
+            // Format the date and time if needed
+            const formattedDate = new Date(dueDate).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const formattedTime = new Date(`1970-01-01T${dueTime}`).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Populate the modal with task details
+            document.getElementById('taskViewTitle').textContent = title;
+            document.getElementById('taskViewContent').innerHTML = content;
+            document.getElementById('taskViewDepartment').textContent = department;
+            document.getElementById('taskViewGradeSection').textContent = gradeSection;
+            document.getElementById('taskViewDueDate').textContent = `${formattedDate} at ${formattedTime}`;
+            document.getElementById('taskViewStatus').textContent = status;
+            document.getElementById('taskViewStatus').style.color = 
+                status === 'Assign' ? 'green' : (status === 'Schedule' ? 'blue' : 'grey');
+
+            // Show the modal
+            document.getElementById('taskViewModal').style.display = 'block';
+
+            // Enable/disable view button based on contentId
+            const viewBtn = document.getElementById('viewFullTaskBtn');
+            viewBtn.onclick = function() {
+                viewFullTask();
+            };
+        }
+
+        function viewFullTask() {
+            if (!currentTaskId) return;
+            
+            // Construct URL with parameters
+            let url = `taskdetails.php?task_id=${encodeURIComponent(currentTaskId)}`;
+            
+            // Only add content_id if it exists
+            if (currentContentId) {
+                url += `&content_id=${encodeURIComponent(currentContentId)}`;
+            }
+            
+            // Navigate to the task details page
+            window.location.href = url;
+        }
+
+        // Close modal function
+        function closeViewModal() {
+            currentTaskId = null;
+            currentContentId = null;
+            document.getElementById('taskViewModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskViewModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
+    <script>
+        // Prevent row click when clicking action buttons
+        document.querySelectorAll('.button-group button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+    </script>
+    
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="assets/js/script.js"></script>

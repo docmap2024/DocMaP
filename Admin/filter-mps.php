@@ -16,15 +16,15 @@ $instructor = isset($_POST['instructor']) ? $_POST['instructor'] : ''; // Get in
 // Build the base query
 $queryMPS = "SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_Name, 
                     CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
-                    m.TotalNumOfStudents, m.TotalNumTested, m.HighestScore, 
-                    m.LowestScore, m.MPS,sy.Year_Range AS SY,
+                    m.TotalNumOfStudents, m.TotalNumTested,
+                    m.MPS,sy.Year_Range AS SY,
                     CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
              FROM mps m
              INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
              INNER JOIN feedcontent fc ON m.ContentID = fc.ContentID
              INNER JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
              INNER JOIN useracc ua ON m.UserID = ua.UserID
-             ";
+             WHERE 1=1"; // Start with a true condition to allow ANDs
 
 // Apply filters
 if (!empty($school_year)) {
@@ -34,7 +34,16 @@ if (!empty($quarter)) {
     $queryMPS .= " AND q.Quarter_ID = '$quarter'";
 }
 if (!empty($grade_level)) {
-    $queryMPS .= " AND m.ContentID = '$grade_level'";
+    // Get Title and Captions from the selected ContentID
+    $gradeInfoQuery = "SELECT Title, Captions FROM feedcontent WHERE ContentID = '$grade_level'";
+    $gradeInfoResult = mysqli_query($conn, $gradeInfoQuery);
+    $gradeInfo = mysqli_fetch_assoc($gradeInfoResult);
+    
+    if ($gradeInfo) {
+        $title = $gradeInfo['Title'];
+        $captions = $gradeInfo['Captions'];
+        $queryMPS .= " AND fc.Title = '$title' AND fc.Captions = '$captions'";
+    }
 }
 if (!empty($instructor)) {
     $queryMPS .= " AND m.UserID = '$instructor'"; // Assuming UserID refers to the instructor

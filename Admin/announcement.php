@@ -10,20 +10,26 @@ if (isset($_POST['department_ids'])) {
     $department_ids = explode(',', $_POST['department_ids']); // Convert comma-separated string to array
 
     if (!empty($department_ids)) {
-        // Fetch data for the selected departments
         $placeholders = implode(',', array_fill(0, count($department_ids), '?'));
-        $sql = "SELECT DISTINCT ContentID, Title, LEFT(Captions, 50) AS Captions FROM feedcontent WHERE dept_ID IN ($placeholders)";
+        $sql = "SELECT d.dept_name, fc.ContentID, fc.Title, LEFT(fc.Captions, 50) AS Captions 
+                FROM feedcontent fc
+                INNER JOIN department d ON fc.dept_ID = d.dept_ID
+                WHERE fc.dept_ID IN ($placeholders)";
         $stmt = $conn->prepare($sql);
         $types = str_repeat('i', count($department_ids));
         $stmt->bind_param($types, ...$department_ids);
         $stmt->execute();
         $result = $stmt->get_result();
-
+    
         $grades = array();
         while ($row = $result->fetch_assoc()) {
-            $grades[] = $row;
+            $dept_name = $row['dept_name'];
+            if (!isset($grades[$dept_name])) {
+                $grades[$dept_name] = array();
+            }
+            $grades[$dept_name][] = $row;
         }
-
+    
         // Return JSON response
         echo json_encode($grades);
     } else {
@@ -32,16 +38,20 @@ if (isset($_POST['department_ids'])) {
     exit;
 }
 
-// SQL query to fetch departments
-$sql = "SELECT dept_ID, dept_name FROM department";
+//Fetch departments for checkboxes
+$sql = "SELECT dept_ID, dept_name, dept_type FROM department";
 $result = $conn->query($sql);
-
-// Prepare response
 $departments = array();
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $departments[] = $row;
     }
+}
+
+// Group departments by type
+$groupedDepartments = [];
+foreach ($departments as $dept) {
+    $groupedDepartments[$dept['dept_type']][] = $dept;
 }
 
 // Set the number of rows per page
@@ -55,24 +65,44 @@ $offset = ($page - 1) * $rows_per_page;
 
 
 // Fetch tasks for display, ordered by timestamp (newest first)
-$sql = "SELECT t.TaskID AS TaskID, t.Title AS TaskTitle, t.taskContent,t.Status, t.DueDate, t.DueTime, d.dept_name, fc.Title AS ContentTitle, fc.Captions
-        FROM tasks t
-        LEFT JOIN feedcontent fc ON t.ContentID = fc.ContentID
-        LEFT JOIN department d ON fc.dept_ID = d.dept_ID
-        WHERE t.Type = 'Announcement'
-        ORDER BY t.TimeStamp DESC  
-        LIMIT $rows_per_page OFFSET $offset";
+$sql = "
+    SELECT 
+        t.TaskID AS TaskID, 
+        t.Title AS TaskTitle, 
+        t.Status, 
+        t.taskContent,  
+        COALESCE(
+            GROUP_CONCAT(DISTINCT d.dept_name SEPARATOR ', '), 
+            GROUP_CONCAT(DISTINCT d2.dept_name SEPARATOR ', ')
+        ) AS DepartmentNames, 
+        fc.Title AS ContentTitle, 
+        fc.Captions, 
+        fc.ContentID,
+        COALESCE(
+            GROUP_CONCAT(DISTINCT d.dept_ID SEPARATOR ', '), 
+            GROUP_CONCAT(DISTINCT d2.dept_ID SEPARATOR ', ')
+        ) AS dept_IDs  -- Fetch dept_IDs from both d and d2
+    FROM tasks t
+    LEFT JOIN feedcontent fc ON t.ContentID = fc.ContentID
+    LEFT JOIN task_department td ON t.TaskID = td.TaskID
+    LEFT JOIN department d ON td.dept_ID = d.dept_ID
+    LEFT JOIN department d2 ON fc.dept_ID = d2.dept_ID
+    WHERE t.Type = 'Announcement' AND t.ApprovalStatus = 'Approved'
+    GROUP BY t.TaskID, t.Title, t.Status, t.taskContent, fc.Title, fc.Captions, fc.ContentID
+    ORDER BY t.TimeStamp DESC
+    LIMIT $rows_per_page OFFSET $offset";
+
 $result = $conn->query($sql);
 $announcements = array();
+
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $announcements[] = $row;
     }
 }
 
-
 // Query to get the total number of tasks for pagination calculation
-$sql_total = "SELECT COUNT(*) as total FROM tasks WHERE Type = 'Reminder'";
+$sql_total = "SELECT COUNT(*) as total FROM tasks WHERE Type = 'Announcement'";
 $result_total = $conn->query($sql_total);
 $total_announcements = $result_total->fetch_assoc()['total'];
 $total_pages = ceil($total_announcements / $rows_per_page);
@@ -115,7 +145,7 @@ if (isset($_POST['task_id'])) {
 
 
     <style>
-body {
+        body {
             font-family: Arial, sans-serif;
             background-color: ;
             overflow: hidden;
@@ -1067,6 +1097,204 @@ body {
         .hidden {
             display: none;
         }
+
+        .department-container {
+            margin-bottom: 20px;
+        }
+
+        .department-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        /* Style for department groups */
+        .department-group {
+            margin-bottom: 15px;
+        }
+
+        .department-group-title {
+            font-weight: bold;
+            color:rgb(17, 16, 16);
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .dropdown-okay-button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+
+        .dropdown-okay-button:hover {
+            background-color: #45a049;
+        }
+
+        /* Announcement View Modal - Specific Styles */
+        #announcementViewModal {
+            display: none;
+            position: fixed;
+            z-index: 1050; /* Higher than your existing modal */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        #announcementViewModal .announcement-modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 25px;
+            border: none;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: announcementModalFadeIn 0.3s;
+        }
+
+        @keyframes announcementModalFadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        #announcementViewModal .announcement-modal-close {
+            color: #6c757d;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: -10px;
+            margin-right: -10px;
+        }
+
+        #announcementViewModal .announcement-modal-close:hover,
+        #announcementViewModal .announcement-modal-close:focus {
+            color:rgb(0, 0, 0);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Announcement View Header */
+        #announcementViewModal .announcement-view-header {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        #announcementViewModal #announcementViewTitle {
+            margin: 0;
+            color:rgb(0, 0, 0);
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Task Meta Information */
+        #announcementViewModal .announcement-meta-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #announcementViewModal .announcement-meta-item {
+            margin-bottom: 5px;
+        }
+
+        #announcementViewModal .announcement-meta-label {
+            display: block;
+            font-size: 13px;
+            color:rgb(0, 0, 0);
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+
+        #announcementViewModal .announcement-meta-value {
+            font-size: 15px;
+            color: #343a40;
+            font-weight: 500;
+        }
+
+        #announcementViewModal #announcementViewStatus {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Announcement Content Area */
+        #announcementkViewModal .announcement-content-area {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        #announcementViewModal .announcement-content-area h3 {
+            margin-top: 0;
+            color:rgb(0, 0, 0);
+            font-size: 18px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        #announcementViewModal #announcementViewContent {
+            line-height: 1.6;
+            color: #495057;
+        }
+
+        #announcementViewModal #announcementViewContent p {
+            margin-bottom: 15px;
+        }
+
+        #announcementViewModal #announcementViewContent img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        /* View Full Announcement Button Styles */
+        .announcement-view-footer {
+            margin-top: 20px;
+            text-align: right;
+            border-top: 1px solid #e9ecef;
+            padding-top: 15px;
+        }
+
+        .buttonViewFullAnnouncement {
+            background-color: #4a6fdc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .buttonViewFullAnnouncement:hover {
+            background-color: #3a5bc7;
+        }
+
+        .buttonViewFullAnnouncement i {
+            margin-right: 5px;
+        }
         
     </style>
 </head>
@@ -1115,31 +1343,54 @@ body {
                         </tr>
                     </thead>
                     <tbody id="announcementTable">
-                        <?php foreach ($announcements as $announcement): ?>
+                        <?php if (empty($announcements)): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($announcement['TaskTitle']); ?></td>
-                                <td><p><?php echo $announcement['taskContent']; // Direct output to render HTML content ?></p></td>
-                                <td><?php echo htmlspecialchars($announcement['dept_name']); ?></td>
-                                <td><?php echo htmlspecialchars($announcement['ContentTitle'] . ' - ' . $announcement['Captions']); ?></td>
-                                <td style="font-weight:bold; color: <?php echo $announcement['Status'] == 'Assign' ? 'green' : ($announcement['Status'] == 'Schedule' ? 'blue' : 'grey'); ?>;">
-                                    <?php echo htmlspecialchars($announcement['Status']); ?>
-                                </td>
-                                <td>
-                                    <div class="button-group">
-                                        <button class="buttonEdit" 
-                                            onclick="editAnnouncement(
-                                                '<?php echo $announcement['TaskID']; ?>', 
-                                                '<?php echo htmlspecialchars(addslashes($announcement['TaskTitle']), ENT_QUOTES); ?>', 
-                                                '<?php echo addslashes($announcement['taskContent']);  ?>',
-                                                '<?php echo htmlspecialchars(addslashes($announcement['dept_name']), ENT_QUOTES); ?>',
-                                                '<?php echo htmlspecialchars(addslashes($announcement['ContentTitle'] . ' - ' . $announcement['Captions']), ENT_QUOTES); ?>',
-                                            )"><i class="fas fa-edit"></i></button>
-                                        <button class="buttonDelete" onclick="deleteAnnouncement('<?php echo $announcement['TaskID']; ?>')"><i class="fas fa-trash-alt"></i></button>
-                                    </div>
-
-                                </td>
+                                <td colspan="8" class="text-center py-3">No announcemnets available</td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($announcements as $announcement): ?>
+                                <?php
+                                // Debugging: Check if ContentID exists
+                                if (!isset($announcement['ContentID'])) {
+                                    $announcement['ContentID'] = ''; // Set a default value if not defined
+                                }
+                                ?>
+                                <tr onclick="viewAnnouncement(
+                                    '<?php echo $announcement['TaskID']; ?>',
+                                    '<?php echo htmlspecialchars(addslashes($announcement['TaskTitle']), ENT_QUOTES); ?>',
+                                    '<?php echo addslashes($announcement['taskContent']); ?>',
+                                    '<?php echo htmlspecialchars(addslashes($announcement['DepartmentNames']), ENT_QUOTES); ?>',
+                                    '<?php echo htmlspecialchars(addslashes($announcement['ContentTitle'] . ' - ' . $announcement['Captions']), ENT_QUOTES); ?>',
+                                    '<?php echo $announcement['Status']; ?>',
+                                    '<?php echo isset($announcement['ContentID']) ? $announcement['ContentID'] : ''; ?>'
+                                )" style="cursor: pointer;">
+                                    <td><?php echo htmlspecialchars($announcement['TaskTitle']); ?></td>
+                                    <td><p><?php echo $announcement['taskContent']; ?></p></td>
+                                    <td><?php echo htmlspecialchars($announcement['DepartmentNames']); ?></td>
+                                    <td><?php echo htmlspecialchars($announcement['ContentTitle'] . ' - ' . $announcement['Captions']); ?></td>
+                                    <td style="font-weight:bold; color: <?php echo $announcement['Status'] == 'Assign' ? 'green' : ($announcement['Status'] == 'Schedule' ? 'blue' : 'grey'); ?>;">
+                                        <?php echo htmlspecialchars($announcement['Status']); ?>
+                                    </td>
+                                    <td>
+                                        <div class="button-group">
+                                            <button class="buttonEdit" 
+                                                onclick="event.stopPropagation(); editAnnouncement(
+                                                    '<?php echo $announcement['TaskID']; ?>', 
+                                                    '<?php echo htmlspecialchars(addslashes($announcement['TaskTitle']), ENT_QUOTES); ?>', 
+                                                    '<?php echo addslashes($announcement['taskContent']); ?>',  <!-- Fixed variable name here -->
+                                                    '<?php echo $announcement['dept_IDs']; ?>',
+                                                    '<?php echo $announcement['ContentID']; ?>'
+                                                )">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="buttonDelete" onclick="event.stopPropagation(); deleteAnnouncement('<?php echo $announcement['TaskID']; ?>')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -1218,24 +1469,52 @@ body {
                                     <div class="form-section">
                                         <label for="department">Department:</label>
                                         <div class="form-group">
+                                            <!-- Hidden input to store selected department IDs -->
+                                            <input type="hidden" id="dept_ID" name="dept_ID" value="">
+
                                             <div class="dropdown">
                                                 <button class="dropdown-toggle" type="button" onclick="toggleDropdown('departmentDropdown')">Select Department</button>
                                                 <div id="departmentDropdown" class="dropdown-menu">
                                                     <div class="checkbox-all-container">
-                                                        <input type="checkbox" id="selectAllDepartments" class="custom-checkbox checkbox-all" onclick="selectAll('departmentDropdown', 'department[]')">
+                                                        <input type="checkbox" id="selectAllDepartments" class="custom-checkbox checkbox-all" onclick="selectAll('departmentDropdown', 'department[]')" checked>
                                                         <label for="selectAllDepartments">All</label>
                                                     </div>
-                                                    <?php foreach ($departments as $dept) : ?>
-                                                    <div class="checkbox-container">
-                                                        <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" onchange="updateGrades()">
-                                                        <label><?= $dept['dept_name'] ?></label>
+
+                                                    <!-- Academic Departments -->
+                                                    <div class="department-group">
+                                                        <h4 class="department-group-title">Academic Departments</h4>
+                                                        <?php if (!empty($groupedDepartments['Academic'])) : ?>
+                                                            <?php foreach ($groupedDepartments['Academic'] as $dept) : ?>
+                                                                <div class="checkbox-container">
+                                                                    <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" data-dept-type="Academic" onchange="updateGrades()" checked>
+                                                                    <label><?= $dept['dept_name'] ?></label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else : ?>
+                                                            <p>No academic departments found.</p>
+                                                        <?php endif; ?>
                                                     </div>
-                                                    <?php endforeach; ?>
+
+                                                    <!-- Administrative Departments -->
+                                                    <div class="department-group">
+                                                        <h4 class="department-group-title">Administrative Departments</h4>
+                                                        <?php if (!empty($groupedDepartments['Administrative'])) : ?>
+                                                            <?php foreach ($groupedDepartments['Administrative'] as $dept) : ?>
+                                                                <div class="checkbox-container">
+                                                                    <input type="checkbox" class="custom-checkbox" name="department[]" value="<?= $dept['dept_ID'] ?>" data-dept-type="Administrative" onchange="updateGrades()" checked>
+                                                                    <label><?= $dept['dept_name'] ?></label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php else : ?>
+                                                            <p>No administrative departments found.</p>
+                                                        <?php endif; ?>
+                                                    </div>
+
+                                                    <button type="button" class="dropdown-okay-button" onclick="closeDropdown('departmentDropdown')">Okay</button>
                                                 </div>
                                             </div>
-
-                                            
                                         </div>
+
                                         <!-- Grade with checkboxes -->
                                         <label for="grade">Grade:</label>
                                         <div class="form-group">
@@ -1243,16 +1522,18 @@ body {
                                                 <button class="dropdown-toggle" type="button" onclick="toggleDropdown('gradeDropdown')">Select Grade</button>
                                                 <div id="gradeDropdown" class="dropdown-menu">
                                                     <div class="checkbox-all-container">
-                                                        <input type="checkbox" class="custom-checkbox checkbox-all" id="selectAllGrades" onclick="selectAll('gradeDropdown', 'grade[]')">
+                                                        <input type="checkbox" class="custom-checkbox checkbox-all" id="selectAllGrades" onclick="selectAll('gradeDropdown', 'grade[]')" checked>
                                                         <label for="selectAllGrades">All</label>
                                                     </div>
                                                     <div id="gradesContainer">
                                                         <p>No grades available. Please select a department.</p>
                                                     </div>
+                                                    <button type="button" class="dropdown-okay-button" onclick="closeDropdown('gradeDropdown')">Okay</button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <label for="file">Attachment: <span style ="font-size:12px; color: grey;">(optional)</span></label>
+
+                                        <label for="file">Attachment: <span style ="font-size:12px; color: grey;">(Attachment is optional)</span></label>
                                         <div class="form-section attachment">
                                             <div class="form-group ">
                                                 <input type="file" id="file" name="file[]" multiple onchange="displaySelectedFiles(event)"style="background-color:transparent;">                                   
@@ -1315,10 +1596,10 @@ body {
                                                     <button class="dropdown-toggle" type="button" onclick="toggleDropdown('updatedepartmentDropdown')">Select Department</button>
                                                     <div id="updatedepartmentDropdown" class="dropdown-menu">
                                                         <div class="checkbox-all-container">
-                                                            <input type="checkbox" id="selectAllDepartments"  
+                                                            <input type="checkbox" id="EditselectAllDepartments"
                                                             class="custom-checkbox checkbox-all" 
                                                             onclick="selectAll('updatedepartmentDropdown', 'department[]')">
-                                                            <label for="selectAllDepartments">All</label>
+                                                            <label for="EditselectAllDepartments">All</label>
                                                         </div>
                                                         <?php foreach ($departments as $dept) : ?>
                                                         <div class="checkbox-container">
@@ -1330,6 +1611,7 @@ body {
                                                             <label><?= $dept['dept_name'] ?></label>
                                                         </div>
                                                         <?php endforeach; ?>
+                                                        <button type="button" class="dropdown-okay-button" onclick="closeDropdown('updatedepartmentDropdown')">Okay</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1344,11 +1626,12 @@ body {
                                                             <input type="checkbox"
                                                             class="custom-checkbox checkbox-all" name="update_grade[]" 
                                                             value="<?= $grade['grade_ID'] ?>" onchange="updateGradesInEditModal()">
-                                                            <label for="selectAllGrades">All</label>
+                                                            <label for="EditselectAllGrades">All</label>
                                                         </div>
                                                         <div id="updategradesContainer">
                                                             <p>No grades available. Please select a department.</p>
                                                         </div>
+                                                        <button type="button" class="dropdown-okay-button" onclick="closeDropdown('updategradeDropdown')">Okay</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1394,6 +1677,43 @@ body {
                     <div class="button-container">
                         <span class="cancel" onclick="closeUpdateScheduleModal()">Cancel</span>
                         <button type="button" class="confirm-button" onclick="updateconfirmSchedule()">Confirm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Announcement View Modal -->
+            <div id="announcementViewModal" class="modal">
+                <div class="announcement-modal-content">
+                    <span class="announcement-modal-close" onclick="closeViewModal()">&times;</span>
+                    
+                    <div class="announcement-view-header">
+                        <h2 id="announcementViewTitle"></h2>
+                    </div>
+                    
+                    <div class="announcement-meta-container">
+                        <div class="announcement-meta-item">
+                            <span class="announcement-meta-label">Status</span>
+                            <span id="announcementViewStatus" class="announcement-meta-value"></span>
+                        </div>
+                        <div class="announcement-meta-item">
+                            <span class="announcement-meta-label">Department</span>
+                            <span id="announcementViewDepartment" class="announcement-meta-value"></span>
+                        </div>
+                        <div class="announcement-meta-item">
+                            <span class="announcement-meta-label">Grade/Section</span>
+                            <span id="announcementViewGradeSection" class="announcement-meta-value"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="announcement-content-area">
+                        <h3>Announcement Details</h3>
+                        <div id="announcementViewContent" class="announcement-view-content"></div>
+                    </div>
+
+                    <div class="announcement-view-footer">
+                        <button id="viewFullAnnouncementBtn" class="buttonViewFullAnnouncement">
+                            <i class="fas fa-external-link-alt"></i> View Full Announcement
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1482,6 +1802,17 @@ body {
             // Close the dropdown after selection
             toggleDropdown('submitDropdown');
 
+            // Get the selected department IDs
+            const selectedDepartments = Array.from(document.querySelectorAll('input[name="department[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            // Set the dept_ID value in the hidden input
+            document.getElementById('dept_ID').value = selectedDepartments;
+
+            // Log the selected department IDs for debugging
+            console.log("Selected Department IDs:", selectedDepartments);
+
             // Check if the action is assign, draft, or schedule
             if (action === 'Assign') {
                 // Submit the form via AJAX
@@ -1548,26 +1879,49 @@ body {
         }
 
 
-        // Function to select/deselect all checkboxes and trigger updateGrades
+        // Function to select/deselect all checkboxes and update the hidden input
         function selectAll(containerId, checkboxName) {
             const container = document.getElementById(containerId);
             const checkboxes = container.querySelectorAll(`input[name="${checkboxName}"]`);
             const selectAllCheckbox = container.querySelector('.checkbox-all');
 
+            // Toggle all checkboxes
             checkboxes.forEach(checkbox => {
                 checkbox.checked = selectAllCheckbox.checked;
             });
 
+            // Update the hidden input with selected department IDs
+            updateDeptIDInput();
+
+            // If department checkboxes are being updated, trigger updateGrades
             if (checkboxName === 'department[]') {
                 updateGrades();
             }
         }
 
+        // Function to update the hidden input with selected department IDs
+        function updateDeptIDInput() {
+            const selectedDepartments = Array.from(document.querySelectorAll('input[name="department[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            // Set the value of the hidden input
+            document.getElementById('dept_ID').value = selectedDepartments;
+
+            // Log the selected department IDs for debugging
+            console.log("Selected Department IDs:", selectedDepartments);
+        }
+
         // Function to fetch and update available grades based on selected departments
         function updateGrades() {
+
+            // Update the hidden input with selected department IDs
+            updateDeptIDInput();
+
             const selectAllDepartmentsCheckbox = document.getElementById('selectAllDepartments');
             let selectedDepartments;
 
+            // If "All" department is selected, set it to select all departments
             if (selectAllDepartmentsCheckbox && selectAllDepartmentsCheckbox.checked) {
                 selectedDepartments = Array.from(document.querySelectorAll('input[name="department[]"]'))
                     .map(input => input.value)
@@ -1596,15 +1950,30 @@ body {
                     return response.json();
                 })
                 .then(data => {
-                    gradesContainer.innerHTML = ''; // Clear existing grades
+                    gradesContainer.innerHTML = '';  // Clear existing grades
 
-                    if (data.length > 0) {
-                        data.forEach(grade => {
-                            const checkbox = document.createElement('label');
-                            checkbox.className = 'checkbox-container';
-                            checkbox.innerHTML = `<input type="checkbox" class="custom-checkbox" name="grade[]" value="${grade.ContentID}">
-                                                ${grade.Title} - ${grade.Captions}`;
-                            gradesContainer.appendChild(checkbox);
+                    // If grades are available, display them
+                    if (Object.keys(data).length > 0) {
+                        Object.entries(data).forEach(([deptName, grades]) => {
+                            const deptContainer = document.createElement('div');
+                            deptContainer.className = 'department-container';
+
+                            const deptLabel = document.createElement('h3');
+                            deptLabel.className = 'department-label';
+                            deptLabel.textContent = deptName;
+                            deptContainer.appendChild(deptLabel);
+
+                            grades.forEach(grade => {
+                                const checkbox = document.createElement('div');
+                                checkbox.className = 'checkbox-container'; 
+                                checkbox.innerHTML = `
+                                    <input type="checkbox" class="custom-checkbox" name="grade[]" value="${grade.ContentID}" checked>
+                                    <label class="grade-title">${grade.Title} - ${grade.Captions}</label>
+                                `;
+                                deptContainer.appendChild(checkbox);
+                            });
+
+                            gradesContainer.appendChild(deptContainer);
                         });
                     } else {
                         gradesContainer.innerHTML = '<p>No grades available for the selected departments.</p>';
@@ -1618,6 +1987,13 @@ body {
                 gradesContainer.innerHTML = '<p>No grades available. Please select a department.</p>';
             }
         }
+
+
+        // Automatically trigger the updateGrades function when the page loads
+        window.addEventListener('load', () => {
+            updateGrades();  // Populate grades based on the default selection
+        });
+
 
         function submitAnnouncementForm() {
             // Get form data
@@ -1766,25 +2142,65 @@ body {
 
 
 
+        /*--------------------------------------------Dropdown Function---------------------------*/
+
+        let currentOpenDropdown = null; // Track the currently open dropdown
+
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
+
+            // Close the currently open dropdown if it's not the clicked one
+            if (currentOpenDropdown && currentOpenDropdown !== dropdown) {
+                currentOpenDropdown.classList.remove('show');
+            }
+
+            // Toggle the clicked dropdown
             dropdown.classList.toggle('show');
+
+            // Update the current open dropdown
+            currentOpenDropdown = dropdown.classList.contains('show') ? dropdown : null;
         }
 
+        // Close the dropdown if the user clicks outside of the dropdown container
+        document.addEventListener("click", function (event) {
+            const dropdowns = document.querySelectorAll(".dropdown-menu");
+            const toggles = document.querySelectorAll(".dropdown-toggle");
+            let isInsideDropdown = false;
 
+            // Check if the click happened inside a dropdown or on its toggle
+            dropdowns.forEach((dropdown) => {
+                if (dropdown.contains(event.target)) {
+                    isInsideDropdown = true;
+                }
+            });
 
-        // Close the dropdown if the user clicks outside of it
-        window.onclick = function(event) {
-            if (!event.target.matches('.dropdown-toggle')) {
-                const dropdowns = document.getElementsByClassName("dropdown-menu");
-                for (let i = 0; i < dropdowns.length; i++) {
-                    const openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
+            toggles.forEach((toggle) => {
+                if (toggle.contains(event.target)) {
+                    isInsideDropdown = true;
+                }
+            });
+
+            // Close all dropdowns if the click is outside
+            if (!isInsideDropdown) {
+                dropdowns.forEach((dropdown) => {
+                    dropdown.classList.remove("show");
+                });
+                currentOpenDropdown = null;
+            }
+        });
+
+        // Close the dropdown when "Okay" button is clicked
+        function closeDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+
+            if (dropdown) {
+                dropdown.classList.remove('show');
+                if (currentOpenDropdown === dropdown) {
+                    currentOpenDropdown = null;
                 }
             }
         }
+        
 
 
         function openModal() {
@@ -1796,8 +2212,8 @@ body {
             document.getElementById('announcementModal').style.display = 'none';
         }
         
-        function updateGradesInEditModal(selectedGrades = []) {
-            const selectAllDepartmentsCheckbox = document.getElementById('selectAllDepartments');
+        function updateGradesInEditModal(selectedGradeIDs = []) {
+            const selectAllDepartmentsCheckbox = document.getElementById('EditselectAllDepartments');
             let selectedDepartments;
 
             // Determine which departments to include based on "Select All" checkbox
@@ -1815,7 +2231,7 @@ body {
 
             if (selectedDepartments) {
                 // Fetch grades based on selected departments
-                fetch('', { 
+                fetch('', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ department_ids: selectedDepartments })
@@ -1827,26 +2243,37 @@ body {
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Fetched Grades:', data);
                     updategradesContainer.innerHTML = ''; // Clear existing grades
-                    if (data.length > 0) {
-                        data.forEach(grade => {
-                            const isChecked = selectedGrades.includes(grade.Title) ? 'checked' : ''; // Check if this grade is selected
-                            const checkbox = document.createElement('div');
-                            checkbox.className = 'checkbox-container';
-                            checkbox.innerHTML = `
-                                <input type="checkbox" name="grade[]" value="${grade.ContentID}" ${isChecked} 
-                                style="outline: none !important; box-shadow: none !important;">
-                                <label style="font-weight: bold;">${grade.Title} - ${grade.Captions}</label>`;
-                            updategradesContainer.appendChild(checkbox);
-                        });
 
-                        const selectAllGradesCheckbox = document.getElementById('selectAllGrades');
-                        if (!selectAllGradesCheckbox) {
-                            const selectAllLabel = document.createElement('label');
-                            selectAllLabel.innerHTML = `
-                                <input type="checkbox" id="selectAllGrades" onclick="selectAll('updategradesContainer', 'grade[]')"> All Grades`;
-                            updategradesContainer.insertBefore(selectAllLabel, updategradesContainer.firstChild);
-                        }
+                    if (Object.keys(data).length > 0) {
+                        // Iterate through each department and its grades
+                        Object.entries(data).forEach(([deptName, grades]) => {
+                            // Create a container for the department
+                            const deptContainer = document.createElement('div');
+                            deptContainer.className = 'department-container';
+
+                            // Add a label for the department
+                            const deptLabel = document.createElement('h3');
+                            deptLabel.className = 'department-label';
+                            deptLabel.textContent = deptName;
+                            deptContainer.appendChild(deptLabel);
+
+                            // Add checkboxes for each grade in the department
+                            grades.forEach(grade => {
+                                const isChecked = selectedGradeIDs.includes(grade.ContentID.toString()) ? 'checked' : '';
+                                const checkbox = document.createElement('div');
+                                checkbox.className = 'checkbox-container';
+                                checkbox.innerHTML = `
+                                    <input type="checkbox" name="grade[]" value="${grade.ContentID}" ${isChecked} 
+                                    style="outline: none !important; box-shadow: none !important;">
+                                    <label>${grade.Title} - ${grade.Captions}</label>`;
+                                deptContainer.appendChild(checkbox);
+                            });
+
+                            // Append the department container to the grades container
+                            updategradesContainer.appendChild(deptContainer);
+                        });
                     } else {
                         updategradesContainer.innerHTML = '<p>No grades available for the selected departments.</p>';
                     }
@@ -1913,25 +2340,38 @@ body {
 
 
 
-        function editAnnouncement(taskID, title, content, deptName, gradeTitles) {
+        function editAnnouncement(taskID, title, content, deptIDs, gradeID) {
             document.getElementById('update_task_id').value = taskID;
             document.getElementById('update_title').value = title;
             document.getElementById('update_instructions').value = content;
 
-            // Set selected department and update grades
-            const departmentSelect = document.querySelectorAll('input[name="department[]"]');
-            departmentSelect.forEach(option => {
-                option.checked = false; // Clear previous selections
-                if (option.nextElementSibling.innerText === deptName) {
-                    option.checked = true; // Check this department
+
+            // Set the task ID, title, and instructions
+            document.getElementById('update_task_id').value = taskID;
+            document.getElementById('update_title').value = title;
+
+            // Strip HTML tags and newline characters from the content
+            const sanitizedContent = content.replace(/<[^>]*>/g, '').replace(/\n/g, ''); // Remove all HTML tags and newlines
+            document.getElementById('update_instructions').value = sanitizedContent;
+
+            // Set the selected departments
+            const departmentCheckboxes = document.querySelectorAll('#updatedepartmentDropdown input[name="department[]"]');
+            const deptIDArray = deptIDs.split(','); // Split comma-separated string into an array
+
+            departmentCheckboxes.forEach(checkbox => {
+                if (deptIDArray.includes(checkbox.value)) { // Check if the checkbox value is in the deptIDArray
+                    checkbox.checked = true; // Check the matching department
+                } else {
+                    checkbox.checked = false; // Uncheck other departments
                 }
             });
 
             // Pass the selected grades to the function
-            updateGradesInEditModal(gradeTitles);
+            updateGradesInEditModal([gradeID]);
 
             document.getElementById('editModal').style.display = 'block'; // Show the edit modal
         }
+
 
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
@@ -1942,9 +2382,32 @@ body {
         // Submit form based on selected action (Assign, Draft, or Schedule)
         function updatesubmitForm(actionType) {
             const form = document.getElementById('updateForm');
+            const title = document.getElementById('update_title').value;
+            const content = document.getElementById('update_instructions').value;
+            
+
+            // Validation check for required fields
+            if (!title || !content) {
+                alert("Please fill out all the required fields.");
+                return;
+            }
             
             // Set the value of the hidden actionType input
             document.getElementById('actionType').value = actionType;
+
+            // Get selected departments and grades
+            const selectedDepartments = Array.from(document.querySelectorAll('#updatedepartmentDropdown input[name="department[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            const selectedGrades = Array.from(document.querySelectorAll('#updategradeDropdown input[name="grade[]"]:checked'))
+                .map(input => input.value)
+                .join(',');
+
+            // Create a FormData object and append all necessary data
+            const formData = new FormData(form);
+            formData.append('selectedDepartments', selectedDepartments);
+            formData.append('selectedGrades', selectedGrades);
 
             // Set the form action based on the selection (Assign, Draft, or Schedule)
             if (actionType === 'Assign') {
@@ -1974,7 +2437,7 @@ body {
             const formData = new FormData(form);
 
             // Log the grades being sent
-            const grades = formData.getAll('grade[]');
+            const grades = formData.getAll('update_grade[]');
             console.log('Selected Grades:', grades); // Log selected grades to confirm
 
             // Log all form data for debugging
@@ -2027,7 +2490,7 @@ body {
             const formData = new FormData(form);
 
             // Log the grades being sent
-            const grades = formData.getAll('grade[]');
+            const grades = formData.getAll('update_grade[]');
             console.log('Selected Grades:', grades); // Log selected grades to confirm
 
             // Log all form data for debugging
@@ -2084,7 +2547,7 @@ body {
             });
 
             // Log the grades being sent
-            const grades = formData.getAll('grade[]');
+            const grades = formData.getAll('update_grade[]');
             console.log('Selected Grades:', grades); // Log selected grades to confirm
 
             // Log all form data for debugging
@@ -2186,16 +2649,60 @@ body {
         document.getElementById('searchInput').addEventListener('input', function() {
             var searchValue = this.value.trim().toLowerCase();
             var rows = document.querySelectorAll('#announcementTable tr');
-
+            
+            // Split the search query into parts (for column-specific searching)
+            var searchParts = searchValue.split(/\s+/);
+            
             rows.forEach(function(row) {
-                var title = row.getElementsByTagName('td')[0]; // Assuming title is the first column
-                if (title) {
-                    var textValue = title.textContent || title.innerText;
-                    if (textValue.toLowerCase().indexOf(searchValue) > -1) {
-                        row.style.display = ''; // Show row if the search term matches
-                    } else {
-                        row.style.display = 'none'; // Hide row if no match
+                var cells = row.getElementsByTagName('td');
+                if (cells.length > 0) {
+                    var shouldShow = true;
+                    
+                    // Check each search term against all columns
+                    for (var i = 0; i < searchParts.length; i++) {
+                        var termFound = false;
+                        var searchTerm = searchParts[i];
+                        
+                        // Skip empty terms
+                        if (searchTerm === '') continue;
+                        
+                        // Check each column (except the last Actions column)
+                        for (var j = 0; j < cells.length - 1; j++) {
+                            var cellText = (cells[j].textContent || cells[j].innerText).toLowerCase();
+                            if (cellText.includes(searchTerm)) {
+                                termFound = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!termFound) {
+                            shouldShow = false;
+                            break;
+                        }
                     }
+                    
+                    row.style.display = shouldShow ? '' : 'none';
+                }
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            var searchValue = this.value.trim().toLowerCase();
+            var rows = document.querySelectorAll('#announcementTable tr');
+            
+            rows.forEach(function(row) {
+                var cells = row.getElementsByTagName('td');
+                if (cells.length > 0) {
+                    // Check each column for a match
+                    var titleMatch = cells[0].textContent.toLowerCase().includes(searchValue);
+                    var contentMatch = cells[1].textContent.toLowerCase().includes(searchValue);
+                    var deptMatch = cells[2].textContent.toLowerCase().includes(searchValue);
+                    var gradeMatch = cells[3].textContent.toLowerCase().includes(searchValue);
+                    var statusMatch = cells[4].textContent.toLowerCase().includes(searchValue);
+                    
+                    // Show row if any column matches
+                    row.style.display = (titleMatch || contentMatch || deptMatch || gradeMatch || statusMatch) 
+                        ? '' : 'none';
                 }
             });
         });
@@ -2236,16 +2743,87 @@ body {
                 });
         }
 
-        /* JavaScript code for autoUpdateScheduledTasks function
+        //JavaScript code for autoUpdateScheduledTasks function
         window.addEventListener('load', function() {
             autoUpdateScheduledTasks();
-        });*/
+        });
         
         setInterval(autoUpdateScheduledTasks, 60000);
 
         // Optionally, trigger the check immediately when the script loads
         autoUpdateScheduledTasks();
 
+    </script>
+
+    <script>
+        // Global variables to store task data
+        let currentTaskId = null;
+        let currentContentId = null;
+
+        // Function to open task view modal
+        function viewAnnouncement(taskId, title, content, department, gradeSection, status, contentId = '') {
+            
+            // Store the IDs for the view button
+            currentTaskId = taskId;
+            currentContentId = contentId || '';
+
+            // Populate the modal with task details
+            document.getElementById('announcementViewTitle').textContent = title;
+            document.getElementById('announcementViewContent').innerHTML = content;
+            document.getElementById('announcementViewDepartment').textContent = department;
+            document.getElementById('announcementViewGradeSection').textContent = gradeSection;
+            document.getElementById('announcementViewStatus').textContent = status;
+            document.getElementById('announcementViewStatus').style.color = 
+                status === 'Assign' ? 'green' : (status === 'Schedule' ? 'blue' : 'grey');
+
+            // Show the modal
+            document.getElementById('announcementViewModal').style.display = 'block';
+
+            // Enable/disable view button based on contentId
+            const viewBtn = document.getElementById('viewFullAnnouncementBtn');
+            viewBtn.onclick = function() {
+                viewFullAnnouncement();
+            };
+        }
+
+        function viewFullAnnouncement() {
+            if (!currentTaskId) return;
+            
+            // Construct URL with parameters
+            let url = `taskdetails.php?task_id=${encodeURIComponent(currentTaskId)}`;
+            
+            // Only add content_id if it exists
+            if (currentContentId) {
+                url += `&content_id=${encodeURIComponent(currentContentId)}`;
+            }
+            
+            // Navigate to the task details page
+            window.location.href = url;
+        }
+
+        // Close modal function
+        function closeViewModal() {
+            currentTaskId = null;
+            currentContentId = null;
+            document.getElementById('announcementViewModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('announcementViewModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
+    <script>
+        // Prevent row click when clicking action buttons
+        document.querySelectorAll('.button-group button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>

@@ -16,7 +16,8 @@ $sql = "
         CONCAT(u.fname, ' ', IFNULL(u.mname, ''), '.',' ', u.lname) AS full_name,
         u.Profile
     FROM department d
-    LEFT JOIN useracc u ON d.dept_ID = u.dept_ID AND u.role = 'Department Head'";
+    LEFT JOIN useracc u ON d.dept_ID = u.dept_ID AND u.role = 'Department Head'
+    WHERE dept_type = 'Academic'";
 
 $result = $conn->query($sql);
 

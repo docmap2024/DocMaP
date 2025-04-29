@@ -5,27 +5,62 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Include your database connection file here
 include 'connection.php';
 
-// Get user_id from session
 $user_id = $_SESSION['user_id'];
 
-// Query to fetch contents from feedcontent table. Added a check for NULL ContentColor
-$sql = "SELECT fs.ContentID, fs.Title, fs.Captions, IFNULL(fs.ContentColor, '#9B2035') as ContentColor  -- Added IFNULL
+// Fetch contents assigned to the user
+$sql = "SELECT fs.ContentID, fs.Title, fs.Captions, IFNULL(fs.ContentColor, '#9B2035') as ContentColor, fs.dept_ID, d.dept_name as deptname
         FROM feedcontent fs
         INNER JOIN usercontent uc ON fs.ContentID = uc.ContentID
-        WHERE uc.UserID = $user_id AND Status=1";
-$result = mysqli_query($conn, $sql);
+        INNER JOIN department d ON fs.dept_ID = d.dept_ID
+        WHERE uc.UserID = $user_id AND uc.Status=1";
 
-// Check for errors in the query execution
+$result = mysqli_query($conn, $sql);
 if (!$result) {
     die("Query failed: " . mysqli_error($conn));
 }
 
-// Fetch all records from the result set
 $contents = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
+// Fetch tasks per ContentID with "Assigned" status only, sorted by nearest due date & time
+$task_query = "SELECT DISTINCT 
+                    ts.TaskID, 
+                    ts.Title AS TaskTitle, 
+                    ts.ContentID, 
+                    ts.DueDate, 
+                    ts.DueTime
+               FROM task_user tu
+               INNER JOIN tasks ts ON tu.TaskID = ts.TaskID
+               INNER JOIN usercontent uc ON ts.ContentID = uc.ContentID
+               WHERE tu.UserID = $user_id 
+               AND tu.Status = 'Assigned'  
+               AND uc.Status = 'Active'
+               AND ts.Type='Task'
+               ORDER BY ts.DueDate ASC, ts.DueTime ASC";  // Sorting by nearest due date/time
+ // Sorting by nearest due date/time
+
+$task_result = mysqli_query($conn, $task_query);
+if (!$task_result) {
+    die("Query failed: " . mysqli_error($conn));
+}
+
+// Store tasks by ContentID
+$tasks_by_content = [];
+while ($task_row = mysqli_fetch_assoc($task_result)) {
+    $contentID = $task_row['ContentID'];
+    $taskID = $task_row['TaskID'];
+    $taskTitle = $task_row['TaskTitle'];
+    $dueDate = date("M d, Y", strtotime($task_row['DueDate'])); // Format due date
+    $dueTime = date("h:i A", strtotime($task_row['DueTime'])); // Format due time
+
+    $tasks_by_content[$contentID][] = [
+        'taskID' => $taskID,
+        'title' => $taskTitle,
+        'dueDate' => $dueDate,
+        'dueTime' => $dueTime
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -34,30 +69,19 @@ $contents = mysqli_fetch_all($result, MYSQLI_ASSOC);
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subjects</title>
+    <title>Grade Levels</title>
     <link rel="icon" type="image/png" href="img/Logo/docmap-logo-1.png">
     <!-- ======= Styles ====== -->
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
    <style>
-        .cardBox {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            height: 100%;
-            margin-top:30px;
+        .container {
+            width:100%;
+            padding-top:15px;
         }
 
-        .card {
-            width: calc(33.33% - 20px); /* 3 cards per row */
-            padding: 20px;
-            box-sizing: border-box;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            color: #fff;
-        }
-
+        
         .card h2 {
             font-size: 20px;
             margin-bottom: -1px;
@@ -86,8 +110,6 @@ $contents = mysqli_fetch_all($result, MYSQLI_ASSOC);
         }
 
         .fab {
-           
-
             right: 20px;
             background-color: #9B2035;
             color: #fff;
@@ -99,11 +121,18 @@ $contents = mysqli_fetch_all($result, MYSQLI_ASSOC);
             align-items: center;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .fab:hover {
+            background-color: #7A192A; /* Darker shade */
+            transform: scale(1.1); /* Slightly enlarges on hover */
         }
 
         .fab i {
             font-size: 30px;
         }
+
 
         .plus-icon {
             font-size: 30px;
@@ -145,6 +174,9 @@ $contents = mysqli_fetch_all($result, MYSQLI_ASSOC);
         .modal {
             z-index: 1050 !important;
         }
+        .taskLink:hover {
+    text-decoration: underline !important;
+}
     </style>
 </head>
 
@@ -163,31 +195,70 @@ $contents = mysqli_fetch_all($result, MYSQLI_ASSOC);
         <!-- MAIN -->
         <main>
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="title" style="margin-bottom: 20px;">Grades</h2>
+                <h2 class="title" style="margin-bottom: 20px;">Grade Levels</h2>
                 <div class="fab" data-toggle="modal" data-target="#exampleModal">
                     <i class='bx bx-plus'></i>
                 </div>
             </div>
-            <div class="cardBox">
-                <?php
-                if (!empty($contents)) {
-                    foreach ($contents as $row) {
-                        // Escape the ContentColor to ensure safe output in the style attribute
-                        $contentColor = htmlspecialchars($row['ContentColor'], ENT_QUOTES, 'UTF-8');
-                        
-                        // Now applying ContentColor safely to the inline style
-                        echo "<div class='card' style='background-color: $contentColor;'>"; // Use background-color instead of color for the card's background
-                        
-                        echo "<h2><a style='color:#ffff; font-size: 25px;' href='tasks.php?content_id=" . htmlspecialchars($row['ContentID'], ENT_QUOTES, 'UTF-8') . "'>" . htmlspecialchars($row['Title'], ENT_QUOTES, 'UTF-8') . "</a></h2>";
-                        echo "<p>" . htmlspecialchars($row['Captions'], ENT_QUOTES, 'UTF-8') . "</p>";
-                        // Add more elements as needed (e.g., images, links)
-                        echo "</div>";
+            <div class="container">
+                <div class="row">
+                    <?php
+                    if (!empty($contents)) {
+                        foreach ($contents as $row) {
+                            $contentColor = htmlspecialchars($row['ContentColor'], ENT_QUOTES, 'UTF-8');
+                            $contentId = htmlspecialchars($row['ContentID'], ENT_QUOTES, 'UTF-8');
+                            $title = htmlspecialchars($row['Title'], ENT_QUOTES, 'UTF-8');
+                            $captions = htmlspecialchars($row['Captions'], ENT_QUOTES, 'UTF-8');
+                            $deptname = htmlspecialchars($row['deptname'], ENT_QUOTES, 'UTF-8');
+
+                            echo "<div class='col-lg-4 col-md-6 col-12 mb-4'>";
+                            echo "<div class='card' style='background-color: $contentColor; cursor: pointer; border-radius: 10px; width:100%; overflow: hidden; border: none; box-shadow: none;' onclick='redirectToPage(\"tasks.php?content_id=$contentId\")'>";
+                            echo "<div class='card-body p-4 text-white'>";
+                            echo "<h5 class='card-title mb-3'><a style='color:#fff; text-decoration: none; font-size: 25px;' href='tasks.php?content_id=$contentId'>$title - $captions</a></h5>";
+                            echo "<p class='card-text' style='font-size: 13px;margin-top:-10px;'><i class='bx bxs-building' style='margin-right:5px;'></i>$deptname</p>";
+                            echo "</div>";
+
+                            if (isset($tasks_by_content[$contentId])) {
+                                echo "<div class='card-footer' style='background-color: #fff; border-radius: 0 0 10px 10px; border: none; padding: 10px;'>";
+                                echo "<ul style='padding-left: 20px; margin: 0; list-style-type: disc;'>"; // Ensures bullets appear
+
+                                foreach ($tasks_by_content[$contentId] as $task) {
+                                    $taskID = $task['taskID'];
+                                    echo "<li style='font-size: 14px; font-weight: bold; padding: 5px 0;'>";
+                                    echo "<a href='taskdetails.php?task_id=$taskID&content_id=$contentId&user_id=$user_id' class='taskLink' style='color: #007BFF; text-decoration: none;'>" . htmlspecialchars($task['title']) . "</a><br>";
+                                    echo "<span style='font-size: 12px; color: #666;'>Due: {$task['dueDate']} at {$task['dueTime']}</span>";
+                                    echo "</li>";
+                                }
+
+                                echo "</ul>"; // Close unordered list
+                                echo "</div>";
+                            }
+
+                            echo "</div>";
+                            echo "</div>";
+                        }
+                    } else {
+                        echo "<div class='col-12 text-center'><p>No content available.</p></div>";
                     }
-                } else {
-                    echo "No content available.";
-                }
-                ?>
+                    ?>
+                </div>
             </div>
+
+
+
+            <!-- JavaScript to Handle Clicks -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll('.content-card').forEach(card => {
+            card.addEventListener('click', function (event) {
+                // Prevent navigation if clicking a task link
+                if (!event.target.closest('.taskLink')) {
+                    window.location.href = this.getAttribute('data-url');
+                }
+            });
+        });
+    });
+</script>
         </main>
         <!-- MAIN -->
     </section>

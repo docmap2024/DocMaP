@@ -171,8 +171,8 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                                         </a>
                                         <!-- Delete Icon -->
                                         <a href="#" class="btn btn-circle btn-delete" title="Delete" 
-                                           onclick="confirmDelete('<?php echo $row['TemplateID']; ?>', '<?php echo $row['filename']; ?>'); return false;">
-                                           <i class="fas fa-trash-alt"></i> <!-- Delete Icon (Font Awesome) -->
+                                            onclick="confirmDelete('<?php echo $row['TemplateID']; ?>', '<?php echo rawurlencode($row['filename']); ?>'); return false;">
+                                            <i class="fas fa-trash-alt"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -291,32 +291,32 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
     });
 </script>
     <script>
-    function confirmDelete(templateId, filename) {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Redirect to delete_template.php with templateId
-                window.location.href = 'delete_template.php?id=' + templateId + '&filename=' + filename;
-            }
-        });
-    }
+        function confirmDelete(templateId, filename) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `delete_template.php?id=${templateId}&file=${filename}`;
+                }
+            });
+            return false; // Prevent default action
+        }
 
-    // Search functionality
-    $(document).ready(function() {
-        $('#searchInput').on('keyup', function() {
-            var value = $(this).val().toLowerCase();
-            $('#templateTableBody tr').filter(function() {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        // Search functionality
+        $(document).ready(function() {
+            $('#searchInput').on('keyup', function() {
+                var value = $(this).val().toLowerCase();
+                $('#templateTableBody tr').filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                });
             });
         });
-    });
     </script>
 </body>
 </html>

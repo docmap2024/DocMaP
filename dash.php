@@ -335,6 +335,7 @@ $conn->close();
         }
         .card{
             height:180px;
+            margin-bottom:10px;
         }
         .new-container {
             position: relative;
@@ -362,14 +363,14 @@ $conn->close();
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            
             display: flex;
             align-items: center;
             justify-content: space-between;
             height:110px;
             padding:10px;
 
-            
+            border: 1px solid #ddd;
             
         }
 
@@ -399,20 +400,22 @@ $conn->close();
         }
 
         .dropbtn {
-        background-color: transparent;
-        color: black;
-        padding: 16px;
-        font-size: 16px;
-        border: none;
-        cursor: pointer;
-        text-decoration: none;
-        /* Optional: Space from edges */
+            background-color: transparent;
+            color: black;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            outline: none; /* <-- Add this */
+            cursor: pointer;
+            text-decoration: none;
         }
 
         .dropbtn:hover, .dropbtn:focus {
-        background-color: transparent;
-        text-decoration: none;
+            background-color: transparent;
+            text-decoration: none;
+            outline: none; /* <-- Also add here to remove when focused */
         }
+
 
         .dropdown {
         position: absolute; /* Set to absolute for positioning */
@@ -473,79 +476,122 @@ $conn->close();
             font-size: 20px;
             
         }
-/* Style for document container */
-.document-container {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    overflow: hidden;
-    transition: box-shadow 0.3s ease, transform 0.3s ease; /* Smooth transition */
-}
-
-/* Shadow effect on hover */
-.document-container:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
-    transform: translateY(-3px); /* Slight lift */
-}
-
-
-/* Document content container for proper alignment */
-.document-content {
-    display: flex;
-    justify-content: space-between; /* Space between the document name and the icon */
-    align-items: center;
-    width: 100%; /* Ensure it takes up full width */
-}
-
-/* Document name styling */
-.document-name {
-    flex: 1; /* Allow the name to take available space */
-    white-space: nowrap; /* Prevent the name from wrapping */
-    overflow: hidden; /* Hide overflowing text */
-    text-overflow: ellipsis; /* Add ellipsis for overflow */
-    padding-right: 10px; /* Space between the name and the icon */
-    max-width: 320px; /* Set a maximum width for the document name */
-}
-
-/* Styling for the file icon container */
-.file-icon {
-    width: 40px; /* Icon container width */
-    height: 40px; /* Icon container height */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #9b2035;
-    border-radius: 50%; /* Circular icon container */
-    border: 1px solid #ccc; /* Border for icon */
-    margin-left: auto; /* Push the icon to the far right */
-}
-
-
-/* Additional styling for icons */
-.fas {
-    font-size: 20px; /* Set the size of the icons */
-    color:#fff;
-}
- .responsive-image {
-        position: absolute;
-        right: 0;
-        top: -63%;
-        height: 320px;
-        max-width: none;
-        display: block; /* Show image by default */
-    }
-
-    @media (max-width: 768px) {
-        .responsive-image {
-            display: none; /* Hide image on mobile screens */
+        /* Style for document container */
+        .document-container {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease, transform 0.3s ease; /* Smooth transition */
         }
-    }
+
+        /* Shadow effect on hover */
+        .document-container:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+            transform: translateY(-3px); /* Slight lift */
+        }
 
 
+        /* Document content container for proper alignment */
+        .document-content {
+            display: flex;
+            justify-content: space-between; /* Space between the document name and the icon */
+            align-items: center;
+            width: 100%; /* Ensure it takes up full width */
+        }
+
+        /* Document name styling */
+        .document-name {
+            flex: 1; /* Allow the name to take available space */
+            white-space: nowrap; /* Prevent the name from wrapping */
+            overflow: hidden; /* Hide overflowing text */
+            text-overflow: ellipsis; /* Add ellipsis for overflow */
+            padding-right: 10px; /* Space between the name and the icon */
+            max-width: 320px; /* Set a maximum width for the document name */
+        }
+
+        /* Styling for the file icon container */
+        .file-icon {
+            width: 40px; /* Icon container width */
+            height: 40px; /* Icon container height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #9b2035;
+            border-radius: 50%; /* Circular icon container */
+            border: 1px solid #ccc; /* Border for icon */
+            margin-left: auto; /* Push the icon to the far right */
+        }
+
+
+        /* Additional styling for icons */
+        .fas {
+            font-size: 20px; /* Set the size of the icons */
+            color:#fff;
+        }
+        .responsive-image {
+                position: absolute;
+                right: 0;
+                top: -63%;
+                height: 320px;
+                max-width: none;
+                display: block; /* Show image by default */
+            }
+
+            @media (max-width: 768px) {
+                .responsive-image {
+                    display: none; /* Hide image on mobile screens */
+                }
+            }
+
+        /* Toast Notification Styles */
+        .toast {
+            visibility: hidden; /* Hidden by default */
+            min-width: 250px; /* Set a default minimum width */
+            margin-left: -125px; /* Divide value of min-width by 2 */
+            background-color: #333; /* Dark background color */
+            color: #fff; /* White text color */
+            text-align: center; /* Centered text */
+            border-radius: 4px; /* Rounded corners */
+            padding: 16px; /* Padding */
+            position: fixed; /* Sit on top of the screen */
+            z-index: 1000; /* Ensure it's on top of other elements */
+            right: 20px; /* Position from the right */
+            top: 20px; /* Position from the top */
+            font-size: 14px; /* Font size */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow */
+        }
+
+        /* Show the toast */
+        .toast.show {
+            visibility: visible; /* Show the toast */
+            animation: fadein 0.5s, fadeout 0.5s 2.5s; /* Add animations */
+        }
+
+        /* Fade-in animation */
+        @keyframes fadein {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Fade-out animation */
+        @keyframes fadeout {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Success and Error Message Styles */
+        .toast.success {
+            background-color: #4CAF50; /* Green background for success */
+        }
+
+        .toast.error {
+            background-color: #f44336; /* Red background for error */
+        }
 
 
     </style>
@@ -565,6 +611,10 @@ $conn->close();
 
         <!-- MAIN -->
         <main>
+
+            <!-- Toast Notification Container -->
+            <div id="toast" class="toast"></div>
+
             <h1 class="title">Dashboard</h1>
             <div class="container-fluid">
                 <div class="row">
@@ -631,15 +681,18 @@ $conn->close();
                                             </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <div class="card">
+                                           <div class="card">
                                                 <div class="head">
                                                     <div>
                                                         <img src="img/icons/list.png">
                                                     </div>
                                                 </div>
                                                 <span class="count"><?php echo htmlspecialchars($contentCount); ?></span>
-                                                <h6 class="todo-text" style="color:#9b2035">Subjects</h6>
+                                                <h6 class="todo-text" style="color:#9b2035">
+                                                    <?php echo ($contentCount == 1) ? 'Grade Level' : 'Grade Levels'; ?>
+                                                </h6>
                                             </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -1509,6 +1562,28 @@ $(document).ready(function() {
         <?php endif; ?>
     });
     </script>
+
+    <script>
+        function showToast(message, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+
+        setTimeout(() => {
+            toast.className = toast.className.replace('show', '');
+        }, 5000);
+    }
+
+    <?php if (isset($_SESSION['success_message'])): ?>
+        showToast("<?php echo $_SESSION['success_message']; ?>", "success");
+        <?php unset($_SESSION['success_message']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error_message'])): ?>
+        showToast("<?php echo $_SESSION['error_message']; ?>", "error");
+        <?php unset($_SESSION['error_message']); ?>
+    <?php endif; ?>
+    </Script>
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="assets/js/script.js"></script>

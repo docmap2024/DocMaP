@@ -123,34 +123,34 @@ mysqli_close($conn);
             margin-right: 20px; /* Add space between the logo and buttons */
         }
         .nav-button {
-        width: 100%; /* Make button take full width */
-        margin-bottom: 10px; /* Space between buttons */
-        background-color: transparent; /* Transparent background */
-        color: #000; /* Default text color */
-        text-align: center; /* Center text */
-        display: flex; /* Flexbox for icon alignment */
-        align-items: center; /* Center the icon and text vertically */
-        justify-content: center; /* Center the icon and text horizontally */
-        padding: 10px; /* Padding for the button */
-        border:none;
-        border-radius: 5px; /* Rounded corners */
-        transition: background-color 0.3s, color 0.3s; /* Smooth background and text transition */
-    }
+            width: 100%; /* Make button take full width */
+            margin-bottom: 10px; /* Space between buttons */
+            background-color: transparent; /* Transparent background */
+            color: #000; /* Default text color */
+            text-align: center; /* Center text */
+            display: flex; /* Flexbox for icon alignment */
+            align-items: center; /* Center the icon and text vertically */
+            justify-content: center; /* Center the icon and text horizontally */
+            padding: 10px; /* Padding for the button */
+            border:none;
+            border-radius: 5px; /* Rounded corners */
+            transition: background-color 0.3s, color 0.3s; /* Smooth background and text transition */
+        }
 
-    .nav-button i {
-        margin-right: 10px; /* Space between icon and text */
-    }
+        .nav-button i {
+            margin-right: 10px; /* Space between icon and text */
+        }
 
-    .nav-button:hover {
-        background-color: #9B2035; /* Background color on hover */
-        color: white; /* Text color on hover */
-    }
+        .nav-button:hover {
+            background-color: #9B2035; /* Background color on hover */
+            color: white; /* Text color on hover */
+        }
 
-    .nav-button:active {
-        background-color: #9B2035; /* Active background color */
-        border:none;
-    }
-    table {
+        .nav-button:active {
+            background-color: #9B2035; /* Active background color */
+            border:none;
+        }
+        table {
             width: 80%;
             border-collapse: collapse;
            
@@ -288,9 +288,6 @@ mysqli_close($conn);
                             <button class="nav-button" id="showSchoolYearBtn">
                                 <i class="bx bx-calendar"></i> School Year
                             </button>
-                            <button class="nav-button" id="showSchoolPerformanceBtn">
-                                <i class="bx bx-line-chart"></i> School Performance
-                            </button>
                         </div>
                     </div>
                     <div class="col-md-9">
@@ -400,112 +397,6 @@ mysqli_close($conn);
                             </table>
                         </div>
 
-                        <!-- School year performance -->
-                        <div class="rounded-container mt-4" id="schoolPerformanceContainer">
-                            <h4 class="mb-3">School Year Performance</h4>
-
-                            <!-- Enrollment Section -->
-                            <div class="performance-section">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5>Enrollment</h5>
-                                    <button class="btn btnProfile1" data-type="enroll" data-toggle="modal" data-target="#schoolPerformanceModal">Create New</button>
-                                </div>
-                                <table class="table table-bordered mt-3" id="enrollmentTable">
-                                    <thead>
-                                        <tr>
-                                            <th>School Year</th>
-                                            <th>Rate</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamically generated rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Dropout Section -->
-                            <div class="performance-section">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5>Dropout</h5>
-                                    <button class="btn btnProfile1" data-type="dropout" data-toggle="modal" data-target="#schoolPerformanceModal">Create New</button>
-                                </div>
-                                <table class="table table-bordered mt-3" id="dropoutTable">
-                                    <thead>
-                                        <tr>
-                                            <th>School Year</th>
-                                            <th>Rate</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamically generated rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Promotion Section -->
-                            <div class="performance-section">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5>Promotion</h5>
-                                    <button class="btn btnProfile1" data-type="promotion" data-toggle="modal" data-target="#schoolPerformanceModal">Create New</button>
-                                </div>
-                                <table class="table table-bordered mt-3" id="promotionTable">
-                                    <thead>
-                                        <tr>
-                                            <th>School Year</th>
-                                            <th>Rate</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamically generated rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Cohort-Survival Section -->
-                            <div class="performance-section">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5>Cohort-Survival</h5>
-                                    <button class="btn btnProfile1" data-type="cohort_survival" data-toggle="modal" data-target="#schoolPerformanceModal">Create New</button>
-                                </div>
-                                <table class="table table-bordered mt-3" id="cohortSurvivalTable">
-                                    <thead>
-                                        <tr>
-                                            <th>School Year</th>
-                                            <th>Rate</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamically generated rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Repetition Section -->
-                            <div class="performance-section">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5>Repetition</h5>
-                                    <button class="btn btnProfile1" data-type="repetition" data-toggle="modal" data-target="#schoolPerformanceModal">Create New</button>
-                                </div>
-                                <table class="table table-bordered mt-3" id="repetitionTable">
-                                    <thead>
-                                        <tr>
-                                            <th>School Year</th>
-                                            <th>Rate</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamically generated rows -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
             <!-- Modal -->
             <div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-labelledby="uploadPhotoModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
@@ -522,36 +413,6 @@ mysqli_close($conn);
                         <div class="modal-footer">
                             <button type="button" class="btn btn-primary" id="uploadButton">Upload</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal for adding new data -->
-            <div class="modal fade" id="schoolPerformanceModal" tabindex="-1" role="dialog" aria-labelledby="schoolPerformanceModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Add Performance Data</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="performanceForm">
-                                <div class="form-group">
-                                    <label for="schoolYear">School Year</label>
-                                    <select id="schoolYear" class="form-control">
-                                        <!-- Populated dynamically via JS -->
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="rate">Rate</label>
-                                    <input type="number" step="0.01" id="rate" class="form-control" required>
-                                </div>
-                                    <input type="hidden" id="type" value="enroll">
-                                    <button type="submit" class="btn btn-primary">Submit</button>
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -759,7 +620,7 @@ mysqli_close($conn);
             </div>
             
 
-            <!-- PErformance Modal -->
+            <!-- Performance Modal -->
             <div class="modal fade" id="schoolyearModal" tabindex="-1"role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -862,156 +723,46 @@ mysqli_close($conn);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Move your custom script after all libraries -->
     <script src="assets/js/script.js"></script>
-<script>
-    document.getElementById('uploadButton').addEventListener('click', function () {
-        const fileInput = document.getElementById('fileInput');
-        const files = fileInput.files;
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', function () {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
 
-        if (files.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Warning',
-                text: 'Please select files to upload.'
-            });
-            return;
-        }
-
-        const formData = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            formData.append('photos[]', files[i]);
-        }
-
-        // AJAX request for file upload
-        fetch('uploadphotos.php', {
-            method: 'POST',
-            body: formData,
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Files uploaded successfully!'
-                    }).then(() => {
-                        // Refresh the entire page
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error uploading files: ' + data.message
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
+            if (files.length === 0) {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while uploading files.'
+                    icon: 'warning',
+                    title: 'Warning',
+                    text: 'Please select files to upload.'
                 });
-            });
-    });
-
-  document.addEventListener('DOMContentLoaded', function () {
-    fetchPhotos();
-
-    function fetchPhotos() {
-    fetch('fetchphotos.php')
-        .then(response => response.json())
-        .then(data => {
-            const photoGallery = document.getElementById('photoGallery');
-            photoGallery.innerHTML = ''; // Clear previous content
-
-            if (data.success) {
-                if (data.files.length === 0) {
-                    // No photos available
-                    photoGallery.innerHTML = `
-                        <div class="text-center">
-                            <p>No available photos. Click the plus button below to start uploading.</p>
-                            <button id="uploadPhotoBtn" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Upload Photo
-                            </button>
-                        </div>
-                    `;
-
-                    // Add event listener for upload button
-                    const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
-                    uploadPhotoBtn.addEventListener('click', () => {
-                        // Open upload modal or redirect to upload page
-                        console.log('Upload button clicked'); // Replace with your logic
-                    });
-                } else {
-                    // Populate gallery with photos
-                    data.files.forEach(photo => {
-                        const photoItem = document.createElement('div');
-                        photoItem.classList.add('col-md-4', 'mb-4');
-                        photoItem.innerHTML = `
-                            <div class="rounded-container position-relative">
-                                <img src="../assets/School_Images/${photo.name}" alt="${photo.name}" class="img-fluid rounded">
-                                <div class="delete-icon position-absolute top-0 end-0 m-2" data-photo-id="${photo.id}"> 
-                                    <i class="fas fa-times"></i>
-                                </div>
-                            </div>
-                        `;
-                        photoGallery.appendChild(photoItem);
-                    });
-
-                    // Add delete icon click event listeners
-                    document.querySelectorAll('.delete-icon').forEach(icon => {
-                        icon.addEventListener('click', deletePhoto);
-                    });
-                }
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Error fetching photos: ' + data.message
-                });
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'An error occurred while fetching photos.'
-            });
-        });
-    }
 
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('photos[]', files[i]);
+            }
 
-    function deletePhoto(event) {
-    const photoId = event.currentTarget.getAttribute('data-photo-id');
-
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "You will not be able to recover this photo!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`deletephoto.php?id=${photoId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+            // AJAX request for file upload
+            fetch('uploadphotos.php', {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        Swal.fire('Deleted!', 'Your photo has been deleted.', 'success');
-                        fetchPhotos(); // Refresh the photo gallery
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Files uploaded successfully!'
+                        }).then(() => {
+                            // Refresh the entire page
+                            location.reload();
+                        });
                     } else {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: data.message || 'An error occurred while deleting the photo.'
+                            text: 'Error uploading files: ' + data.message
                         });
                     }
                 })
@@ -1020,446 +771,129 @@ mysqli_close($conn);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'An error occurred while deleting the photo.'
+                        text: 'An error occurred while uploading files.'
                     });
                 });
-        }
-    });
-}
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchPhotos();
+
+            function fetchPhotos() {
+                fetch('fetchphotos.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        const photoGallery = document.getElementById('photoGallery');
+                        photoGallery.innerHTML = ''; // Clear previous content
+
+                        if (data.success) {
+                            if (data.files.length === 0) {
+                                // No photos available
+                                photoGallery.innerHTML = `
+                                    <div class="text-center">
+                                        <p>No available photos. Click the plus button below to start uploading.</p>
+                                        <button id="uploadPhotoBtn" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Upload Photo
+                                        </button>
+                                    </div>
+                                `;
+
+                                // Add event listener for upload button
+                                const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+                                uploadPhotoBtn.addEventListener('click', () => {
+                                    // Open upload modal or redirect to upload page
+                                    console.log('Upload button clicked'); // Replace with your logic
+                                });
+                            } else {
+                                // Populate gallery with photos
+                                data.files.forEach(photo => {
+                                    const photoItem = document.createElement('div');
+                                    photoItem.classList.add('col-md-4', 'mb-4');
+                                    photoItem.innerHTML = `
+                                        <div class="rounded-container position-relative">
+                                            <img src="../assets/School_Images/${photo.name}" alt="${photo.name}" class="img-fluid rounded">
+                                            <div class="delete-icon position-absolute top-0 end-0 m-2" data-photo-id="${photo.id}"> 
+                                                <i class="fas fa-times"></i>
+                                            </div>
+                                        </div>
+                                    `;
+                                    photoGallery.appendChild(photoItem);
+                                });
+
+                                // Add delete icon click event listeners
+                                document.querySelectorAll('.delete-icon').forEach(icon => {
+                                    icon.addEventListener('click', deletePhoto);
+                                });
+                            }
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Error fetching photos: ' + data.message
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'An error occurred while fetching photos.'
+                        });
+                    });
+            }
 
 
-});
+            function deletePhoto(event) {
+                const photoId = event.currentTarget.getAttribute('data-photo-id');
 
-</script>
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You will not be able to recover this photo!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`deletephoto.php?id=${photoId}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Deleted!', 'Your photo has been deleted.', 'success');
+                                    fetchPhotos(); // Refresh the photo gallery
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: data.message || 'An error occurred while deleting the photo.'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'An error occurred while deleting the photo.'
+                                });
+                            });
+                    }
+                });
+            }
 
 
+        });
+
+    </script>
 
     <script>
-        $(document).ready(function () {
-            // When any 'Create New' button is clicked, set the type based on the button's data-type attribute
-            $('.createNewBtn').on('click', function () {
-                const type = $(this).data('type');
-                $('#type').val(type);  // Set the hidden type field in the modal form
-                fetchSchoolYears();
-            });
-
-            // Submit form data for enrollment or other performance data
-            $('#performanceForm').on('submit', function (e) {
-                e.preventDefault();
-                const schoolYear = $('#schoolYear').val();
-                const rate = $('#rate').val();
-                const type = $('#type').val();  // This value can be 'enroll', 'dropout', etc.
-
-                $.post('upload_performance.php', {
-                    school_year_id: schoolYear,
-                    rate: rate,
-                    type: type
-                }, function (response) {
-                    // After successful insert, hide the modal and refresh the performance data
-                    $('#schoolPerformanceModal').modal('hide');
-
-                    // Show SweetAlert for success
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Performance data has been successfully added.',
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Refresh performance data and page after the user clicks 'OK'
-                            fetchEnrollData();
-                            fetchDropoutData();
-                            fetchPromoteData();
-                            fetchCohortData();
-                            fetchRepetitionData();
-
-                            // Reset the form fields after a successful creation
-                            $('#performanceForm').trigger('reset'); // Reset the entire form
-                        }
-                    });
-                });
-            });
-        });
-
-        $(document).ready(function () {
-            // Fetch data when the page is loaded
-            fetchEnrollData();
-            fetchDropoutData();
-            fetchPromoteData();
-            fetchCohortData();
-            fetchRepetitionData();
-        });
-
-        // Function to fetch and display enrollment data from the backend
-        function fetchEnrollData() {
-            $.getJSON('fetch_enroll.php', function (data) {
-                let rows = '';
-                if (data.enrollment.length > 0) {
-                    $.each(data.enrollment, function (index, item) {
-                        rows += `<tr>
-                                    <td>${item.Year_Range}</td>
-                                    <td>${item.Rate}</td>
-                                    <td>
-                                        <button class="btn btn-danger delete-btn" data-id="${item.Enroll_ID}">Delete</button>
-                                    </td>
-                                </tr>`;
-                    });
-                } else {
-                    rows = `<tr><td colspan="3" class="text-center">No enrollment data available.</td></tr>`;
-                }
-
-                $('#enrollmentTable tbody').html(rows);
-            });
-        }
-
-        $('#enrollmentTable').on('click', '.delete-btn', function () {
-            const enrollId = $(this).data('id');  // This should be correctly fetching the ID
-            console.log(`Attempting to delete enrollment ID: ${enrollId}`); // Check the ID
-            
-            // Use SweetAlert for confirmation
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Log the ID being sent for deletion
-                    console.log(`Attempting to delete enrollment ID: ${enrollId}`);
-
-                    $.post('delete_enroll.php', { id: enrollId }, function (response) {
-                        console.log('Server response:', response); // Log the server response
-                        
-                        if (response.success) {
-                            // Show SweetAlert success message
-                            Swal.fire(
-                                'Deleted!',
-                                'The enrollment has been deleted.',
-                                'success'
-                            ).then(() => {
-                                fetchEnrollData(); // Refresh the table after deletion
-                            });
-                        } else {
-                            // Show SweetAlert error message
-                            Swal.fire(
-                                'Error!',
-                                'There was an issue deleting the data: ' + response.message,
-                                'error'
-                            );
-                        }
-                    }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error('AJAX request failed:', textStatus, errorThrown);
-                        Swal.fire(
-                            'Error!',
-                            'Failed to delete the enrollment. Please try again later.',
-                            'error'
-                        );
-                    });
-                }
-            });
-        });
-
-
-        // Function to fetch and display dropout data from the backend
-        function fetchDropoutData() {
-            $.getJSON('fetch_dropout.php', function (data) {
-                let rows = '';
-                if (data.dropout.length > 0) {
-                    $.each(data.dropout, function (index, item) {
-                        rows += `<tr>
-                                    <td>${item.Year_Range}</td>
-                                    <td>${item.Rate}</td>
-                                    <td>
-                                        <button class="btn btn-danger delete-btn" data-id="${item.Dropout_ID}">Delete</button>
-                                    </td>
-                                </tr>`;
-                    });
-                } else {
-                    rows = `<tr><td colspan="3" class="text-center">No dropout data available.</td></tr>`;
-                }
-                $('#dropoutTable tbody').html(rows);
-            });
-        }
-
-        // Event delegation to handle delete button clicks
-        $('#dropoutTable').on('click', '.delete-btn', function () {
-            const dropoutId = $(this).data('id');  // This should be correctly fetching the ID
-            console.log(`Attempting to delete dropout ID: ${dropoutId}`); // Check the ID
-            
-            // Use SweetAlert for confirmation
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Log the ID being sent for deletion
-                    console.log(`Attempting to delete dropout ID: ${dropoutId}`);
-
-                    $.post('delete_dropout.php', { id: dropoutId }, function (response) {
-                        console.log('Server response:', response); // Log the server response
-                        
-                        if (response.success) {
-                            // Show SweetAlert success message
-                            Swal.fire(
-                                'Deleted!',
-                                'The dropout rate has been deleted.',
-                                'success'
-                            ).then(() => {
-                                fetchDropoutData();  // Refresh the table after deletion
-                            });
-                        } else {
-                            // Show SweetAlert error message
-                            Swal.fire(
-                                'Error!',
-                                'There was an issue deleting the data: ' + response.message,
-                                'error'
-                            );
-                        }
-                    }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error('AJAX request failed:', textStatus, errorThrown);
-                        Swal.fire(
-                            'Error!',
-                            'Failed to delete the dropout rate. Please try again later.',
-                            'error'
-                        );
-                    });
-                }
-            });
-        });
-
-
-        // Function to fetch and display promotion data from the backend
-        function fetchPromoteData() {
-            $.getJSON('fetch_promotion.php', function (data) {
-                let rows = '';
-                if (data.promotion.length > 0) {
-                    $.each(data.promotion, function (index, item) {
-                        rows += `<tr>
-                                    <td>${item.Year_Range}</td>
-                                    <td>${item.Rate}</td>
-                                    <td>
-                                        <button class="btn btn-danger delete-btn" data-id="${item.Promotion_ID}">Delete</button>
-                                    </td>
-                                </tr>`;
-                    });
-                } else {
-                    rows = `<tr><td colspan="3" class="text-center">No promotion data available.</td></tr>`;
-                }
-                $('#promotionTable tbody').html(rows);
-            });
-        }
-
-
-        // Event delegation to handle delete button clicks
-        $('#promotionTable').on('click', '.delete-btn', function () {
-            const promotionId = $(this).data('id');  // This should be correctly fetching the ID
-            console.log(`Attempting to delete promotion ID: ${promotionId}`); // Check the ID
-            
-            // Use SweetAlert for confirmation
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Log the ID being sent for deletion
-                    console.log(`Attempting to delete promotion ID: ${promotionId}`);
-
-                    $.post('delete_promotion.php', { id: promotionId }, function (response) {
-                        console.log('Server response:', response); // Log the server response
-                        
-                        if (response.success) {
-                            // Show SweetAlert success message
-                            Swal.fire(
-                                'Deleted!',
-                                'The promotion rate has been deleted.',
-                                'success'
-                            ).then(() => {
-                                fetchPromoteData();  // Refresh the table after deletion
-                            });
-                        } else {
-                            // Show SweetAlert error message
-                            Swal.fire(
-                                'Error!',
-                                'There was an issue deleting the data: ' + response.message,
-                                'error'
-                            );
-                        }
-                    }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error('AJAX request failed:', textStatus, errorThrown);
-                        Swal.fire(
-                            'Error!',
-                            'Failed to delete the promotion rate. Please try again later.',
-                            'error'
-                        );
-                    });
-                }
-            });
-        });
-
-
-
-        // Function to fetch and display cohort-survival data from the backend
-        function fetchCohortData() {
-            $.getJSON('fetch_cohort.php', function (data) {
-                let rows = '';
-                if (data.cohort.length > 0) {
-                    $.each(data.cohort, function (index, item) {
-                        rows += `<tr>
-                                    <td>${item.Year_Range}</td>
-                                    <td>${item.Rate}</td>
-                                    <td>
-                                        <button class="btn btn-danger delete-btn" data-id="${item.Cohort_ID}">Delete</button>
-                                    </td>
-                                </tr>`;
-                    });
-                } else {
-                    rows = `<tr><td colspan="3" class="text-center">No cohort-survival data available.</td></tr>`;
-                }
-                $('#cohortSurvivalTable tbody').html(rows);
-            });
-        }
-
-
-        // Event delegation to handle delete button clicks
-        $('#cohortSurvivalTable').on('click', '.delete-btn', function () {
-            const cohortId = $(this).data('id');  // This should be correctly fetching the ID
-            console.log(`Attempting to delete cohort ID: ${cohortId}`); // Check the ID
-            
-            // Use SweetAlert for confirmation
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Log the ID being sent for deletion
-                    console.log(`Attempting to delete cohort ID: ${cohortId}`);
-
-                    $.post('delete_cohort.php', { id: cohortId }, function (response) {
-                        console.log('Server response:', response); // Log the server response
-                        
-                        if (response.success) {
-                            // Show SweetAlert success message
-                            Swal.fire(
-                                'Deleted!',
-                                'The cohort survival rate has been deleted.',
-                                'success'
-                            ).then(() => {
-                                fetchCohortData();  // Refresh the table after deletion
-                            });
-                        } else {
-                            // Show SweetAlert error message
-                            Swal.fire(
-                                'Error!',
-                                'There was an issue deleting the data: ' + response.message,
-                                'error'
-                            );
-                        }
-                    }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error('AJAX request failed:', textStatus, errorThrown);
-                        Swal.fire(
-                            'Error!',
-                            'Failed to delete the cohort survival rate. Please try again later.',
-                            'error'
-                        );
-                    });
-                }
-            });
-        });
-
-
-
-        // Function to fetch and display cohort-survival data from the backend
-        function fetchRepetitionData() {
-            $.getJSON('fetch_repetition.php', function (data) {
-                let rows = '';
-                if (data.repetition.length > 0) {
-                    $.each(data.repetition, function (index, item) {
-                        rows += `<tr>
-                                    <td>${item.Year_Range}</td>
-                                    <td>${item.Rate}</td>
-                                    <td>
-                                        <button class="btn btn-danger delete-btn" data-id="${item.Repetition_ID}">Delete</button>
-                                    </td>
-                                </tr>`;
-                    });
-                } else {
-                    rows = `<tr><td colspan="3" class="text-center">No repetition data available.</td></tr>`;
-                }
-                $('#repetitionTable tbody').html(rows);
-            });
-        }
-
-
-        // Event delegation to handle delete button clicks
-        $('#repetitionTable').on('click', '.delete-btn', function () {
-            const repetitionId = $(this).data('id');  // This should be correctly fetching the ID
-            console.log(`Attempting to delete repetition ID: ${repetitionId}`); // Check the ID
-            
-            // Use SweetAlert for confirmation
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Log the ID being sent for deletion
-                    console.log(`Attempting to delete repetition ID: ${repetitionId}`);
-
-                    $.post('delete_repetition.php', { id: repetitionId }, function (response) {
-                        console.log('Server response:', response); // Log the server response
-                        
-                        if (response.success) {
-                            // Show SweetAlert success message
-                            Swal.fire(
-                                'Deleted!',
-                                'The repetition rate has been deleted.',
-                                'success'
-                            ).then(() => {
-                                fetchRepetitionData();
-                            });
-                        } else {
-                            // Show SweetAlert error message
-                            Swal.fire(
-                                'Error!',
-                                'There was an issue deleting the data: ' + response.message,
-                                'error'
-                            );
-                        }
-                    }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error('AJAX request failed:', textStatus, errorThrown);
-                        Swal.fire(
-                            'Error!',
-                            'Failed to delete the repetition rate. Please try again later.',
-                            'error'
-                        );
-                    });
-                }
-            });
-        });
-
-
         // Fetch school years and populate dropdown
         function fetchSchoolYears() {
             $.getJSON('fetch_schoolyear.php', function (data) {
@@ -1593,7 +1027,6 @@ mysqli_close($conn);
         function hideAllContainers() {
             document.getElementById("schoolDetailsContainer").style.display = "none";
             document.getElementById("schoolYearContainer").style.display = "none";
-            document.getElementById("schoolPerformanceContainer").style.display = "none";
         }
 
         // Initially hide all containers except the School Details container
@@ -1612,12 +1045,6 @@ mysqli_close($conn);
         document.getElementById("showSchoolYearBtn").onclick = function() {
             hideAllContainers();
             document.getElementById("schoolYearContainer").style.display = "block";
-        };
-
-        // Show School Performance when clicking "School Performance" button
-        document.getElementById("showSchoolPerformanceBtn").onclick = function() {
-            hideAllContainers();
-            document.getElementById("schoolPerformanceContainer").style.display = "block";
         };
 
 

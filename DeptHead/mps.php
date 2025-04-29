@@ -69,8 +69,7 @@ if ($resultQuarter) {
 $queryMPS = "
     SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_Name, 
            CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
-           m.TotalNumOfStudents, m.TotalNumTested, m.HighestScore, 
-           m.LowestScore, m.MPS, sy.Year_Range AS SY,
+           m.TotalNumOfStudents, m.TotalNumTested, m.MPS, sy.Year_Range AS SY,
            CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
     FROM mps m
     INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
@@ -233,7 +232,7 @@ if ($stmt = mysqli_prepare($conn, $gradeLevelQuery)) {
         <main>
             <div class="header-section">
                 <h1 class="title">MPS</h1>
-                <button class="btn btn-success" id="printButton" onclick="fetchSchoolDetailsAndPrint()">Print</button> <!-- Print button added -->
+                
             </div>
 
         
@@ -281,7 +280,7 @@ if ($stmt = mysqli_prepare($conn, $gradeLevelQuery)) {
 
                     <div class="col d-flex align-items-end justify-content-between">
                         <button class="btn btn-primary" id="filterButton">Filter</button>
-                            
+                        <button class="btn btn-success" id="printButton" onclick="fetchSchoolDetailsAndPrint()">Print</button> <!-- Print button added -->
                     </div>
                 </div>
             </div>
@@ -296,10 +295,10 @@ if ($stmt = mysqli_prepare($conn, $gradeLevelQuery)) {
                             <th>Teacher</th>
                             <th>Total No. Students</th>
                             <th>Total No. Tested</th>
-                            <th>Highest Score</th>
-                            <th>Lowest Score</th>
+                         
+                    
                             <th>MPS</th>
-                            <th class="action-column">Action</th>
+                     
                         </tr>
                     </thead>
                     <tbody>
@@ -313,19 +312,14 @@ if ($stmt = mysqli_prepare($conn, $gradeLevelQuery)) {
                                 echo '<td>' . htmlspecialchars($row['SubTeacher']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['TotalNumOfStudents']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['TotalNumTested']) . '</td>';
-                                echo '<td>' . htmlspecialchars($row['HighestScore']) . '</td>';
-                                echo '<td>' . htmlspecialchars($row['LowestScore']) . '</td>';
+                                
+                          
                                 
                                 // Check MPS value and apply class
                                 $mpsClass = htmlspecialchars($row['MPS']) < 75 ? 'text-danger' : 'text-success';
                                 echo '<td style="font-weight:bold;" class="' . $mpsClass . '">' . htmlspecialchars($row['MPS']) . '</td>';
                                 
-                                echo '<td class="action-column">';
-                               
-                                echo '<button class="btn btn-info btn-rounded">
-                                        <i class="bx bx-envelope"></i> <!-- Email Icon -->
-                                    </button>';
-                                echo '</td>';
+                            
                                 echo '</tr>';
                             }
                         } else {
@@ -357,27 +351,31 @@ if ($stmt = mysqli_prepare($conn, $gradeLevelQuery)) {
 function fetchSchoolDetailsAndPrint() {
     // Fetch school details using AJAX
     $.ajax({
-        url: '../getSchoolDetails.php',
+        url: 'getSchoolDetails.php',
         method: 'GET',
         success: function(data) {
             // Prepare the logo and school details for the print view
-            var logo = data.Logo ? '<img src="../img/Logo/' + data.Logo + '" style="width: 130px; height: auto; margin-right:20px;" />' : '<p>No Logo Available</p>';
+            var logo = data.Logo ? '<img src="img/Logo/DEPEDLOGO.png" style="width: 90px; height: auto; " />' : '<p>No Logo Available</p>';
+            var teacherSignature = data.Teacher_Signature ? `<img src="img/e_sig/${data.Teacher_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
+            var principalSignature = data.Principal_Signature ? `<img src="img/e_sig/${data.Principal_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
+
             var schoolDetails = `
-                <div class="header-content">
+                <div class="header-content" style="text-align: center;">
                     <div class="logo">${logo}</div>
                     <div class="school-details">
-                        <p>Republic of the ${data.Country}</p>
-                        <p>${data.Organization}</p>
-                        <p>${data.Region}</p>
-                        <h2 style="font-weight: bold; font-size: 1.5em;">${data.Name}</h2>
-                        <p>${data.Address}</p>
-                        <p>School ID: ${data.School_ID}</p>
+                        <p style='font-family: "Old English Text MT", serif; font-weight:bold; font-size:20px;'>Republic of the ${data.Country}</p>
+                        <p  style='font-family: "Old English Text MT", serif;font-weight:bold; font-size:28px;'>${data.Organization}</p>
+                        <p style="text-transform: uppercase; font-family: 'Tahoma'; font-weight: bold; font-size: 13px;">REGION ${data.Region}</p>
+                        <p style="text-transform: uppercase; font-family: 'Tahoma'; font-weight: 900; font-size: 16px;">SCHOOLS DIVISION OF BATANGAS</p>
+                        <p style="text-transform: uppercase; font-family: 'Tahoma'; font-weight: 900; font-size: 16px;">LIAN SUB-OFFICE</p>
+                        <p style="text-transform: uppercase;font-weight: 900; font-family: 'Tahoma'; font-size: 16px;">${data.Name} - ${data.School_ID}</p>
+
                     </div>
                 </div>
-                <hr/>
-                <div class="additional-titles" style="text-align: center; font-family: 'Times New Roman', serif;">
-                    <h3>Mean Percentage Score</h3>
+                <hr style="border: 1.5px solid black; margin: 10px 0;" />
 
+                <div class="additional-titles" style="text-align: center; font-family: 'arial', serif; font-weight:bold;">
+                    <h3>Mean Percentage Score</h3>
                 </div>
             `;
 
@@ -390,16 +388,66 @@ function fetchSchoolDetailsAndPrint() {
             // Create print content
             var printContent = schoolDetails + document.getElementById("mpsTable").outerHTML;
 
-            // Add signature lines at the bottom
+            // Add signature lines at the bottom with e-signatures
             printContent += `
                 <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="text-align: center; flex: 1;">
-                        <span>Approved by:</span><br/><br/>
-                        <span style="font-weight:bold;">${data.Principal_FullName}</span><br/>
-                        <hr style="max-width: 30%; margin: 0 auto;" />
-                        <span>Principal</span>
-                    </div>
-                </div>
+    <!-- Prepared by (Subject Teacher) -->
+    <div style="text-align: center; flex: 1; position: relative;">
+        <span>Prepared by:</span><br/><br/>
+        <div style="position: relative; display: inline-block;">
+            <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
+                ${data.Teacher_FullName}
+            </span>
+            <img src="img/e_sig/${data.Teacher_Signature}" 
+                style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
+        </div>
+        <hr style="max-width: 50%; margin: 0 auto;" />
+        <span>Subject Teacher</span>
+    </div>
+
+    <!-- Noted by (Department Head) -->
+    <div style="text-align: center; flex: 1; position: relative;">
+        <span>Noted by:</span><br/><br/>
+        <div style="position: relative; display: inline-block;">
+            <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
+                ${data.DHead_FullName}
+            </span>
+            <img src="img/e_sig/${data.DHead_Signature}" 
+                style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
+        </div>
+        <hr style="max-width: 50%; margin: 0 auto;" />
+        <span>Department Head</span>
+    </div>
+
+    <!-- Approved by (Principal) -->
+    <div style="text-align: center; flex: 1; position: relative;">
+        <span>Approved by:</span><br/><br/>
+        <div style="position: relative; display: inline-block;">
+            <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
+                ${data.Principal_FullName}
+            </span>
+            <img src="img/e_sig/${data.Principal_Signature}" 
+                style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
+        </div>
+        <hr style="max-width: 50%; margin: 0 auto;" />
+        <span>Principal</span>
+    </div>
+</div>
+
+<!-- Footer Section -->
+<div class="footer" style="display: flex; align-items: center; justify-content: space-between; margin-top: 50px; padding: 10px; border-top: 2.5px solid black;">
+    <div class="footer-left" style="display: flex; align-items: center; margin-left: 50px; flex: 1;">
+        <img src="img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 280px; height: auto; margin-right: 10px;" />
+        <img src="img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
+    </div>
+    <div class="footer-right" style="text-align: left; font-size: 12px; flex: 2; margin-left:30px; font-size:18px;">
+        <p>${data.Address} ${data.City_Muni} School ID: ${data.School_ID}</p>
+        <p>Contact nos.: ${data.Mobile_No} Landline: ${data.landline}</p>
+        <p style="text-decoration: underline; color: blue;">${data.Email}</p>
+    </div>
+</div>
+
+
             `;
 
             // Open the print window
@@ -412,79 +460,98 @@ function fetchSchoolDetailsAndPrint() {
                         <title>Print Table</title>
                         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
                         <style>
-                            body {
-                                position: relative; /* Allow positioning of watermark */
-                            }
-                            .watermark {
-                                position: absolute;
-                                top: 50%; /* Center vertically */
-                                left: 50%; /* Center horizontally */
-                                transform: translate(-50%, -50%); /* Centering adjustment */
-                                opacity: 0.1; /* Make it faint */
-                                pointer-events: none; /* Ensure it doesn't block interactions */
-                                z-index: -1; /* Send to back */
-                            }
                             .header-content {
                                 display: flex;
-                                justify-content: center; /* Centers the content horizontally */
-                                align-items: center; /* Aligns the content vertically */
+                                flex-direction: column;
+                                align-items: center;
                                 margin-bottom: 20px;
                             }
-                            .logo {}
                             .school-details {
                                 text-align: center;
-                                font-family: 'Times New Roman', serif;
+                                
                             }
                             .school-details h2 {
                                 font-size: 1.5em;
                                 font-weight: bold;
                             }
                             .school-details p {
-                                margin: 0;
+                                margin-bottom: -5px;
                             }
                             hr {
                                 border-top: 1px solid black;
                                 width: 100%;
                                 margin-top: 10px;
                             }
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                            }
+                            th, td {
+                                text-align: center;
+                                vertical-align: middle;
+                                border: 1px solid black;
+                                padding: 8px;
+                            }
                             .additional-titles {
                                 margin-top: 10px;
                                 margin-bottom: 50px;
                             }
-                            .additional-titles h3, .additional-titles h4 {
-                                margin: 5px 0;
-                                font-weight: bold;
-                            }
                             .signature-section {
                                 margin-top: 50px;
                                 text-align: center;
-                                display: flex; /* Use flexbox for horizontal alignment */
-                                justify-content: space-between; /* Distribute space evenly */
-                                align-items: flex-start; /* Align items to the top */
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: flex-start;
                             }
                             .signature-section div {
-                                flex: 1; /* Allow equal distribution of width */
-                                text-align: center; /* Center the text in each section */
+                                flex: 1;
+                                text-align: center;
                             }
-                                
+                            .watermark {
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                opacity: 0.1;
+                                pointer-events: none;
+                                z-index: -1;
+                            }
+                            .footer {
+                                position: fixed;
+                                bottom: 0;
+                                width: 100%;
+                                padding: 10px 20px;
+                                border-top: 2px solid black;
+                                background-color: white;
+                            }
+
+                            .footer img {
+                                width: 100px;
+                                height: auto;
+                            }
+                            .footer p {
+                                margin-bottom:-3px;
+                                flex-grow: 1;
+                                font-family: 'Times New Roman', serif;
+                               
+                            }
+
                         </style>
                     </head>
                     <body>
-                        ${printContent}
-                        <img src="../img/Logo/${data.Logo}" class="watermark" style="width: 700px;" />
-                    </body>
+                    ${printContent}
+                    <img src="img/Logo/${data.Logo}" class="watermark" style="width: 700px;" />
+                </body>
                 </html>
             `);
 
             win.document.close();
 
-            // Wait for the content to load before printing
             win.onload = function() {
                 win.print();
                 win.close();
             };
 
-            // Restore action column visibility after printing
             actionColumns.forEach(function(column) {
                 column.style.display = '';
             });
@@ -495,7 +562,6 @@ function fetchSchoolDetailsAndPrint() {
     });
 }
 </script>
-
 
 
 
@@ -547,14 +613,8 @@ $(document).ready(function() {
                                 <td>${row.SubTeacher}</td>
                                 <td>${row.TotalNumOfStudents}</td>
                                 <td>${row.TotalNumTested}</td>
-                                <td>${row.HighestScore}</td>
-                                <td>${row.LowestScore}</td>
                                 <td class="${mpsClass}">${row.MPS}</td>
-                                <td class="action-column">
-                                    <button class="btn btn-info btn-rounded">
-                                        <i class="bx bx-envelope"></i> <!-- Email Icon -->
-                                    </button>
-                                </td>
+                                
                             </tr>
                         `;
                         tbody.append(html);

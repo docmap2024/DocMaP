@@ -8,16 +8,19 @@ if (isset($_GET['dept_id'])) {
 
     // Fetch department-level statistics for total submit and assigned counts
     // Total submitted or approved tasks
-    $submittedQuery = "SELECT COUNT(DISTINCT tu.UserID) AS totalSubmit 
-                       FROM task_user tu
-                       INNER JOIN feedcontent fc ON tu.ContentID = fc.ContentID 
-                       WHERE (tu.Status = 'Submitted' OR tu.Status = 'Approved') 
-                       AND fc.dept_ID = ?";
-    $submittedStmt = $conn->prepare($submittedQuery);
-    $submittedStmt->bind_param('i', $dept_id);
-    $submittedStmt->execute();
-    $submittedResult = $submittedStmt->get_result();
-    $totalSubmit = $submittedResult->fetch_assoc()['totalSubmit'] ?? 0;
+    $submittedQuery = "SELECT COUNT(tu.Task_User_ID) AS totalSubmit 
+                   FROM task_user tu
+                   INNER JOIN feedcontent fc ON tu.ContentID = fc.ContentID 
+                   WHERE (tu.Status = 'Submitted' OR tu.Status = 'Approved') 
+                   AND fc.dept_ID = ?";
+$submittedStmt = $conn->prepare($submittedQuery);
+if (!$submittedStmt) {
+    die(json_encode(['error' => 'Error in SQL preparation: ' . $conn->error]));
+}
+$submittedStmt->bind_param('i', $dept_id);
+$submittedStmt->execute();
+$submittedResult = $submittedStmt->get_result();
+$totalSubmit = $submittedResult->fetch_assoc()['totalSubmit'] ?? 0;
 
     // Total assigned tasks with Status = 'Assign'
     $assignedQuery = "SELECT COUNT(DISTINCT tu.UserID) AS totalAssigned
@@ -36,7 +39,7 @@ if (isset($_GET['dept_id'])) {
     $tasksQuery = "SELECT 
     t.TimeStamp, 
     MAX(t.Title) AS TaskTitle,  
-    SUM(CASE WHEN tu.Status = 'Submitted' THEN 1 ELSE 0 END) AS totalSubmit,
+    SUM(CASE WHEN tu.Status IN ('Submitted', 'Approved', 'Rejected') THEN 1 ELSE 0 END) AS totalSubmit,
     COUNT(tu.UserID) AS totalAssigned
 FROM 
     tasks t

@@ -44,7 +44,7 @@ $stmt->close();
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.css" rel="stylesheet">
-    <title>DocMaP</title>
+    <title>DocMaP | Home</title>
 
     <!-- Bootstrap core CSS -->
     <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -702,9 +702,16 @@ $stmt->close();
                   <div class="col-lg-4">
                     <div class="info-post">
                       <div class="icon">
-                        <img src="assets/images/phone-icon.png" alt="">
-                        <a href="tel:<?php echo htmlspecialchars($mobile); ?>"><?php echo htmlspecialchars($mobile); ?></a>
+                          <img src="assets/images/phone-icon.png" alt="">
+                          <?php 
+                              // Ensure the mobile number is a 10-digit numeric string
+                              $formattedMobile = preg_replace('/(\d{4})(\d{3})(\d{4})/', '$1-$2-$3', $mobile);
+                          ?>
+                          <a href="tel:<?php echo htmlspecialchars($mobile); ?>">
+                              <?php echo htmlspecialchars($formattedMobile); ?>
+                          </a>
                       </div>
+
                     </div>
                   </div>
                   <div class="col-lg-4">
@@ -764,16 +771,45 @@ $stmt->close();
     <div class="container">
       <div class="row">
         <div class="col-lg-12">
-          <p>Copyright © 2024 DocMaP by QWERTY Co., Ltd. All Rights Reserved. 
+          <p>Copyright © <?= date("Y"); ?> 
+            <a href="developers.php" class="qwerty-link">
+              QWERTY Co., Ltd.
+            </a> 
+            All Rights Reserved. 
           <br>
-          <a href="https://github.com/AbiAb1/ProfTal.git" target="_parent">
-            <img src="img/Logo/qwerty.png" alt="QWERTY Logo" style = "width: 150px;">
+          <a href="https://github.com/AbiAb1/ProfTal.git" target="_blank">
+            <img src="img/Logo/qwerty.png" alt="QWERTY Logo" style="width: 150px;">
           </a>
           </p>
         </div>
       </div>
     </div>
-  </footer>
+</footer>
+<style>
+  .qwerty-link {
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease-in-out;
+    display: inline-block;
+  }
+
+  .qwerty-link:hover {
+    transform: scale(1.2); /* Zoom in effect */
+    color:#fff;
+  }
+
+  .qwerty-logo {
+    width: 150px;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .qwerty-logo:hover {
+    transform: scale(1.1); /* Zoom in effect for the logo */
+  }
+</style>
+
+
+
 <!-- Caps Lock Warning -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {

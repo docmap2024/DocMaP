@@ -1,9 +1,9 @@
-<div href="dashdhead.php" class="brand" style="text-align:center; font-size:38px; margin-top: 15px;">
+<a href="dash_dhead.php" class="brand" style="text-align:center; font-size:38px; margin-top: 15px; text-decoration: none;">
     <i class="icon">
         <img src="img/Logo/docmap-logo-1.png" alt="Icon" style="max-width: 40px; height: auto;">
     </i>
     <img src="img/Logo/docmap.png" alt="Logo" style="max-width: 150px; height: auto;">
-</div>
+</a>
 
 <ul class="side-menu">
 			<li><a href="dash_dhead.php" class="active"><i class='bx bxs-dashboard icon' ></i> Dashboard</a></li>

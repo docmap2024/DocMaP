@@ -5,10 +5,12 @@ include 'connection.php';
 // Fetch the user ID from the session
 $user_id = $_SESSION['user_id']; // Ensure you set this session variable upon login
 
-// Fetch instructors
-$queryTeachers = "SELECT CONCAT(fname, ' ',lname) AS TeacherName, UserID
-                  FROM useracc 
-                  WHERE role = 'Teacher' OR role = 'Department Head' AND Status= 'Approved'";
+// Fetch instructors who have records in mps
+$queryTeachers = "SELECT DISTINCT CONCAT(u.fname, ' ', u.lname) AS TeacherName, u.UserID
+                  FROM useracc u
+                  INNER JOIN mps mp ON u.UserID = mp.UserID
+                  WHERE (u.role = 'Teacher' OR u.role = 'Department Head') 
+                  AND u.Status = 'Approved'";
 $resultTeacher = mysqli_query($conn, $queryTeachers);
 
 
@@ -48,8 +50,7 @@ if ($resultQuarter) {
 }
 $queryMPS = "SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_Name, 
                     CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
-                    m.TotalNumOfStudents, m.TotalNumTested, m.HighestScore, 
-                    m.LowestScore, m.MPS,sy.Year_Range AS SY,
+                    m.TotalNumOfStudents, m.TotalNumTested,  m.MPS,sy.Year_Range AS SY,
                     CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
              FROM mps m
              INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
@@ -63,13 +64,13 @@ $resultMPS = mysqli_query($conn, $queryMPS);
 $schoolyearQuery = "SELECT School_Year_ID, Year_Range FROM schoolyear";
 $schoolyearResult = mysqli_query($conn, $schoolyearQuery);
 
-// Fetch Grade Level data (content titles associated with the user)
-$user_id = $_SESSION['user_id']; // Assuming you're using session to store user ID
+// Fetch DISTINCT grade levels that have records in mps (for admin module)
 $gradeLevelQuery = "
-    SELECT fs.ContentID, fs.Title, fs.Captions
+    SELECT DISTINCT fs.ContentID, fs.Title, fs.Captions
     FROM feedcontent fs
-    INNER JOIN usercontent uc ON fs.ContentID = uc.ContentID
-     ";
+    INNER JOIN mps m ON fs.ContentID = m.ContentID
+    GROUP BY fs.Title, fs.Captions
+";
 $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
 ?>
 
@@ -98,9 +99,6 @@ $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
             padding-right: 20px;
             margin-bottom: 20px;
         }
-
-
-        
 
         .readonly-input {
             background-color: #f0f0f0; /* Light gray background */
@@ -255,8 +253,6 @@ $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
                             <th>Instructor</th>
                             <th>Total No. Students</th>
                             <th>Total No. Tested</th>
-                            <th>Highest Score</th>
-                            <th>Lowest Score</th>
                             <th>MPS</th>
                             <th class="action-column">Action</th>
                         </tr>
@@ -272,8 +268,6 @@ $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
                                 echo '<td>' . htmlspecialchars($row['SubTeacher']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['TotalNumOfStudents']) . '</td>';
                                 echo '<td>' . htmlspecialchars($row['TotalNumTested']) . '</td>';
-                                echo '<td>' . htmlspecialchars($row['HighestScore']) . '</td>';
-                                echo '<td>' . htmlspecialchars($row['LowestScore']) . '</td>';
 
                                 // Check MPS value and apply class
                                 $mpsClass = htmlspecialchars($row['MPS']) < 75 ? 'text-danger' : 'text-success';
@@ -423,40 +417,44 @@ function sendMessage() {
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
         function fetchSchoolDetailsAndPrint() {
-            // Fetch school details using AJAX
             $.ajax({
-                url: '../getSchoolDetails.php',
+                url: 'getSchoolDetails.php',
                 method: 'GET',
                 success: function(data) {
                     var mpsTable = document.getElementById("mpsTable");
                     var actionColumns = document.querySelectorAll('.action-column');
 
-                    // Check if the table has rows
                     if (mpsTable.rows.length > 1) {
                         // Prepare the logo and school details for the print view
-                        var logo = data.Logo ? '<img src="../img/Logo/' + data.Logo + '" style="width: 130px; height: auto; margin-right:20px;" />' : '<p>No Logo Available</p>';
+                        var logo = data.Logo ? '<img src="../img/Logo/' + data.Logo + '" style="width: 80px; height: auto;" />' : '<p>No Logo Available</p>';
+                        
+                        // Centered DepEd Logo
+                        var depedLogo = `
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <img src="img/Logo/deped_logo.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
+                            </div>
+                        `;
+
                         var schoolDetails = `
-                            <div class="header-content" style="padding-right:150px;">
-                                <div class="logo" style="flex-shrink: 0; ">
-                                ${logo}
-                                </div>
-                                <div class="school-details">
-                                    <p>Republic of the ${data.Country}</p>
-                                    <p>${data.Organization}</p>
-                                    <p>${data.Region}</p>
-                                    <h2 style="font-weight: bold; font-size: 1.5em;">${data.Name}</h2>
-                                    <p>${data.Address}</p>
-                                    <p>School ID: ${data.School_ID}</p>
+                            <div class="header-container">
+                                ${depedLogo}
+                                <div class="school-details" style="text-align: center;">
+                                    <p style='font-family: "Old English Text MT", serif; font-weight:bold; font-size:20px; margin: 0;'>Republic of the ${data.Country || 'Philippines'}</p>
+                                    <p style='font-family: "Old English Text MT", serif;font-weight:bold; font-size:28px; margin: 4px 0 2px 0;'>${data.Organization || 'Department of Education'}</p>
+                                    <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">Region ${data.Region || 'IV-A'}</p>
+                                    <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">Schools Division of Batangas</p>
+                                    <p style="text-transform: uppercase; font-family: 'Tahoma'; font-size: 16px; margin: 1px;">${data.Name || 'School Name'}</p>
+                                    <p style="text-transform: uppercase;  font-family: 'Tahoma'; font-size: 16px; margin: 1px;">${data.Address}, ${data.City_Muni}</p>
                                 </div>
                             </div>
-                            <hr/>
+                            <hr style="max-width:100%; margin: 10px auto; border: 1px solid black;">
                             <div class="additional-titles" style="text-align: center; font-family: 'Times New Roman', serif;">
                                 <h3>Mean Percentage Score</h3>
                                 <h4>Philippine Politics and Governance</h4>
                             </div>
                         `;
 
-                        // Hide action columns in the table
+                        // Hide action columns
                         actionColumns.forEach(function(column) {
                             column.style.display = 'none';
                         });
@@ -464,30 +462,68 @@ function sendMessage() {
                         // Create print content
                         var printContent = schoolDetails + mpsTable.outerHTML;
 
-                        // Add signature lines at the bottom
+                        // Signature Section
                         printContent += `
                             <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div style="text-align: center; flex: 1;">
                                     <span>Approved by:</span><br/><br/>
+                                    <div style="margin-bottom: -55px; margin-top: -65px;">
+                                        <img src="img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                    </div>
                                     <span style="font-weight:bold;">${data.Principal_FullName}</span><br/>
                                     <hr style="max-width: 30%; margin: 0 auto;" />
-                                    <span>Principal</span>
+                                    <span>${data.Principal_Role}</span>
                                 </div>
                             </div>
                         `;
 
-                        // Open the print window
-                        var win = window.open('', '', 'height=700,width=900');
+                        // Footer with DepEd MATATAG Logo (will be positioned at bottom via CSS)
+                        var footerContent = `
+                            <div class="footer">
+                                <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
+                                    <div class="footer-logo">
+                                        <img src="  img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                        ${data.Logo ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
+                                    </div>
+                                    <div class="footer-details">
+                                        <p style="margin-bottom: -5px;">${data.Address || ''} ${data.City_Muni || ''} ${data.School_ID ? 'School ID: ' + data.School_ID : ''}</p>
+                                        <p style="margin-bottom: -5px;">${data.Mobile_No ? 'Contact nos.: ' + data.Mobile_No : ''} ${data.landline ? ' Landline: ' + data.landline : ''}</p>
+                                        <p class="footer-underline">${data.Email || ''}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
 
-                        // Write the content to the new window
+                        printContent += footerContent;
+
+                        // Open print window
+                        var win = window.open('', '', 'height=700,width=900');
                         win.document.write(`
                             <html>
                                 <head>
-                                    <title>Print Table</title>
+                                    <title>Mean Percentage Score Report</title>
                                     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
                                     <style>
                                         body {
+                                            font-family: 'Times New Roman', serif;
+                                            margin: 1cm;
                                             position: relative;
+                                            min-height: 100vh;
+                                            padding-bottom: 100px; /* Space for footer */
+                                        }
+                                        table {
+                                            width: 100%;
+                                            border-collapse: collapse;
+                                            margin-top: 20px;
+                                        }
+                                        th, td {
+                                            border: 1px solid #ddd;
+                                            padding: 8px;
+                                            text-align: center;
+
+                                        }
+                                        th {
+                                            background-color: #f2f2f2;
                                         }
                                         .watermark {
                                             position: absolute;
@@ -498,47 +534,80 @@ function sendMessage() {
                                             pointer-events: none;
                                             z-index: -1;
                                         }
-                                        .header-content {
-                                            display: flex;
-                                            justify-content: center;
-                                            align-items: center;
+                                        .header-container {
                                             margin-bottom: 20px;
                                         }
-                                        .logo {}
                                         .school-details {
                                             text-align: center;
-                                            font-family: 'Times New Roman', serif;
-                                        }
-                                        .school-details h2 {
-                                            font-size: 1.5em;
-                                            font-weight: bold;
-                                        }
-                                        .school-details p {
-                                            margin: 0;
                                         }
                                         hr {
                                             border-top: 1px solid black;
                                             width: 100%;
-                                            margin-top: 10px;
+                                            margin: 10px auto;
                                         }
                                         .additional-titles {
-                                            margin-top: 10px;
-                                            margin-bottom: 50px;
+                                            margin: 20px 0;
                                         }
-                                        .additional-titles h3, .additional-titles h4 {
-                                            margin: 5px 0;
+                                        .additional-titles h3 {
+                                            font-size: 1.3em;
+                                            margin-bottom: 5px;
+                                            font-weight: bold;
+                                        }
+                                        .additional-titles h4 {
+                                            font-size: 1.1em;
+                                            margin-top: 0;
                                             font-weight: bold;
                                         }
                                         .signature-section {
-                                            margin-top: 50px;
-                                            text-align: center;
-                                            display: flex;
-                                            justify-content: space-between;
-                                            align-items: flex-start;
+                                            margin-top: 60px;
+                                            margin-bottom: 100px; /* Space above footer */
+                                            page-break-inside: avoid;
                                         }
-                                        .signature-section div {
-                                            flex: 1;
-                                            text-align: center;
+                                        .footer {
+                                            position: fixed;
+                                            bottom: 0;
+                                            left: 0;
+                                            right: 0;
+                                            width: 100%;
+                                            background-color: white;
+                                            padding: 5px 0;
+                                            border-top: 2.5px solid #000;
+                                            margin-bottom: 15px;
+                                        }
+
+                                        .footer-logo {
+                                            display: flex;
+                                            align-items: center;
+                                            margin-right: 20px;
+                                        }
+
+                                        .footer-details {
+                                            text-align: left;
+                                            font-size: 1.5rem;
+                                            line-height: 1.3;
+                                        }
+
+                                        .footer-underline {
+                                            color: blue;
+                                            text-decoration: underline;
+                                        }
+                                        
+                                        @media print {
+                                            @page {
+                                                margin: 5mm 10mm 5mm 5mm; 
+                                                size: auto;
+                                                marks: none; /* Removes crop marks */
+                                            }
+                                            body {
+                                                margin: 1cm;
+                                            }
+                                            .footer {
+                                                position: fixed;
+                                                bottom: 0;
+                                            }
+                                            /* Remove browser-added headers/footers */
+                                            thead { display: table-header-group; }
+                                            tfoot { display: table-footer-group; }
                                         }
                                     </style>
                                 </head>
@@ -550,21 +619,18 @@ function sendMessage() {
                         `);
 
                         win.document.close();
-
-                        // Wait for the content to load before printing
                         win.onload = function() {
                             win.print();
                             win.close();
                         };
 
-                        // Restore action column visibility after printing
+                        // Restore action columns
                         actionColumns.forEach(function(column) {
                             column.style.display = '';
                         });
                     } else {
-                        // Disable the print button if there are no rows in the table
                         document.getElementById("printButton").disabled = true;
-                        document.getElementById("printButton").style.display = 'none'; // Hide the button
+                        document.getElementById("printButton").style.backgroundColor = '#cccccc';
                     }
                 },
                 error: function() {
@@ -581,79 +647,93 @@ function sendMessage() {
 
 
 <script>
-$(document).ready(function() {
-    // When the filter button is clicked
-    $('#filterButton').click(function() {
-        // Fetch selected values from the dropdowns
-        const schoolYear = $('#schoolYearSelect').val();
-        const quarter = $('#quarterSelect').val();
-        const gradeLevel = $('#gradeLevelSelect').val();
-        const instructor = $('#instructorSelect').val(); // Fetch instructor selection
-        
-        console.log('Filter button clicked');
-        console.log('Selected School Year:', schoolYear);
-        console.log('Selected Quarter:', quarter);
-        console.log('Selected Grade Level:', gradeLevel);
-        console.log('Selected Instructor:', instructor); // Log selected instructor
+    $(document).ready(function() {
+        // When the filter button is clicked
+        $('#filterButton').click(function() {
+            // Fetch selected values from the dropdowns
+            const schoolYear = $('#schoolYearSelect').val();
+            const quarter = $('#quarterSelect').val();
+            const gradeLevel = $('#gradeLevelSelect').val();
+            const instructor = $('#instructorSelect').val();
+            
+            console.log('Filter button clicked');
+            console.log('Selected School Year:', schoolYear);
+            console.log('Selected Quarter:', quarter);
+            console.log('Selected Grade Level:', gradeLevel);
+            console.log('Selected Instructor:', instructor);
 
-        // AJAX request to fetch filtered data
-        $.ajax({
-            url: 'filter-mps.php',
-            method: 'POST',
-            data: {
-                school_year: schoolYear,
-                quarter: quarter,
-                grade_level: gradeLevel,
-                instructor: instructor // Send instructor selection in the request
-            },
-            dataType: 'json',
-            success: function(data) {
-                console.log('Data received:', data); // Check the response data
-                const tbody = $('#mpsTable tbody');
-                tbody.empty(); // Clear current table rows
-                
-                if (data.length > 0) {
-                    data.forEach(row => {
-                        const mpsClass = row.MPS < 75 ? 'text-danger' : 'text-success';
-                        const html = `
-                            <tr>
-                                <td>${row.SY}</td>
-                                <td>${row.Quarter_Name}</td>
-                                <td>${row.GradeSection}</td>
-                                <td>${row.SubTeacher}</td>
-                                <td>${row.TotalNumOfStudents}</td>
-                                <td>${row.TotalNumTested}</td>
-                                <td>${row.HighestScore}</td>
-                                <td>${row.LowestScore}</td>
-                                <td class="${mpsClass}">${row.MPS}</td>
-                                <td class="action-column">
-                                    <button id="printBtn" class="btn btn-info btn-rounded">
-                                        <i class="bx bx-envelope"></i> <!-- Email Icon -->
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                        tbody.append(html);
-                    });
-
-                    // Enable the print button if data exists
-                    $('#printBtn').prop('disabled', false);
-                    $('#printBtn').show();
-                } else {
-                    tbody.append('<tr><td colspan="9">No data found</td></tr>');
+            // AJAX request to fetch filtered data
+            $.ajax({
+                url: 'filter-mps.php',
+                method: 'POST',
+                data: {
+                    school_year: schoolYear,
+                    quarter: quarter,
+                    grade_level: gradeLevel,
+                    instructor: instructor
+                },
+                dataType: 'json',
+                success: function(data) {
+                    console.log('Data received:', data);
+                    console.log('Total records received:', data.length);
+                    console.log('Sample record:', data[0]); // Inspect structure
+                    const tbody = $('#mpsTable tbody');
+                    tbody.empty();
                     
-                    // Disable the print button and hide it
-                    $('#printButton').prop('disabled', true);
-                    $('#printButton').hide();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error:', error); // Log any AJAX errors
-                console.log(xhr.responseText); // Log the response
+                    if (data.length > 0) {
+                        data.forEach((row, index) => {
+                            console.log('Processing:', row.GradeSection); // Log each grade
+                            const mpsClass = row.MPS < 75 ? 'text-danger' : 'text-success';
+                            const html = `
+                                <tr>
+                                    <td>${row.SY}</td>
+                                    <td>${row.Quarter_Name}</td>
+                                    <td>${row.GradeSection}</td>
+                                    <td>${row.SubTeacher}</td>
+                                    <td>${row.TotalNumOfStudents}</td>
+                                    <td>${row.TotalNumTested}</td>
+                                    <td class="${mpsClass}">${row.MPS}</td>
+                                    <td class="action-column">
+                                        <button class="btn btn-info btn-rounded print-btn" data-index="${index}">
+                                            <i class="bx bx-envelope"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                            tbody.append(html);
+                        });
+
+                        // Enable the main print button when data exists
+                        // Enable and style the print button
+                        $('#printButton')
+                            .prop('disabled', false)
+                            .css({
+                                'background-color': 'green',
+                                'color': 'white',
+                                'cursor': 'pointer'
+                            });
+                    } else {
+                        tbody.append('<tr><td colspan="9">No data found</td></tr>');
+                        
+                        // Disable and style the print button
+                        $('#printButton')
+                            .prop('disabled', true)
+                            .css({
+                                'background-color': '#cccccc',
+                                'color': '#666666',
+                                'cursor': 'not-allowed'
+                            });
+                    }
+                },
+                error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                // Also disable print button on error
+                $('#printButton').prop('disabled', true);
+                $('#mpsTable tbody').html('<tr><td colspan="9">Error loading data</td></tr>');
             }
+            });
         });
     });
-});
 </script>
 
     

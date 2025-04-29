@@ -8,6 +8,36 @@
 <ul class="side-menu">
     <li><a href="dash.php" class="active"><i class='bx bxs-dashboard icon'></i> Dashboard</a></li>
     <li class="divider" data-text="main">Main</li>
+    
+    <?php
+    // Include your database connection
+    include 'connection.php';
+
+    // Start session to get user details (assuming the user is logged in and their ID is stored in session)
+    $user_id = $_SESSION['user_id']; // Assuming UserID is stored in session
+
+    // Query to check if the user belongs to an "Administrative" department
+    $sql_admin_dept = "SELECT d.dept_type 
+                       FROM useracc u
+                       JOIN user_department ud ON u.UserID = ud.UserID
+                       JOIN department d ON ud.dept_ID = d.dept_ID
+                       WHERE u.UserID = ? AND d.dept_type = 'Administrative'";
+
+    // Prepare and execute the query
+    $stmt_admin_dept = $conn->prepare($sql_admin_dept);
+    $stmt_admin_dept->bind_param("i", $user_id);
+    $stmt_admin_dept->execute();
+    $result_admin_dept = $stmt_admin_dept->get_result();
+
+    // Check if the user belongs to an "Administrative" department
+    $isAdministrative = $result_admin_dept->num_rows > 0;
+    ?>
+
+    <!-- Only show the "Administrative" tab if the user belongs to an "Administrative" department -->
+    <?php if ($isAdministrative): ?>
+        <li><a href="department.php"><i class='bx bxs-building icon'></i>Administrative</a></li>
+    <?php endif; ?>
+
     <li><a href="subjects.php"><i class='bx bxs-bookmarks icon'></i>All Grades</a></li>
     <li>
         <a href="#" style="background-color:#9B2035;color:#fff;">
@@ -80,8 +110,8 @@
         // Start session to get user details (assuming the user is logged in and their ID is stored in session)
         $user_id = $_SESSION['user_id'];// Assuming UserID is stored in session
 
-        // Query to check if the user is a chairperson
-        $sql = "SELECT * FROM Chairperson WHERE UserID = ?";
+        // Query to check if the user is a guidance coordinator
+        $sql = "SELECT * FROM guidance_coordinator WHERE UserID = ?";
 
         // Prepare and execute the query
         $stmt = $conn->prepare($sql);
@@ -89,12 +119,12 @@
         $stmt->execute();
         $result = $stmt->get_result();
 
-        // Check if the user is a chairperson
-        $isChairperson = $result->num_rows > 0;
+        // Check if the user is a guidance coordinator
+        $isCoordinator = $result->num_rows > 0;
     ?>
 
-    <!-- Only show the "Performance Indicator" tab if the user is a chairperson -->
-    <?php if ($isChairperson): ?>
+    <!-- Only show the "Performance Indicator" tab if the user is a guidance coordinator -->
+    <?php if ($isCoordinator): ?>
         <li><a href="performance_indicator.php"><i class='bx bx-grid icon'></i></i>Performance Indicator</a></li>
     <?php endif; ?>
     

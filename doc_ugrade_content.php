@@ -264,14 +264,14 @@ function getFileIcon($mimeType) {
                             <div class="col-md-4 mb-4">
                                 <a href="Documents/<?php echo htmlspecialchars($document['name']); ?>" target="_blank" class="document-item" data-date="<?php echo htmlspecialchars($document['TimeStamp']); ?>">
                                     <i class="<?php echo getFileIcon($document['mimeType']); ?> icon"></i>
-                                        <div class="document-name">
-                                            <?php 
-                                            // Strip the prefix up to the first underscore
-                                            $displayName = preg_replace('/^[^_]*_/', '', $document['name']);
-                                            echo htmlspecialchars($displayName); 
-                                            ?>
-                                            <i class="fas fa-info-circle info-icon" data-toggle="modal" data-target="#modal-<?php echo $document['DocuID']; ?>" title="View Details"></i>
-                                        </div>
+                                    <div class="document-name">
+                                        <?php 
+                                        // Remove prefix and file extension
+                                        $displayName = preg_replace('/^[^_]*_/', '', pathinfo($document['name'], PATHINFO_FILENAME));
+                                        echo htmlspecialchars($displayName); 
+                                        ?>
+                                        <i class="fas fa-info-circle info-icon" data-toggle="modal" data-target="#modal-<?php echo $document['DocuID']; ?>" title="View Details"></i>
+                                    </div>
                                 </a>
                             </div>
                         <?php endforeach; ?>
@@ -281,76 +281,68 @@ function getFileIcon($mimeType) {
                         </div>
                     <?php endif; ?>
                 </div>
+
             </div>
         </main>
     </section>
 
     <script>
-       document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search');
     const filterAlphabetical = document.getElementById('filter-alphabetical');
     const filterDate = document.getElementById('filter-date');
-    const documentItems = Array.from(document.querySelectorAll('.document-item'));
+    const documentList = document.querySelector('.row'); // Target the row container
+    let documentItems = Array.from(document.querySelectorAll('.document-item'));
 
     searchInput.addEventListener('input', filterDocuments);
     filterAlphabetical.addEventListener('change', filterDocuments);
     filterDate.addEventListener('change', filterDocuments);
 
     function filterDocuments() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const alphabeticalSort = filterAlphabetical.value;
-    const dateSort = filterDate.value;
+        const searchTerm = searchInput.value.toLowerCase();
+        const alphabeticalSort = filterAlphabetical.value;
+        const dateSort = filterDate.value;
 
-    // Filter by search term
-    let filteredItems = documentItems.filter(item => {
-        const documentName = item.querySelector('.document-name').textContent.toLowerCase();
-        return documentName.includes(searchTerm);
-    });
+        // Filter by search term
+        let filteredItems = documentItems.filter(item => {
+            const documentName = item.querySelector('.document-name').textContent.toLowerCase();
+            return documentName.includes(searchTerm);
+        });
 
-    // Sort alphabetically if selected
-    if (alphabeticalSort === 'asc') {
+        // Apply sorting
         filteredItems.sort((a, b) => {
-            const nameA = a.querySelector('.document-name').textContent.toLowerCase().replace(/^[^_]*_/, ''); // Strip prefix
-            const nameB = b.querySelector('.document-name').textContent.toLowerCase().replace(/^[^_]*_/, ''); // Strip prefix
-            return nameA.localeCompare(nameB);
+            let result = 0;
+
+            // Sort by date if selected
+            if (dateSort === 'newest' || dateSort === 'oldest') {
+                const dateA = new Date(a.getAttribute('data-date'));
+                const dateB = new Date(b.getAttribute('data-date'));
+                result = dateSort === 'newest' ? dateB - dateA : dateA - dateB;
+            }
+
+            // Sort alphabetically if selected (only if dates are equal or sorting is not applied)
+            if (result === 0 && (alphabeticalSort === 'asc' || alphabeticalSort === 'desc')) {
+                const nameA = a.querySelector('.document-name').textContent.toLowerCase();
+                const nameB = b.querySelector('.document-name').textContent.toLowerCase();
+                result = alphabeticalSort === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+            }
+
+            return result;
         });
-    } else if (alphabeticalSort === 'desc') {
-        filteredItems.sort((a, b) => {
-            const nameA = a.querySelector('.document-name').textContent.toLowerCase().replace(/^[^_]*_/, ''); // Strip prefix
-            const nameB = b.querySelector('.document-name').textContent.toLowerCase().replace(/^[^_]*_/, ''); // Strip prefix
-            return nameB.localeCompare(nameA);
+
+        // Clear the current document list and append sorted items
+        documentList.innerHTML = ''; // Clear the row container
+        filteredItems.forEach(item => {
+            const documentItem = document.createElement('div');
+            documentItem.classList.add('col-md-4', 'mb-4');
+            documentItem.appendChild(item);
+            documentList.appendChild(documentItem); // Append to the row container
         });
+
+        // Handle no documents message
+        const noDocumentsMessage = document.querySelector('.no-documents-message');
+        noDocumentsMessage.style.display = filteredItems.length === 0 ? 'block' : 'none';
     }
-
-    // Sort by date if selected
-    if (dateSort === 'newest') {
-        filteredItems.sort((a, b) => {
-            const dateA = new Date(a.getAttribute('data-date'));
-            const dateB = new Date(b.getAttribute('data-date'));
-            return dateB - dateA; // Newest first
-        });
-    } else if (dateSort === 'oldest') {
-        filteredItems.sort((a, b) => {
-            const dateA = new Date(a.getAttribute('data-date'));
-            const dateB = new Date(b.getAttribute('data-date'));
-            return dateA - dateB; // Oldest first
-        });
-    }
-
-    // Display filtered and sorted items
-    documentItems.forEach(item => {
-        item.parentElement.style.display = 'none'; // Hide all items first
-    });
-
-    filteredItems.forEach(item => {
-        item.parentElement.style.display = 'block'; // Show filtered items
-    });
-
-    // Handle no documents message
-    const noDocumentsMessage = document.querySelector('.no-documents-message');
-    noDocumentsMessage.style.display = filteredItems.length === 0 ? 'block' : 'none';
-}
-
 });
 
     </script>

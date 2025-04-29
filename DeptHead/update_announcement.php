@@ -10,26 +10,54 @@ if (isset($_POST['update_task_id'])) {
     $taskID = $_POST['update_task_id'];
 
     // Check if grades were submitted
-    if (isset($_POST['grade']) && !empty($_POST['grade'])) {
-        $contentIDs = implode(',', $_POST['grade']); // Combine selected grades into a comma-separated string
+    if (isset($_POST['update_grade']) && !empty($_POST['update_grade'])) {
+        $contentIDs = implode(',', $_POST['update_grade']); // Combine selected grades into a comma-separated string
     } else {
-        error_log("No grades selected for TaskID: $taskID\n", 3, 'logfile.log');
+        $response = [
+            'success' => false,
+            'message' => 'No grades selected.'
+        ];
+        header('Content-Type: application/json');
+        echo json_encode($response);
         exit;
     }
 
     $title = $_POST['update_title'];
-    $dueDate = $_POST['update_due_date'];
-    $dueTime = $_POST['update_due_time'];
     $taskContent = $_POST['update_instructions'];
     $actionType = $_POST['actionType']; // Added actionType from the form
+
+    // Validate actionType
+    $allowedActions = ['Assign', 'Draft', 'Schedule'];
+    if (!in_array($actionType, $allowedActions)) {
+        $response = [
+            'success' => false,
+            'message' => 'Invalid action type.'
+        ];
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit;
+    }
+
+    // Set as null since no field exists
+    $dueDate = NULL;
+    $dueTime = NULL;
 
     // Variables for schedule-specific data
     $scheduleDate = isset($_POST['update_schedule_date']) ? $_POST['update_schedule_date'] : null;
     $scheduleTime = isset($_POST['update_schedule_time']) ? $_POST['update_schedule_time'] : null;
 
-     // Log the schedule date and time
-     error_log("Schedule Date: " . $scheduleDate . "\n", 3, 'logfile.log');
-     error_log("Schedule Time: " . $scheduleTime . "\n", 3, 'logfile.log');
+    // Validate schedule date and time for scheduled tasks
+    if ($actionType == 'Schedule') {
+        if (empty($scheduleDate) || empty($scheduleTime)) {
+            $response = [
+                'success' => false,
+                'message' => 'Schedule date and time are required for scheduled tasks.'
+            ];
+            header('Content-Type: application/json');
+            echo json_encode($response);
+            exit;
+        }
+    }
 
     // Log the update request details to logfile.log
     error_log("Update Task - TaskID: $taskID, ContentIDs: $contentIDs, Title: $title, DueDate: $dueDate, DueTime: $dueTime, Instructions: $taskContent, ActionType: $actionType\n", 3, 'logfile.log');
@@ -62,14 +90,16 @@ if (isset($_POST['update_task_id'])) {
     $response = array();
     if ($stmt->execute()) {
         $response['success'] = true;
-        $response['message'] = 'Reminder updated successfully!';
+        $response['message'] = 'Announcement updated successfully!';
         // Log successful update
-        error_log("Reminder update successful - TaskID: $taskID, Status: $actionType\n", 3, 'logfile.log');
+        error_log("Announcement update successful - TaskID: $taskID, Status: $actionType\n", 3, 'logfile.log');
     } else {
         $response['success'] = false;
-        $response['message'] = 'Failed to update reminder.';
+        $response['message'] = 'Failed to update announcement.';
         // Log error details
-        error_log("Update Reminder Error: " . $stmt->error . "\n", 3, 'logfile.log');
+        error_log("Update Announcement Error: " . $stmt->error . "\n", 3, 'logfile.log');
+        error_log("SQL Query: $sql\n", 3, 'logfile.log');
+        error_log("Parameters: ContentIDs: $contentIDs, Title: $title, TaskContent: $taskContent, DueDate: $dueDate, DueTime: $dueTime, Status: $status, TaskID: $taskID\n", 3, 'logfile.log');
     }
 
     // Close statement and connection

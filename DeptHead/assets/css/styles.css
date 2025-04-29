@@ -19,7 +19,15 @@
 	--dark-blue: #0C5FCD;
 	--red: #FC3B56;
 }
-
+.modal {
+	z-index: 1050 !important;
+}.modal-backdrop {
+	z-index: 1040 !important;
+}
+.input:focus {
+	opacity: 1;
+	width: 250px;
+}		
 html {
 	overflow-x: hidden;
 }

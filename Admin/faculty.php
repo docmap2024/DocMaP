@@ -4,29 +4,44 @@ session_start();
 
 include 'connection.php';
 
-// Fetch chairperson data
+// Fetch guidance coordinator data
 $sql = "
     SELECT 
-        Chairperson_ID,
+        gc.Coordinator_ID,
         CONCAT(useracc.fname, ' ', useracc.mname, ' ', useracc.lname) AS FullName,
         Grade.Grade_Level
     FROM 
-        Chairperson
+        guidance_coordinator gc
     INNER JOIN 
-        useracc ON Chairperson.UserID = useracc.UserID
+        useracc ON gc.UserID = useracc.UserID
     INNER JOIN 
-        Grade ON Chairperson.Grade_ID = Grade.Grade_ID
+        Grade ON gc.Grade_ID = Grade.Grade_ID
 ";
 $result = $conn->query($sql);
 
 // Initialize an array to hold data
-$chairpersonData = [];
+$coordinatorData = [];
 
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        $chairpersonData[] = $row;
+        $coordinatorData[] = $row;
     }
 }
+
+// Fetch all department heads with their department names
+$deptHeadQuery = "SELECT 
+                    u.UserID AS DeptHead_ID,
+                    CONCAT(u.fname, ' ', u.mname, ' ', u.lname) AS FullName,
+                    d.dept_name AS Department_Name
+                  FROM 
+                    useracc u
+                  JOIN 
+                    department d ON u.dept_ID = d.dept_ID
+                  WHERE 
+                    u.role = 'Department Head'";
+$deptHeadResult = $conn->query($deptHeadQuery);
+$deptHeadData = $deptHeadResult->fetch_all(MYSQLI_ASSOC);
+
 
 $conn->close();
 ?>
@@ -48,8 +63,7 @@ $conn->close();
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         /* CSS for the faculty members list */
-        
-
+    
         .faculty-list-container {
             margin: 20px;
             padding: 20px;
@@ -84,12 +98,12 @@ $conn->close();
         }
 
         .btn-update {
-            background-color:blue;
+            background-color:rgb(32, 126, 233);
             color: white;   
         }
 
         .btn-resign {
-            background-color: red;
+            background-color:rgb(156, 23, 45);
             color: white;
         }
 
@@ -102,9 +116,9 @@ $conn->close();
             transition: border-color 0.3s ease;
 
         }
-
+        
         .search-input:focus {
-            border-color: #3498db;
+            border-color:#3498db;
             outline: none;
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
         }
@@ -196,12 +210,10 @@ $conn->close();
                 padding: 6px;
             }
         }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
+        /* Pagination styles */
+        .pagination-container {
             margin-top: 20px;
-            margin-bottom: 30px;
+            text-align: center;
         }
 
         .pagination a {
@@ -246,8 +258,8 @@ $conn->close();
             background-color: #a43150; /* Lighter shade on hover for First and Last */
         }
 
-        /*---------- Chairperson Container ----------*/
-        .chairperson-container {
+        /*---------- Coordinator Container ----------*/
+        .coordinator-container {
             margin: 20px;
             padding: 20px;
             background-color: #f9f9f9;
@@ -267,10 +279,10 @@ $conn->close();
             width: 100%; /* Make sure buttons take up the full width */
         }
 
-        /* Style for the Assign Chairperson Button */
-        #assignChairpersonBtn {
+        /* Style for the Assign Coordinator Button */
+        #assignCoordinatorBtn {
             padding: 10px 20px;
-            background-color: #3498db;
+            background-color: rgb(32, 126, 233);
             color: white;
             border: none;
             border-radius: 5px;
@@ -278,14 +290,14 @@ $conn->close();
             font-size: 1rem;
         }
 
-        #assignChairpersonBtn:hover {
+        #assignCoordinatorBtn:hover {
             background-color: #2980b9;
         }
 
-        /* Style for the Delete Chairperson Button */
-        #deleteChairpersonBtn {
+        /* Style for the Delete Coordinator Button */
+        #deleteCoordinatorBtn {
             padding: 10px 20px;
-            background-color: #f44336; /* Red */
+            background-color:rgb(156, 23, 45); 
             color: white;
             border: none;
             border-radius: 5px;
@@ -293,36 +305,36 @@ $conn->close();
             font-size: 1rem;
         }
 
-        #deleteChairpersonBtn:hover {
+        #deleteCoordinatorBtn:hover {
             background-color: #d32f2f;
         }
 
-        /*---------- Chairperson Table ----------*/
-        .chairperson-table, .faculty-table {
+        /*---------- Coordinator Table ----------*/
+        .coordinator-table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .chairperson-table th, .chairperson-table td {
+        .coordinator-table th, .coordinator-table td {
             padding: 12px;
             text-align: center;
             border-bottom: 1px solid #ddd;
         }
 
-        .chairperson-table th {
+        .coordinator-table th {
             background-color: #9b2035;
             color: white;
         }
 
-        .chairperson-table tr:hover, .faculty-table tr:hover {
+        .coordinator-table tr:hover{
             background-color: #f1f1f1;
         }
 
-        .chairperson-table input[type="checkbox"] {
+        .coordinator-table input[type="checkbox"] {
             cursor: pointer;
         }
 
-        /*---------- Assign Chairperson Modal ----------*/
+        /*---------- Assign Coordinator Modal ----------*/
         .modal {
             display: none;
             position: fixed;
@@ -353,9 +365,9 @@ $conn->close();
 
         .close-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 20px;
+            top: 1px;
+            right: 15px;
+            font-size: 33px;
             cursor: pointer;
         }
 
@@ -380,6 +392,27 @@ $conn->close();
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 1rem;
+        }
+
+        .modal-content .search-input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .modal-content .search-input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        /* Adjust modal content padding if needed */
+        .modal-content {
+            padding: 25px;
         }
 
         .btn-assign {
@@ -506,17 +539,94 @@ $conn->close();
         }
 
         .info-message {
-    display: flex;
-    align-items: center;
-    margin-top: 5px; /* Space between title and message */
-    
-}
+            display: flex;
+            align-items: center;
+            margin-top: 5px; /* Space between title and message */
+            
+        }
 
-.info-message p {
-    font-size: 16px; /* Font size for the message */
-    color: #555; /* Color for the message text */
-    margin: 0; /* Remove default margin */
-}
+        .info-message p {
+            font-size: 16px; /* Font size for the message */
+            color: #555; /* Color for the message text */
+            margin: 0; /* Remove default margin */
+        }
+
+
+        /*---------- Department Head Container ----------*/
+        .department-head-container {
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* Button container (flex row) */
+        .button-container {
+            display: flex;
+            justify-content: flex-end; /* Aligns the buttons to the right */
+            gap: 10px; /* Space between buttons */
+            margin-bottom: 20px;
+            width: 100%; /* Make sure buttons take up the full width */
+        }
+
+        /* Style for the Assign Department Head Button */
+        #assignDeptHeadBtn {
+            padding: 10px 20px;
+            background-color: rgb(32, 126, 233);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        #assignDeptHeadBtn:hover {
+            background-color: #2980b9;
+        }
+
+        /* Style for the Delete Department Head Button */
+        #removeDeptHeadBtn {
+            padding: 10px 20px;
+            background-color:rgb(156, 23, 45); 
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        #removeDeptHeadBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        /*---------- Department Head Table ----------*/
+        .department-head-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .department-head-table th, .department-head-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .department-head-table th {
+            background-color: #9b2035;
+            color: white;
+        }
+
+        .department-head-table tr:hover{
+            background-color: #f1f1f1;
+        }
+
+        .department-head-table input[type="checkbox"] {
+            cursor: pointer;
+        }
 
 
     </style>
@@ -589,52 +699,57 @@ $conn->close();
             </div>
 
 
-            <!------------------------------------ Chairperson Container ------------------------------->
-            <div class="chairperson-container">
-                <h2>Chairpersons</h2>
+            <!------------------------------------ Coordinator Container ------------------------------->
+            <div class="coordinator-container">
+                <h2>Guidance Coordinator</h2>
                 
                 <!-- Buttons for Deletion and Assign -->
                 <div class="button-container">
-                    <button id="assignChairpersonBtn" class="btn-update">Assign Chairperson</button>
-                    <button id="deleteChairpersonBtn" class="btn-delete">Delete Chairperson</button>
+                    <button id="assignCoordinatorBtn" class="btn-update">Assign Coordinator</button>
+                    <button id="deleteCoordinatorBtn" class="btn-delete">Delete Coordinator</button>
                 </div>
                 
-                <table class="chairperson-table">
+                <table class="coordinator-table">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" id="selectAll-chairperson"></th>
+                            <th><input type="checkbox" id="selectAll-coordinator"></th>
                             <th>Full Name</th>
                             <th>Grade Level</th>
                         </tr>   
                     </thead>
                     <tbody>
-                        <?php if (!empty($chairpersonData)) : ?>
-                            <?php foreach ($chairpersonData as $chairperson) : ?>
+                        <?php if (!empty($coordinatorData)) : ?>
+                            <?php foreach ($coordinatorData as $coordinator) : ?>
                                 <tr>
-                                    <!-- Checkbox for selecting chairpersons -->
-                                    <td><input type="checkbox" name="chairpersonID[]" value="<?= $chairperson['Chairperson_ID']; ?>"></td>
-                                    <td><?= htmlspecialchars($chairperson['FullName']); ?></td>
-                                    <td><?= htmlspecialchars($chairperson['Grade_Level']); ?></td>
+                                    <!-- Checkbox for selecting coordinators -->
+                                    <td><input type="checkbox" name="coordinatorID[]" value="<?= $coordinator['Coordinator_ID']; ?>"></td>
+                                    <td><?= htmlspecialchars($coordinator['FullName']); ?></td>
+                                    <td><?= htmlspecialchars($coordinator['Grade_Level']); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="3" style="text-align: center;">No chairperson data available.</td>
+                                <td colspan="3" style="text-align: center;">No guidance coordinator data available.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Modal for Assigning Chairperson -->
-            <div id="assignChairpersonModal" class="modal">
+            <!-- Modal for Assigning Coordinator -->
+            <div id="assignCoordinatorModal" class="modal">
                 <div class="modal-content">
                     <span class="close-btn" id="closeModal">&times;</span>
-                    <h2>Assign Chairperson</h2>
+                    <h2>Assign Guidance Coordinator</h2>
 
-                    <form id="assignChairpersonForm" method="POST" action="assign_chairperson.php">
+                    <!-- Search input -->
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="coordinatorSearch" class="search-input" placeholder="Search users..." style="width: 100%;">
+                    </div>
+
+                    <form id="assignCoordinatorForm" method="POST" action="assign_coordinator.php">
                         <div class="user-table-container">
-                            <table class="user-info-table">
+                            <table class="user-info-table" id="coordinatorUserTable">
                                 <thead>
                                     <tr>
                                         <th>Select</th>
@@ -647,8 +762,8 @@ $conn->close();
                                     // Database connection
                                     include 'connection.php';
 
-                                    // Fetch users eligible to be chairpersons
-                                    $usersQuery = "SELECT UserID, CONCAT(fname, ' ', mname, ' ', lname) AS FullName, Rank 
+                                    // Fetch users eligible to be coordinators
+                                    $usersQuery = "SELECT UserID, CONCAT(fname, ' ', mname, ' ', lname) AS FullName, URank 
                                                 FROM useracc 
                                                 WHERE role IN ('Department Head', 'Teacher')";
                                     $usersResult = $conn->query($usersQuery);
@@ -659,7 +774,7 @@ $conn->close();
                                             <tr>
                                                 <td><input type='radio' name='userID' value='{$user['UserID']}' required></td>
                                                 <td>" . htmlspecialchars($user['FullName']) . "</td>
-                                                <td>" . htmlspecialchars($user['Rank'] ?? 'N/A') . "</td>
+                                                <td>" . htmlspecialchars($user['URank'] ?? 'N/A') . "</td>
                                             </tr>";
                                         }
                                     } else {
@@ -697,14 +812,126 @@ $conn->close();
             </div>
 
 
+            <!------------------------------------ Department Head Container ------------------------------->
 
+            <div class="department-head-container">
+                <h2>Department Heads</h2>
 
+                <!-- Buttons for Assigning and Removing Department Heads -->
+                <div class="button-container">
+                    <button id="assignDeptHeadBtn" class="btn-update">Assign Department Head</button>
+                    <button id="removeDeptHeadBtn" class="btn-delete">Remove Department Head</button>
+                </div>
+
+                <table class="department-head-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll-deptHead"></th>
+                            <th>Full Name</th>
+                            <th>Department</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($deptHeadData)) : ?>
+                            <?php foreach ($deptHeadData as $deptHead) : ?>
+                                <tr>
+                                    <td><input type="checkbox" name="deptHeadID[]" value="<?= $deptHead['DeptHead_ID']; ?>"></td>
+                                    <td><?= htmlspecialchars($deptHead['FullName']); ?></td>
+                                    <td><?= htmlspecialchars($deptHead['Department_Name']); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else : ?>
+                            <tr>
+                                <td colspan="3" style="text-align: center;">No department head data available.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal for Assigning Department Head -->
+            <div id="assignDeptHeadModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-btn" id="closeDeptHeadModal">&times;</span>
+                    <h2>Assign Department Head</h2>
+
+                    <!-- Search input -->
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="deptHeadSearch" class="search-input" placeholder="Search users..." style="width: 100%;">
+                    </div>
+
+                    <form id="assignDeptHeadForm" method="POST" action="assign_department_head.php">
+                        <div class="user-table-container">
+                            <table class="user-info-table" id="deptHeadUserTable">
+                                <thead>
+                                    <tr>
+                                        <th>Select</th>
+                                        <th>Full Name</th>
+                                        <th>Rank</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    // Database connection
+                                    include 'connection.php';
+
+                                    // Fetch eligible users for Department Head role
+                                    $usersQuery = "SELECT UserID, CONCAT(fname, ' ', mname, ' ', lname) AS FullName, URank 
+                                                FROM useracc 
+                                                WHERE role = 'Teacher'";
+                                    $usersResult = $conn->query($usersQuery);
+
+                                    if ($usersResult->num_rows > 0) {
+                                        while ($user = $usersResult->fetch_assoc()) {
+                                            echo "
+                                            <tr>
+                                                <td><input type='radio' name='userID' value='{$user['UserID']}' required></td>
+                                                <td>" . htmlspecialchars($user['FullName']) . "</td>
+                                                <td>" . htmlspecialchars($user['URank'] ?? 'N/A') . "</td>
+                                            </tr>";
+                                        }
+                                    } else {
+                                        echo "
+                                        <tr>
+                                            <td colspan='3'>No eligible users found.</td>
+                                        </tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <label for="departmentID">Department:</label>
+                        <select name="departmentID" id="departmentID" required>
+                            <option value="">Select Department</option>
+                            <?php
+                            // Fetch departments without current department heads
+                            $departmentsQuery = "SELECT d.dept_ID, d.dept_name 
+                            FROM department d
+                            LEFT JOIN useracc u ON d.dept_ID = u.dept_ID AND u.role = 'Department head'
+                            WHERE u.UserID IS NULL";
+                            $departmentsResult = $conn->query($departmentsQuery);
+
+                            if ($departmentsResult->num_rows > 0) {
+                                while ($department = $departmentsResult->fetch_assoc()) {
+                                    echo "<option value='{$department['dept_ID']}'>" . htmlspecialchars($department['dept_name']) . "</option>";
+                                }
+                            }
+                            ?>
+                        </select>
+
+                        <button type="submit" class="btn-submit">Assign</button>
+                    </form>
+                </div>
+            </div>
         </main>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="assets/js/script.js"></script>
 
+
+    <!--------------------------------------------Faculty Members--------------------------------------->
     <script>
             // Handle Select All checkbox
             document.getElementById('selectAll').addEventListener('change', function() {
@@ -735,7 +962,7 @@ $conn->close();
                                         <label>Last Name:</label>
                                         <input type="text" class="swal2-input user-lastname" value="${lastName || ''}">
                                         <label>Rank:</label>
-                                        <input type="text" class="swal2-input user-rank" value="${user.rank || ''}">
+                                        <input type="text" class="swal2-input user-rank" value="${user.urank || ''}">
                                         <label>Address:</label>
                                         <input type="text" class="swal2-input user-address" value="${user.address || ''}">
                                         <label>Mobile:</label>
@@ -757,7 +984,7 @@ $conn->close();
                                         firstName: document.querySelectorAll('.user-firstname')[index].value,
                                         middleName: document.querySelectorAll('.user-middlename')[index].value,
                                         lastName: document.querySelectorAll('.user-lastname')[index].value,
-                                        rank: document.querySelectorAll('.user-rank')[index].value,
+                                        urank: document.querySelectorAll('.user-rank')[index].value,
                                         address: document.querySelectorAll('.user-address')[index].value,
                                         mobile: document.querySelectorAll('.user-mobile')[index].value,
                                         email: document.querySelectorAll('.user-email')[index].value,
@@ -782,7 +1009,7 @@ $conn->close();
                 return Array.from(selectedCheckboxes).map(checkbox => ({
                     UserID: checkbox.value,
                     fullname: checkbox.getAttribute('data-fullname'),
-                    rank: checkbox.getAttribute('data-rank'),
+                    urank: checkbox.getAttribute('data-rank'),
                     address: checkbox.getAttribute('data-address'),
                     mobile: checkbox.getAttribute('data-mobile'),
                     email: checkbox.getAttribute('data-email'),
@@ -797,7 +1024,7 @@ $conn->close();
                         user.firstName !== original.getAttribute('data-fullname').split(' ')[0] ||
                         user.middleName !== (original.getAttribute('data-fullname').split(' ')[1] || '') ||
                         user.lastName !== (original.getAttribute('data-fullname').split(' ')[2] || '') ||
-                        user.rank !== original.getAttribute('data-rank') ||
+                        user.urank !== original.getAttribute('data-rank') ||
                         user.address !== original.getAttribute('data-address') ||
                         user.mobile !== original.getAttribute('data-mobile') ||
                         user.email !== original.getAttribute('data-email')
@@ -850,97 +1077,88 @@ $conn->close();
 
             // Function to load faculty members and update the table
             function loadFacultyMembers(page = 1) {
-    fetch(`fetch_users.php?page=${page}`)
-        .then(response => response.json())
-        .then(data => {
-            const { users, total_pages, current_page } = data;
+                fetch(`fetch_users.php?page=${page}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const { users, total_pages, current_page } = data;
 
-            // Update the table with the fetched users
-            const tableBody = document.querySelector('.faculty-table tbody');
-            tableBody.innerHTML = '';
+                        // Update the table with the fetched users
+                        const tableBody = document.querySelector('.faculty-table tbody');
+                        tableBody.innerHTML = '';
 
-            users.forEach(user => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><input type="checkbox" class="select-user" 
-                            data-fullname="${user.fullname}" 
-                            data-rank="${user.Rank}" 
-                            data-address="${user.address}" 
-                            data-mobile="${user.mobile}" 
-                            data-email="${user.email}" 
-                            value="${user.UserID}"></td>
-                    <td>${user.fullname}</td>
-                    <td>${user.Rank}</td>
-                    <td>${user.address}</td>
-                    <td>${user.mobile}</td>
-                    <td>${user.email}</td>
-                `;
-                tableBody.appendChild(row);
-            });
+                        users.forEach(user => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td><input type="checkbox" class="select-user" 
+                                        data-fullname="${user.fullname}" 
+                                        data-rank="${user.URank}" 
+                                        data-address="${user.address}" 
+                                        data-mobile="${user.mobile}" 
+                                        data-email="${user.email}" 
+                                        value="${user.UserID}"></td>
+                                <td>${user.fullname}</td>
+                                <td>${user.URank}</td>
+                                <td>${user.address}</td>
+                                <td>${user.mobile}</td>
+                                <td>${user.email}</td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
 
-            // Update pagination controls
-            updatePagination(total_pages, current_page);
-        })
-        .catch(error => console.error('Error loading faculty members:', error));
-}
+                        // Update pagination controls
+                        updatePagination(total_pages, current_page);
+                    })
+                    .catch(error => console.error('Error loading faculty members:', error));
+            }
 
-// Function to update pagination controls
-function updatePagination(total_pages, current_page) {
-    const paginationContainer = document.querySelector('.pagination');
-    paginationContainer.innerHTML = '';
+            // Function to update pagination controls
+            function updatePagination(total_pages, current_page) {
+                const paginationContainer = document.querySelector('.pagination');
+                paginationContainer.innerHTML = '';
 
-    // First button
-    if (current_page > 1) {
-        const firstButton = document.createElement('a');
-        firstButton.href = `?page=1`;
-        firstButton.classList.add('first-button');
-        firstButton.title = 'back to first';
-        firstButton.innerHTML = '<i class="bx bx-chevrons-left"></i>';
-        paginationContainer.appendChild(firstButton);
-    }
+                // Previous button
+                if (current_page > 1) {
+                    const prevButton = document.createElement('a');
+                    prevButton.innerText = 'Prev';
+                    prevButton.href = '#';
+                    prevButton.classList.add('prev-button');
+                    prevButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadFacultyMembers(current_page - 1);
+                    });
+                    paginationContainer.appendChild(prevButton);
+                }
 
-    // Previous button
-    if (current_page > 1) {
-        const prevButton = document.createElement('a');
-        prevButton.href = `?page=${current_page - 1}`;
-        prevButton.classList.add('prev-button');
-        prevButton.innerHTML = '<i class="bx bx-chevron-left"></i>';
-        paginationContainer.appendChild(prevButton);
-    }
+                // Page number buttons
+                for (let i = 1; i <= total_pages; i++) {
+                    const pageLink = document.createElement('a');
+                    pageLink.innerText = i;
+                    pageLink.href = '#';
+                    if (i === current_page) {
+                        pageLink.classList.add('active'); // Add active class for the current page
+                    }
+                    pageLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadFacultyMembers(i);
+                    });
+                    paginationContainer.appendChild(pageLink);
+                }
 
-    // Page numbers
-    const start_page = Math.max(1, current_page - 2); // Ensure we don't go below 1
-    const end_page = Math.min(total_pages, current_page + 2); // Ensure we don't go above the last page
-
-    for (let i = start_page; i <= end_page; i++) {
-        const pageButton = document.createElement('a');
-        pageButton.href = `?page=${i}`;
-        pageButton.classList.add(i === current_page ? 'active' : '');
-        pageButton.innerText = i;
-        paginationContainer.appendChild(pageButton);
-    }
-
-    // Next button
-    if (current_page < total_pages) {
-        const nextButton = document.createElement('a');
-        nextButton.href = `?page=${current_page + 1}`;
-        nextButton.classList.add('next-button');
-        nextButton.innerHTML = '<i class="bx bx-chevron-right"></i>';
-        paginationContainer.appendChild(nextButton);
-    }
-
-    // Last button
-    if (current_page < total_pages) {
-        const lastButton = document.createElement('a');
-        lastButton.href = `?page=${total_pages}`;
-        lastButton.classList.add('last-button');
-        lastButton.innerHTML = '<i class="bx bx-chevrons-right"></i>';
-        paginationContainer.appendChild(lastButton);
-    }
-}
-
-// Initial load of faculty members for the first page
-loadFacultyMembers(1);
+                // Next button
+                if (current_page < total_pages) {
+                    const nextButton = document.createElement('a');
+                    nextButton.innerText = 'Next';
+                    nextButton.href = '#';
+                    nextButton.classList.add('next-button');
+                    nextButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadFacultyMembers(current_page + 1);
+                    });
+                    paginationContainer.appendChild(nextButton);
+                }
+            }
+            // Initial load of faculty members for the first page
+            loadFacultyMembers(1);
 
             
 
@@ -970,7 +1188,7 @@ loadFacultyMembers(1);
             function deleteUsersFromServer(selectedUsers) {
                 const userIDs = selectedUsers.map(user => user.UserID);
 
-                fetch('delete_users.php', {
+                fetch('delete_user.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userIDs })
@@ -1033,19 +1251,20 @@ loadFacultyMembers(1);
             });
         </script>
 
+        <!--------------------------------------------Guidance Coordinator--------------------------------------->
         
         <script>
-            document.getElementById('assignChairpersonBtn').addEventListener('click', function() {
-                document.getElementById('assignChairpersonModal').style.display = 'flex';
+            document.getElementById('assignCoordinatorBtn').addEventListener('click', function() {
+                document.getElementById('assignCoordinatorModal').style.display = 'flex';
             });
 
             document.getElementById('closeModal').addEventListener('click', function() {
-                document.getElementById('assignChairpersonModal').style.display = 'none';
+                document.getElementById('assignCoordinatorModal').style.display = 'none';
             });
 
 
             $(document).ready(function() {
-                $('#assignChairpersonForm').submit(function(event) {
+                $('#assignCoordinatorForm').submit(function(event) {
                     event.preventDefault();  // Prevent default form submission
 
                     var gradeID = $('#gradeID').val();  // Get the selected grade level
@@ -1055,7 +1274,7 @@ loadFacultyMembers(1);
                         Swal.fire({
                             icon: 'error',
                             title: 'Grade Level Required',
-                            text: 'Please select a grade level before assigning the chairperson.',
+                            text: 'Please select a grade level before assigning the coordinator.',
                             confirmButtonText: 'OK'
                         });
                         return;  // Prevent form submission if no grade level is selected
@@ -1065,7 +1284,7 @@ loadFacultyMembers(1);
 
                     $.ajax({
                         type: 'POST',
-                        url: 'assign_chairperson.php',  // PHP file that handles form submission
+                        url: 'assign_coordinator.php',  // PHP file that handles form submission
                         data: formData,
                         dataType: 'json',  // Expecting JSON response
                         success: function(response) {
@@ -1073,7 +1292,7 @@ loadFacultyMembers(1);
                             if (response.status === 'success') {
                                 Swal.fire({
                                     icon: 'success',
-                                    title: 'Chairperson Assigned!',
+                                    title: 'Guidance Coordinator Assigned!',
                                     text: response.message,
                                     confirmButtonText: 'OK'
                                 }).then(() => location.reload()); // Reload to reflect changes
@@ -1090,7 +1309,7 @@ loadFacultyMembers(1);
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'An error occurred while assigning the chairperson. Please try again.',
+                                text: 'An error occurred while assigning the coordinator. Please try again.',
                                 confirmButtonText: 'OK'
                             });
                         }
@@ -1100,19 +1319,19 @@ loadFacultyMembers(1);
 
 
             $(document).ready(function() {
-                // Delete Chairpersons
-                $('#deleteChairpersonBtn').click(function(e) {
+                // Delete Coordinator
+                $('#deleteCoordinatorBtn').click(function(e) {
                     e.preventDefault();  // Prevent the default button behavior
                     
-                    var selectedChairpersons = $('input[name="chairpersonID[]"]:checked').map(function() {
+                    var selectedCoordinators = $('input[name="coordinatorID[]"]:checked').map(function() {
                         return this.value;
                     }).get();
 
-                    if (selectedChairpersons.length === 0) {
+                    if (selectedCoordinators.length === 0) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'No Chairperson Selected',
-                            text: 'Please select at least one chairperson to delete.',
+                            title: 'No Guidance Coordinator Selected',
+                            text: 'Please select at least one guidance coordinator to delete.',
                             confirmButtonText: 'OK'
                         });
                         return;
@@ -1120,15 +1339,15 @@ loadFacultyMembers(1);
 
                     $.ajax({
                         type: 'POST',
-                        url: 'delete_chairperson.php',  // PHP file for deletion
-                        data: { chairpersonID: selectedChairpersons },  // Correct data format
+                        url: 'delete_coordinator.php',  // PHP file for deletion
+                        data: { coordinatorID: selectedCoordinators },  // Correct data format
                         dataType: 'json',  // Specify that the response should be JSON
                         success: function(response) {
                             // Check the response status to display appropriate message
                             if (response.status === 'success') {
                                 Swal.fire({
                                     icon: 'success',
-                                    title: 'Chairperson Deleted',
+                                    title: 'Guidance Coordinator Deleted',
                                     text: response.message,
                                     confirmButtonText: 'OK'
                                 }).then(() => location.reload());
@@ -1145,7 +1364,7 @@ loadFacultyMembers(1);
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: 'An error occurred while deleting the chairperson. Please try again.',
+                                text: 'An error occurred while deleting the guidance coordinator. Please try again.',
                                 confirmButtonText: 'OK'
                             });
                         }
@@ -1153,19 +1372,291 @@ loadFacultyMembers(1);
                 });
             });
 
-
-
-
             // JavaScript to select/deselect all checkboxes
-            document.getElementById("selectAll-chairperson").addEventListener("click", function() {
-                const checkboxes = document.querySelectorAll("input[name='chairpersonID[]']");
+            document.getElementById("selectAll-coordinator").addEventListener("click", function() {
+                const checkboxes = document.querySelectorAll("input[name='coordinatorID[]']");
                 checkboxes.forEach(function(checkbox) {
-                    checkbox.checked = document.getElementById("selectAll-chairperson").checked;
+                    checkbox.checked = document.getElementById("selectAll-coordinator").checked;
                 });
             });
 
+        </script>
 
 
+        <!--------------------------------------------Department Head--------------------------------------->
+
+        <script>
+            document.getElementById('assignDeptHeadBtn').addEventListener('click', function() {
+                document.getElementById('assignDeptHeadModal').style.display = 'block';
+            });
+
+            document.getElementById('closeDeptHeadModal').addEventListener('click', function() {
+                document.getElementById('assignDeptHeadModal').style.display = 'none';
+            });
+
+            window.onclick = function(event) {
+                const modal = document.getElementById('assignDeptHeadModal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+        </script>
+
+        <script>
+            // Department Head Assignment Functionality
+            $(document).ready(function() {
+                $('#assignDeptHeadForm').submit(function(event) {
+                    event.preventDefault();  // Prevent default form submission
+
+                    // Validate form inputs
+                    const userID = $('input[name="userID"]:checked').val();
+                    const departmentID = $('#departmentID').val();
+
+                    if (!userID) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No User Selected',
+                            text: 'Please select a user to assign as department head.',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+
+                    if (!departmentID) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No Department Selected',
+                            text: 'Please select a department for the department head.',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+
+                    // Show loading indicator
+                    Swal.fire({
+                        title: 'Processing...',
+                        html: 'Assigning department head',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Prepare form data
+                    const formData = $(this).serialize();
+
+                    // AJAX call to assign department head
+                    $.ajax({
+                        type: 'POST',
+                        url: 'assign_department_head.php',
+                        data: formData,
+                        dataType: 'json',
+                        success: function(response) {
+                            Swal.close();
+                            if (response.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: response.message,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    // Reload the page to reflect changes
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message || 'Failed to assign department head',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.close();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'An error occurred while processing your request.',
+                                confirmButtonText: 'OK'
+                            });
+                            console.error('Error:', error);
+                        }
+                    });
+                });
+            });
+        </script>
+
+        <script>
+            // Department Head Removal Functionality
+            document.getElementById('removeDeptHeadBtn').addEventListener('click', function() {
+                // Get all checked checkboxes
+                const selectedDeptHeads = Array.from(document.querySelectorAll('input[name="deptHeadID[]"]:checked'))
+                    .map(checkbox => checkbox.value);
+                
+                if (selectedDeptHeads.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'No Selection',
+                        text: 'Please select at least one department head to remove.',
+                        confirmButtonText: 'OK'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Confirm Removal',
+                    html: `You are about to remove <b>${selectedDeptHeads.length}</b> department head(s).<br><br>
+                        This action will demote them to regular teacher status.<br>
+                        Are you sure you want to proceed?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Yes, remove them',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading indicator
+                        Swal.fire({
+                            title: 'Processing...',
+                            html: 'Removing department head(s)',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // AJAX call to remove department heads
+                        fetch('remove_department_head.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ deptHeadIDs: selectedDeptHeads })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            Swal.close();
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: data.message,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    // Reload the page to reflect changes
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message || 'Failed to remove department head(s)',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.close();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'An error occurred while processing your request.',
+                                confirmButtonText: 'OK'
+                            });
+                            console.error('Error:', error);
+                        });
+                    }
+                });
+            });
+
+            // Select all checkboxes in department head table
+            document.getElementById('selectAll-deptHead').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[name="deptHeadID[]"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        </script>
+
+        <script>
+            // Search functionality for Chairperson modal
+            document.getElementById('chairpersonSearch').addEventListener('input', function() {
+                const filter = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#chairpersonUserTable tbody tr');
+                
+                rows.forEach(row => {
+                    const fullName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    const rank = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                    
+                    if (fullName.includes(filter) || rank.includes(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+
+            // Search functionality for Department Head modal
+            document.getElementById('deptHeadSearch').addEventListener('input', function() {
+                const filter = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#deptHeadUserTable tbody tr');
+                
+                rows.forEach(row => {
+                    const fullName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    const rank = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                    
+                    if (fullName.includes(filter) || rank.includes(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+
+            // Clear search when modal is closed
+            document.getElementById('closeModal').addEventListener('click', function() {
+                document.getElementById('chairpersonSearch').value = '';
+                const rows = document.querySelectorAll('#chairpersonUserTable tbody tr');
+                rows.forEach(row => row.style.display = '');
+                document.getElementById('assignChairpersonModal').style.display = 'none';
+            });
+
+            document.getElementById('closeDeptHeadModal').addEventListener('click', function() {
+                document.getElementById('deptHeadSearch').value = '';
+                const rows = document.querySelectorAll('#deptHeadUserTable tbody tr');
+                rows.forEach(row => row.style.display = '');
+                document.getElementById('assignDeptHeadModal').style.display = 'none';
+            });
+
+            // Modal open functions (existing code)
+            document.getElementById('assignChairpersonBtn').addEventListener('click', function() {
+                document.getElementById('assignChairpersonModal').style.display = 'flex';
+            });
+
+            document.getElementById('assignDeptHeadBtn').addEventListener('click', function() {
+                document.getElementById('assignDeptHeadModal').style.display = 'block';
+            });
+
+            // Window click handler (existing code)
+            window.onclick = function(event) {
+                const modal = document.getElementById('assignDeptHeadModal');
+                if (event.target == modal) {
+                    document.getElementById('deptHeadSearch').value = '';
+                    const rows = document.querySelectorAll('#deptHeadUserTable tbody tr');
+                    rows.forEach(row => row.style.display = '');
+                    modal.style.display = 'none';
+                }
+                
+                const chairModal = document.getElementById('assignChairpersonModal');
+                if (event.target == chairModal) {
+                    document.getElementById('chairpersonSearch').value = '';
+                    const rows = document.querySelectorAll('#chairpersonUserTable tbody tr');
+                    rows.forEach(row => row.style.display = '');
+                    chairModal.style.display = 'none';
+                }
+            };
         </script>
 
         

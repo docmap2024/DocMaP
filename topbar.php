@@ -1,5 +1,5 @@
 <nav>
-    <i class='bx bx-menu toggle-sidebar'></i>
+    <i class='bx bx-menu toggle-sidebar' id ="menu-toggle"></i>
     <form action="#">
         <!-- Your form content here if needed -->
     </form>
@@ -17,14 +17,41 @@
         if (isset($_SESSION['user_id'])) {
             $user_id = $_SESSION['user_id'];
         ?>
-        <i class='bx bxs-bell icon' id="notification-icon"></i>
+        <i class='bx bxs-bell icon' id="notification-icon" title ="Notifications"></i>
 
         <!-- Modal Structure for Notifications -->
         <div id="notifications-modal" class="modal">
             <div class="modal-content">
+                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-weight: bold; color: #9B2035;">Notifications</h2>
+                <?php
+                if (session_status() == PHP_SESSION_NONE) {
+                    session_start();
+                }
+
+                include 'connection.php';
+
+                if (isset($_SESSION['user_id'])) {
+                    $user_id = $_SESSION['user_id'];
+
+                    // Count unread notifications
+                    $count_sql = "SELECT COUNT(*) FROM notif_user WHERE UserID = ? AND Status = 1";
+                    $count_stmt = $conn->prepare($count_sql);
+                    $count_stmt->bind_param("s", $user_id);
+                    $count_stmt->execute();
+                    $count_stmt->bind_result($unread_count);
+                    $count_stmt->fetch();
+                    $count_stmt->close();
+                ?>
+                    <!-- Read All Button -->
+                    <button class="read-all-btn" id="readAllBtn" onclick="markAllAsRead()" <?php echo ($unread_count == 0) ? 'disabled' : ''; ?>>Read All</button>
+
+                <?php } ?>
+
+            </div>
                 <!-- Close Button -->
                 <span class="close">&times;</span> 
-                <h2 style="font-weight:bold;color:#9B2035; margin-bottom: 20px;">Notifications</h2>
+               
                 <ul class="notifications-list">
                     <?php
                     // Query to get the notifications where the user is the recipient (NotifUserID = session user_id)
@@ -65,12 +92,14 @@
                     $stmt->close();
                     ?>
                 </ul>
+                <!-- Read All Button -->
+                    
             </div>
         </div>
         <?php } ?>
     </a>
     <a href="todo.php" class="nav-link">
-        <i class='bx bxs-notepad icon'></i>
+        <i class='bx bxs-notepad icon'id="todo-icon" title="To-do's"></i>
         <!-- Notepad icon content -->
     </a>
     <span class="divider" ></span>
@@ -129,8 +158,57 @@
 </nav>
 
 <style>
-    /* ... Your existing styles ... */
+    #menu-toggle {
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: #333; /* Default color */
+    }
 
+    #menu-toggle:hover {
+        transform: scale(1.3) rotate(10deg);
+        color: #9b2035; /* Change to desired hover color */
+    }
+    #notification-icon {
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: #333; /* Default color */
+    }
+
+    #notification-icon:hover {
+        transform: scale(1.3) rotate(10deg);
+        color: #9b2035; /* Change to desired hover color */
+    }
+    #todo-icon {
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: #333; /* Default color */
+    }
+
+    #todo-icon:hover {
+        transform: scale(1.3) rotate(10deg);
+        color: #9b2035; /* Change to desired hover color */
+    }
+    .profile-image {
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: #333; /* Default color */
+    }
+
+    .profile-image:hover {
+        transform: scale(1.1) rotate(10deg);
+        color: #9b2035; /* Change to desired hover color */
+    }
+
+    /* ... Your existing styles ... */
+          .read-all-btn {
+        background-color: #9B2035;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .read-all-btn:hover {
+        background-color: #7A1729; /* Darker shade on hover */
+    }
     .profile {
         display: flex;
         align-items: center;
@@ -300,8 +378,80 @@
 }
 
 /* Rest of your existing styles */
+.read-all-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
 
 </style>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function markAllAsRead() {
+    Swal.fire({
+        title: "Mark all as read?",
+        text: "This will mark all unread notifications as read.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#9B2035",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, mark all!",
+        cancelButtonText: "Cancel"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('mark_all_as_read.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI: Change styles of unread notifications
+                    document.querySelectorAll('.new-notification').forEach(item => {
+                        item.classList.remove('new-notification');
+                        item.classList.add('old-notification');
+                        item.querySelector('.notif-title').style.color = 'gray';
+                    });
+
+                    // Disable the button after marking as read
+                    document.getElementById('readAllBtn').disabled = true;
+
+                    // Show success alert
+                    Swal.fire({
+                        title: "Success!",
+                        text: "All notifications have been marked as read.",
+                        icon: "success",
+                        confirmButtonColor: "#9B2035"
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Failed to mark notifications as read.",
+                        icon: "error",
+                        confirmButtonColor: "#9B2035"
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: "Error!",
+                    text: "Something went wrong.",
+                    icon: "error",
+                    confirmButtonColor: "#9B2035"
+                });
+            });
+        }
+    });
+}
+</script>
+
+
+
 
 <script>
     // Get modal element

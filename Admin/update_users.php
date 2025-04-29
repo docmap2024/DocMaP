@@ -15,13 +15,13 @@ try {
         $firstName = $user['firstName'];
         $middleName = $user['middleName'];
         $lastName = $user['lastName'];
-        $rank = $user['rank'];
+        $rank = $user['urank'];
         $address = $user['address'];
         $mobile = $user['mobile'];
         $email = $user['email'];
 
         $sql = "UPDATE useracc 
-                SET fname = ?, mname = ?, lname = ?, Rank = ?, address = ?, mobile = ?, email = ?
+                SET fname = ?, mname = ?, lname = ?, URank = ?, address = ?, mobile = ?, email = ?
                 WHERE UserID = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param('sssssssi', $firstName, $middleName, $lastName, $rank, $address, $mobile, $email, $userID);

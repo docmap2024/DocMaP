@@ -1,6 +1,7 @@
 <?php
 // Database connection
 include 'connection.php';
+header('Content-Type: application/json');
 
 $logFile = 'logfile.log'; // Specify the log file path
 
@@ -25,13 +26,11 @@ if (isset($_POST['task_id'])) {
     $conn->close();
 
     // Return JSON response
-    header('Content-Type: application/json');
     echo json_encode($response);
     exit;
 } else {
     // Handle missing task_id error
     $response = array('success' => false, 'message' => 'Task ID not provided.');
-    header('Content-Type: application/json');
     echo json_encode($response);
     exit;
 }
