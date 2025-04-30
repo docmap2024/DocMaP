@@ -43,7 +43,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
 
     // Fetch the selected folder name based on GradeLevelFolderID
     $contentQuery = "SELECT fc.Title, fc.Captions 
-                FROM userofolders gf
+                FROM userfolders gf
                 JOIN usercontent uc ON uc.UserContentID = gf.UserContentID
                 JOIN feedcontent fc ON fc.ContentID = uc.ContentID
                 WHERE gf.UserFolderID = $userFolderId";
