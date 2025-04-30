@@ -686,18 +686,12 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                                 <!-- Department Head Count -->
                                                                 <div class="col-6 text-left">
                                                                     <h4 style="font-weight: bold;"><?php echo $departmentHeadCount; ?></h4>
-                                                                    <div class="chart-container top-right"style ="height:70px; width:70px;">
-                                                                        <canvas id="deptHeadChart" ></canvas>
-                                                                    </div>
                                                                     <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Dept Head</p>
                                                                 </div>
 
                                                                 <!-- Teacher Count -->
                                                                 <div class="col-6 text-left">
                                                                     <h4 style="font-weight: bold;"><?php echo $teacherCount; ?></h4>
-                                                                    <div class="chart-container top-right" style ="height:70px; width:70px;">
-                                                                        <canvas id="teacherChart"></canvas>
-                                                                    </div>
                                                                     <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Teacher</p>
                                                                 </div>
                                                             </div>
@@ -729,18 +723,12 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                                 <!-- Academic Department Count -->
                                                                 <div class="col-6 text-left">
                                                                     <h4 style="font-weight: bold;"><?php echo $academicCount; ?></h4>
-                                                                    <div class="chart-container top-right"style ="height:70px; width:70px;">
-                                                                        <canvas id="academicChart" ></canvas>
-                                                                    </div>
                                                                     <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Academic</p>
                                                                 </div>
 
                                                                 <!-- Administrative Department Count -->
                                                                 <div class="col-6 text-left">
                                                                     <h4 style="font-weight: bold;"><?php echo $administrativeCount; ?></h4>
-                                                                    <div class="chart-container top-right" style ="height:70px; width:70px;">
-                                                                        <canvas id="administrativeChart"></canvas>
-                                                                    </div>
                                                                     <p style="font-weight: bold; font-size: 13px; margin-top: 10px;">Administrative</p>
                                                                 </div>
                                                             </div>
@@ -1157,81 +1145,11 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                 const academicPercentage = totalDepartment > 0 ? (academicCount / totalDepartment) * 100 : 0;
                 const administrativePercentage = totalDepartment > 0 ? (administrativeCount / totalDepartment) * 100 : 0;
 
-                // Department Head Chart Data
-                const dataDeptHead = {
-                    datasets: [{
-                        data: [deptHeadPercentage, 100 - deptHeadPercentage],
-                        backgroundColor: ['#9b2035', '#cccccc'],
-                        hoverOffset: 4
-                    }]
-                };
+                
 
-                // Teacher Chart Data
-                const dataTeacher = {
-                    datasets: [{
-                        data: [teacherPercentage, 100 - teacherPercentage],
-                        backgroundColor: ['#9b2035', '#cccccc'],
-                        hoverOffset: 4
-                    }]
-                };
-                
-                // Academic Department Chart Data
-                const dataAcademic = {
-                    datasets: [{
-                        data: [academicPercentage, 100 - academicPercentage],
-                        backgroundColor: ['#9b2035', '#cccccc'],
-                        hoverOffset: 4
-                    }]
-                };
-                
-                // Administrative Department Chart Data
-                const dataAdministrative = {
-                    datasets: [{
-                        data: [administrativePercentage, 100 - administrativePercentage],
-                        backgroundColor: ['#9b2035', '#cccccc'],
-                        hoverOffset: 4
-                    }]
-                };
+               
 
-                // Render Department Head Pie Chart
-                new Chart(document.getElementById('deptHeadChart').getContext('2d'), {
-                    type: 'pie',
-                    data: dataDeptHead,
-                    options: {
-                        responsive: true,
-                        plugins: { legend: { display: true } }
-                    }
-                });
-
-                // Render Teacher Pie Chart
-                new Chart(document.getElementById('teacherChart').getContext('2d'), {
-                    type: 'pie',
-                    data: dataTeacher,
-                    options: {
-                        responsive: true,
-                        plugins: { legend: { display: true } }
-                    }
-                });
-                
-                // Render Academic Department Pie Chart
-                new Chart(document.getElementById('academicChart').getContext('2d'), {
-                    type: 'pie',
-                    data: dataAcademic,
-                    options: {
-                        responsive: true,
-                        plugins: { legend: { display: true } }
-                    }
-                });
-                
-                // Render Administrative Department Pie Chart
-                new Chart(document.getElementById('administrativeChart').getContext('2d'), {
-                    type: 'pie',
-                    data: dataAdministrative,
-                    options: {
-                        responsive: true,
-                        plugins: { legend: { display: true } }
-                    }
-                });
+            
             });
             
             // Search functionality
