@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'Connection.php';
+require 'connection.php';
 
 // Set charset for proper encoding handling
 $conn->set_charset("utf8mb4");
