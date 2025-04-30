@@ -35,7 +35,7 @@
                     $user_id = $_SESSION['user_id'];
 
                     // Count unread notifications
-                    $count_sql = "SELECT COUNT(*) FROM Notif_User WHERE UserID = ? AND Status = 1";
+                    $count_sql = "SELECT COUNT(*) FROM notif_User WHERE UserID = ? AND Status = 1";
                     $count_stmt = $conn->prepare($count_sql);
                     $count_stmt->bind_param("s", $user_id);
                     $count_stmt->execute();
@@ -131,7 +131,7 @@ ORDER BY
             $userId = $_SESSION['user_id'];
 
             // Query to fetch profile image filename and user name
-            $sql = "SELECT Profile, CONCAT(Fname, ' ', Lname) AS fullname FROM useracc WHERE UserID = ?";
+            $sql = "SELECT profile, CONCAT(fname, ' ', lname) AS fullname FROM useracc WHERE UserID = ?";
             $stmt = $conn->prepare($sql);
 
             if ($stmt) {
