@@ -32,7 +32,7 @@ if ($stmt_user = $conn->prepare($sql_user)) {
 }
 
 // Fetch recent documents (limit 10, sorted by timestamp)
-$sql_documents = "SELECT * FROM documents WHERE UserID = ? ORDER BY Timestamp DESC LIMIT 10";
+$sql_documents = "SELECT * FROM documents WHERE UserID = ? ORDER BY TimeStamp DESC LIMIT 10";
 if ($stmt_documents = $conn->prepare($sql_documents)) {
     $stmt_documents->bind_param("i", $user_id);
     $stmt_documents->execute();
@@ -54,7 +54,7 @@ if ($stmt_documents = $conn->prepare($sql_documents)) {
 }
 
 // Fetch tasks
-$sql_tasks = "SELECT ts.Title, ts.DueDate, ts.DueTime, ts.ContentID, ts.TaskContent, ts.Type, 
+$sql_tasks = "SELECT ts.Title, ts.DueDate, ts.DueTime, ts.ContentID, ts.taskContent, ts.Type, 
                      fc.Title as feedContentTitle,fc.ContentColor, tu.UserID, tu.TaskID, tu.ContentID
               FROM tasks ts
               INNER JOIN usercontent uc ON ts.ContentID = uc.ContentID
