@@ -687,7 +687,7 @@ function fetchSchoolDetailsAndPrint() {
                 <!-- Footer Section -->
                     <div class="footer" style="display: flex; align-items: center; justify-content: space-between; margin-top: 50px; padding: 10px; border-top: 2.5px solid black;">
                     <div class="footer-left" style="display: flex; align-items: center; margin-left: 50px; flex: 1;">
-                        <img src="img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 280px; height: auto; margin-right: 10px;" />
+                        <img src="img/Logo/DEPED_MATATAGLOGO.png" style="width: 280px; height: auto; margin-right: 10px;" />
                         <img src="img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
                     </div>
                     <div class="footer-right" style="text-align: left; font-size: 12px; flex: 2; margin-left:30px; font-size:18px;">
