@@ -43,7 +43,7 @@ $sql = "
            SUM(c.Cohort_Rate) AS total_cohort_rate, 
            AVG(r.Repeaters_Rate) AS avg_repetition_rate, 
            AVG(t.Transition_Rate) AS avg_transition_rate
-    FROM performance_pndicator pi
+    FROM performance_indicator pi
     JOIN grade g ON pi.Grade_ID = g.Grade_ID
     JOIN enroll e ON pi.Enroll_ID = e.Enroll_ID
     JOIN dropout d ON pi.Dropout_ID = d.Dropout_ID
