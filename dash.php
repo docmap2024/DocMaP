@@ -756,7 +756,7 @@ $conn->close();
                                                                     $displayName = strstr($fileName, '_') ? substr(strstr($fileName, '_'), 1) : $fileName;
                                                                     
                                                                     // Create the URL to the document (assuming documents are stored in the "Documents" directory)
-                                                                    $documentPath = 'https://github.com/docmap2024/DocMaP/tree/main/Documents/' . $fileName;
+                                                                    $documentPath = 'Documents/' . $fileName;
 
                                                                     // Make the document name clickable, linking to the file's URL
                                                                     echo '<a href="' . $documentPath . '" target="_blank" style="text-decoration:none;color:black;">' . $displayName . '</a>';
