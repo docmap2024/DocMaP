@@ -15,7 +15,7 @@ $sql = "
     INNER JOIN 
         useracc ON gc.UserID = useracc.UserID
     INNER JOIN 
-        grade ON gc.Grade_ID = Grade.Grade_ID
+        grade ON gc.Grade_ID = grade.Grade_ID
 ";
 $result = $conn->query($sql);
 
@@ -793,7 +793,7 @@ $conn->close();
                             <option>Select Grade Level</option>
                             <?php
                             // Fetch grade levels
-                            $gradesQuery = "SELECT Grade_ID, Grade_Level FROM Grade";
+                            $gradesQuery = "SELECT Grade_ID, Grade_Level FROM grade";
                             $gradesResult = $conn->query($gradesQuery);
 
                             if ($gradesResult->num_rows > 0) {
