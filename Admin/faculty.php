@@ -9,13 +9,13 @@ $sql = "
     SELECT 
         gc.Coordinator_ID,
         CONCAT(useracc.fname, ' ', useracc.mname, ' ', useracc.lname) AS FullName,
-        Grade.Grade_Level
+        grade.Grade_Level
     FROM 
         guidance_coordinator gc
     INNER JOIN 
         useracc ON gc.UserID = useracc.UserID
     INNER JOIN 
-        Grade ON gc.Grade_ID = Grade.Grade_ID
+        grade ON gc.Grade_ID = Grade.Grade_ID
 ";
 $result = $conn->query($sql);
 
