@@ -487,7 +487,7 @@
                 <!-- MAIN -->
                 <main>
                     <div class="header">
-                        <h1 class ="title">Administrative Departments<i class="fas fa-angle-right" style="margin: 0 8px; color: #9B2035;"></i></h1>
+                        <h1 class ="title">Administrative Departments</h1>
                         <button id="openModalBtn" class="icon-button">
                             <i class='bx bx-plus'></i>
                         </button>
