@@ -667,7 +667,10 @@
                                                             </div>
                                                         </div>
 
-                                                        <button class="btn btn-primary" onclick="accessDepartment(${department.dept_ID}, '${department.dept_name}')">Access</button>
+                                                        <!-- Button container (pushed to the bottom) -->
+                                                        <div class="card-footer">
+                                                            <button class="btn btn-primary" onclick="accessDepartment(${department.dept_ID}, '${department.dept_name}')">Access</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
