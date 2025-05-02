@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 include 'connection.php';
 
 // Function to append logs to GitHub
-function appendToGitHubLog($logEntry) {  // Changed parameter name to reflect it expects full log entry
+function appendToGitHubLog($logEntry) {
     $githubRepo = "docmap2024/DocMaP"; // Your repo
     $branch = "main";
     $logFilePath = "Admin/logfile.log"; // Path in your repo
@@ -84,7 +84,7 @@ function write_log($message) {
     
     // 2. Also append complete entry to GitHub (with error handling)
     try {
-        if (!appendToGitHubLog($logEntry)) {  // Pass the complete log entry
+        if (!appendToGitHubLog($logEntry)) {
             // If GitHub fails, keep the message in local logs
             file_put_contents($logfile, "[$timestamp] [ERROR] Failed to upload to GitHub: $message\n", FILE_APPEND);
         }
