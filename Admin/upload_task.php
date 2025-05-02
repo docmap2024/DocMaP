@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 include 'connection.php';
 
 // Function to append logs to GitHub
-function appendToGitHubLog($message) {
+function appendToGitHubLog($logEntry) {  // Changed parameter name to reflect it expects full log entry
     $githubRepo = "docmap2024/DocMaP"; // Your repo
     $branch = "main";
     $logFilePath = "Admin/logfile.log"; // Path in your repo
@@ -42,9 +42,8 @@ function appendToGitHubLog($message) {
         }
     }
 
-    // 2. Append new message
-    $timestamp = date("Y-m-d H:i:s");
-    $newContent = $existingContent . "[$timestamp] $message\n";
+    // 2. Append the complete log entry (already includes timestamp)
+    $newContent = $existingContent . $logEntry;
 
     // 3. Update file on GitHub
     $data = [
@@ -78,13 +77,14 @@ function appendToGitHubLog($message) {
 function write_log($message) {
     $logfile = '/tmp/logfile.log';
     $timestamp = date("Y-m-d H:i:s");
+    $logEntry = "[$timestamp] $message\n"; // Create complete log entry here
     
     // 1. Write to local tmp file
-    file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
+    file_put_contents($logfile, $logEntry, FILE_APPEND);
     
-    // 2. Also append to GitHub (with error handling)
+    // 2. Also append complete entry to GitHub (with error handling)
     try {
-        if (!appendToGitHubLog($message)) {
+        if (!appendToGitHubLog($logEntry)) {  // Pass the complete log entry
             // If GitHub fails, keep the message in local logs
             file_put_contents($logfile, "[$timestamp] [ERROR] Failed to upload to GitHub: $message\n", FILE_APPEND);
         }
