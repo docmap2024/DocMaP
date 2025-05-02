@@ -189,27 +189,52 @@
                 padding-right: 40px; /* Space for the eye icon */
             }
 
+            /* Card styling with fixed height and text truncation */
             .card {
                 border: 1px solid #ddd;
                 border-radius: 8px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease, box-shadow 0.3s ease;
+                height: 100%; /* Make card fill its container */
+                display: flex;
+                flex-direction: column;
             }
 
             .card-body {
                 padding: 20px;
+                flex: 1; /* Allow card-body to grow and fill space */
+                display: flex;
+                flex-direction: column;
+                overflow: hidden; /* Hide overflow */
             }
 
             .card-title {
                 font-size: 1.25rem;
                 font-weight: bold;
                 margin-bottom: 10px;
+                white-space: nowrap; /* Prevent title from wrapping */
+                overflow: hidden;
+                text-overflow: ellipsis; /* Add ellipsis if title is too long */
             }
 
             .card-text {
                 font-size: 0.9rem;
                 color: #555;
                 margin-bottom: 15px;
+                display: -webkit-box;
+                -webkit-line-clamp: 3; /* Limit to 3 lines */
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Push the button container to the bottom */
+            .card-footer {
+                margin-top: auto; /* Pushes to the bottom */
+                padding: 15px 20px 0; /* Top 15px, Left/Right 20px (matches card-body padding) */
+                border-top: none;
+                background: transparent;
+                text-align: left; /* Align button to the left */
             }
 
             .btn-primary {
@@ -218,6 +243,9 @@
                 padding: 8px 16px;
                 font-size: 0.9rem;
                 transition: background-color 0.3s ease;
+                width: auto; /* Let the button width fit content */
+                display: inline-block; /* Allows text-align to work */
+                margin-left: 0; /* Remove any default margin */
             }
 
             .btn-primary:hover {
@@ -247,9 +275,33 @@
                 background-color: white; /* Background color for dropdown */
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Optional: Add shadow for depth */
                 border-radius: 4px; /* Optional: Rounded corners */
-                min-width: 120px; /* Set a minimum width for the dropdown menu */
-                max-width: 200px; /* Set a maximum width for the dropdown menu */
+                width: 200px; /* Set a maximum width for the dropdown menu */
                 width: auto; /* Allows the width to adjust based on content */
+                z-index: 1000;
+            }
+
+            /* Styles for tablets and larger (768px and up) */
+            @media (min-width: 768px) {
+                .dropdown-menu {
+                    position: absolute; /* Switch to absolute on larger screens */
+                    right: 0; /* Align to right of parent */
+                    top: 100%; /* Position below the toggle button */
+                    margin-top: 0; /* Remove the mobile margin */
+                }
+            }
+
+            /* Styles for mobile screens (767px and below) */
+            @media (max-width: 767px) {
+                .dropdown-menu {
+                    display: none; /* Hide the dropdown menu by default */
+                    position: relative; /* Position dropdown menu absolutely */
+                    background-color: white; /* Background color for dropdown */
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Optional: Add shadow for depth */
+                    border-radius: 4px; /* Optional: Rounded corners */
+                    width: 200px; /* Set a maximum width for the dropdown menu */
+                    width: auto; /* Allows the width to adjust based on content */
+                    z-index: 1000;
+                }
             }
 
             .dropdown.active .dropdown-menu {
