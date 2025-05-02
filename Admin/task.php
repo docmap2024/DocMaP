@@ -3,9 +3,6 @@
 include 'connection.php';
 session_start();
 
-$activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'tasks';
-
-
 // Check if department_ids are being sent
 if (isset($_POST['department_ids'])) {
     $department_ids = explode(',', $_POST['department_ids']); // Convert comma-separated string to array
@@ -1345,12 +1342,8 @@ if (isset($_GET['title'])) {
 
         <!-- MAIN -->
         <main>
-            <div class="tabs">
-                <button class="tab-button <?php echo $activeTab === 'tasks' ? 'active' : ''; ?>" onclick="switchTab('tasks')">Tasks</button>
-                <button class="tab-button <?php echo $activeTab === 'pending' ? 'active' : ''; ?>" onclick="switchTab('pending')">Pending Task</button>
-            </div>
 
-            <div id="tasksTab" class="tab-content <?php echo $activeTab === 'tasks' ? '' : 'hidden'; ?>">
+            <div id="tasksTab" class="tab-content">
                 <div class="header">
                     <h1 class ="title">Tasks</h1>
 
@@ -1472,51 +1465,6 @@ if (isset($_GET['title'])) {
                     <?php if ($page < $total_pages): ?>
                         <a href="?page=<?php echo $total_pages; ?>" class="last-button"><i class='bx bx-chevrons-right'></i></a>
                     <?php endif; ?>
-                </div>
-
-
-
-
-            </div>
-             <div id="pendingTab" class="tab-content <?php echo $activeTab === 'pending' ? '' : 'hidden'; ?>">
-                <div class="header">
-                    <h1 class ="title">Pending Task</h1>
-                </div>
-                
-                <div class="container">
-                    
-                    <div class="action-buttons" style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
-                        <!-- Information Icon and Message -->
-                        <div class="info-message" style="display: flex; align-items: center;">
-                            <i class='bx bx-info-circle' style="font-size: 24px; margin-right: 10px; color:#9B2035;"></i>
-                            <p style="font-size: 14px; color: #555; margin: 0;">
-                                Task that have a yellow tag are Scheduled tasks, it's prioritized.
-                            </p>
-                        </div>
-                        <div class="buttons-group" style="display: flex; gap: 10px;">
-                            <button id="approveSelected">Approve</button>
-                            <button id="rejectSelected">Reject</button>
-                        </div>
-                        
-                    </div>
-
-                    
-                    <table id="taskTable">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
-                                <th>Title</th>
-                                <th>Content</th>
-                                <th>Type</th>
-                                <th>User</th>
-                                <th>Due Date</th>
-                                <th>Due Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Tasks will be populated here -->
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -1923,149 +1871,6 @@ if (isset($_GET['title'])) {
             });
         });
     </script>
-    <script>
-    // JavaScript to switch tabs
-        function switchTab(tab) {
-            const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('tab', tab);
-            window.location.search = urlParams.toString();
-        }
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const selectAllCheckbox = document.getElementById('selectAll');
-
-            selectAllCheckbox.addEventListener('change', () => {
-                const taskCheckboxes = document.querySelectorAll('.task-checkbox');
-                taskCheckboxes.forEach(checkbox => {
-                    checkbox.checked = selectAllCheckbox.checked;
-                });
-            });
-
-            fetchTasks();
-
-            function fetchTasks() {
-                fetch('taskApproval.php')
-                    .then(response => response.json())
-                    .then(tasks => {
-                        const taskTableBody = document.querySelector('#taskTable tbody');
-                        taskTableBody.innerHTML = '';
-
-                        if (tasks.length === 0) {
-                            const noTaskMessage = document.createElement('tr');
-                            noTaskMessage.innerHTML = '<td colspan="8" style="text-align: center; color: grey;">No Pending Task Available</td>';
-                            taskTableBody.appendChild(noTaskMessage);
-                        } else {
-                            tasks.forEach(task => {
-                                const row = document.createElement('tr');
-
-                                // Add an icon or tag for scheduled tasks
-                                const scheduleTag = task.Status === 'Schedule' ? `<span class="tag"><i class='bx bxs-stopwatch bx-tada bx-rotate-90' ></i></span>` : '';
-
-                                row.innerHTML = `
-                                    <td><input type="checkbox" class="task-checkbox" data-task-id="${task.TaskID}"></td>
-                                    <td>${scheduleTag} ${task.Title}</td>
-                                    <td>${task.taskContent}</td>
-                                    <td>${task.Type}</td>
-                                    <td>${task.fname} ${task.lname}</td>
-                                    <td>${task.DueDate}</td>
-                                    <td>${task.DueTime}</td>
-                                `;
-
-                                taskTableBody.appendChild(row);
-                            });
-
-                            // Re-bind "select all" functionality to new rows
-                            const taskCheckboxes = document.querySelectorAll('.task-checkbox');
-                            taskCheckboxes.forEach(checkbox => {
-                                checkbox.addEventListener('change', () => {
-                                    if (!checkbox.checked) {
-                                        selectAllCheckbox.checked = false;
-                                    } else if (
-                                        Array.from(taskCheckboxes).every(cb => cb.checked)
-                                    ) {
-                                        selectAllCheckbox.checked = true;
-                                    }
-                                });
-                            });
-                        }
-                    })
-                    .catch(error => console.error('Error fetching tasks:', error));
-            }
-
-
-            document.getElementById('approveSelected').addEventListener('click', () => {
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You are about to approve the selected task(s).",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, approve it!',
-                    cancelButtonText: 'No, cancel!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        handleBatchAction('approve');
-                    }
-                });
-            });
-
-            document.getElementById('rejectSelected').addEventListener('click', () => {
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You are about to reject the selected task(s).",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, reject it!',
-                    cancelButtonText: 'No, cancel!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        handleBatchAction('reject');
-                    }
-                });
-            });
-
-            function handleBatchAction(action) {
-                const selectedTasks = Array.from(document.querySelectorAll('.task-checkbox:checked')).map(checkbox => checkbox.dataset.taskId);
-
-                if (selectedTasks.length === 0) {
-                    showNotification('No tasks selected.', 'error');
-                    return;
-                }
-
-                fetch('taskApproval.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        taskIDs: JSON.stringify(selectedTasks),
-                        action: action
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Show SweetAlert for success message
-                    Swal.fire({
-                        title: action === 'approve' ? 'Approved!' : 'Rejected!',
-                        text: `The selected task(s) have been successfully ${action}d.`,
-                        icon: data.status === 'success' ? 'success' : 'error',
-                        timer: 2000, // Show for 2 seconds
-                        showConfirmButton: false,
-                    });
-
-                    // Refresh tasks after the alert
-                    setTimeout(() => {
-                        fetchTasks(); // Refresh task list after action
-                    }, 2000); // Refresh after 2.5 seconds to allow alert to show
-                })
-                .catch(error => {
-                    console.error('Error during batch action:', error);
-                    showNotification('An error occurred while processing your request.', 'error');
-                });
-            }
-        });
-    </script>
-
     <script>
         // Initialize CKEditor
         ClassicEditor
