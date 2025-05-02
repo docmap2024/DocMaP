@@ -1387,7 +1387,7 @@ if (isset($_GET['title'])) {
                                         $task['ContentID'] = ''; // Set a default value if not defined
                                     }
                                     ?>
-                                    <tr onclick="viewTask(
+                                    <tr data-task-id="<?php echo $task['TaskID']; ?>" onclick="viewTask(
                                         '<?php echo $task['TaskID']; ?>',
                                         '<?php echo htmlspecialchars(addslashes($task['TaskTitle']), ENT_QUOTES); ?>',
                                         '<?php echo addslashes($task['taskContent']); ?>',
@@ -2752,19 +2752,30 @@ if (isset($_GET['title'])) {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ task_id: taskId })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             Swal.fire('Deleted!', 'Your task has been deleted.', 'success');
-                            // Reload or update the task table
-                            document.querySelector(`button[onclick="deleteTask('${taskId}')"]`).closest('tr').remove();
+                            // More reliable way to find and remove the row
+                            const row = document.querySelector(`[data-task-id="${taskId}"]`);
+                            if (row) {
+                                row.remove();
+                            } else {
+                                // If row not found, reload the page
+                                location.reload();
+                            }
                         } else {
                             Swal.fire('Error!', data.message || 'Failed to delete the task.', 'error');
                         }
                     })
                     .catch(error => {
-                        Swal.fire('Error!', 'Something went wrong. Please try again later.', 'error');
-                        console.error(error);
+                        Swal.fire('Error!', 'Failed to delete task. Please try again later.', 'error');
+                        console.error('Error:', error);
                     });
                 }
             });
