@@ -6,11 +6,89 @@ include 'connection.php'; // Your database connection file
 // Set the timezone to Philippine Standard Time
 date_default_timezone_set('Asia/Manila');
 
-// Modify your write_log function
-function write_log($message) {
-    $logfile = '/tmp/logfile.log'; // Use tmp directory
+// Function to append logs to GitHub
+function appendToGitHubLog($message) {
+    $githubRepo = "docmap2024/DocMaP"; // Your repo
+    $branch = "main";
+    $logFilePath = "Admin/logfile.log"; // Path in your repo
+    
+    $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
+    if (!$githubToken) {
+        error_log("GitHub token not configured");
+        return false;
+    }
+
+    // 1. Get current log file content
+    $ch = curl_init("https://api.github.com/repos/$githubRepo/contents/$logFilePath?ref=$branch");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: token $githubToken",
+        "User-Agent: DocMaP-Logger",
+        "Accept: application/vnd.github.v3+json"
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $existingContent = "";
+    $sha = null;
+    
+    if ($response) {
+        $fileData = json_decode($response, true);
+        if (isset($fileData['content'])) {
+            $existingContent = base64_decode($fileData['content']);
+            $sha = $fileData['sha']; // Needed for updates
+        }
+    }
+
+    // 2. Append new message
     $timestamp = date("Y-m-d H:i:s");
+    $newContent = $existingContent . "[$timestamp] $message\n";
+
+    // 3. Update file on GitHub
+    $data = [
+        "message" => "Log update " . date('Y-m-d H:i:s'),
+        "content" => base64_encode($newContent),
+        "branch" => $branch
+    ];
+    
+    if ($sha) {
+        $data["sha"] = $sha; // Required for updates
+    }
+
+    $ch = curl_init("https://api.github.com/repos/$githubRepo/contents/$logFilePath");
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: token $githubToken",
+        "Content-Type: application/json",
+        "User-Agent: DocMaP-Logger"
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return $httpCode === 200;
+}
+
+// Modified write_log function
+function write_log($message) {
+    $logfile = '/tmp/logfile.log';
+    $timestamp = date("Y-m-d H:i:s");
+    
+    // 1. Write to local tmp file
     file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
+    
+    // 2. Also append to GitHub (with error handling)
+    try {
+        if (!appendToGitHubLog($message)) {
+            // If GitHub fails, keep the message in local logs
+            file_put_contents($logfile, "[$timestamp] [ERROR] Failed to upload to GitHub: $message\n", FILE_APPEND);
+        }
+    } catch (Exception $e) {
+        file_put_contents($logfile, "[$timestamp] [EXCEPTION] GitHub log error: " . $e->getMessage() . "\n", FILE_APPEND);
+    }
 }
 
 
