@@ -19,14 +19,12 @@
         
         <style>
             .container {
-                width: 800px;
+                width: 100%; /* Ensure full width for responsiveness */
                 height: 600px;
-                max-width: 90%; /* Prevents container from being wider than viewport */
-                min-width: 300px; /* Minimum width */
                 border-radius: 20px;
                 margin: 0 auto;
-                padding: 0 15px;
-                overflow: auto;
+                padding: 0 15px; /* Added horizontal padding for spacing */
+                
             }
 
             .header {
