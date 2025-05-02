@@ -13,9 +13,9 @@ $log_file = 'logfile.log';
 
 // Function to write to log file
 function write_log($message) {
-    global $log_file;
+    $logfile = '/tmp/logfile.log'; // Use tmp directory
     $timestamp = date("Y-m-d H:i:s");
-    file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND);
+    file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
 }
 
 ini_set('log_errors', 1);
@@ -56,7 +56,7 @@ write_log("Received form data: UserID = $UserID, ContentIDs = " . implode(", ", 
 
 // File upload handling
 $uploadOk = 1;
-$target_dir = __DIR__ . '/Attachments/'; // Absolute path to the directory
+$target_dir = '/tmp/Attachments/'; // Absolute path to the directory
 $allFilesUploaded = true;
 
 if (!is_dir($target_dir)) {
