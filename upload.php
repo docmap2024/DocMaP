@@ -28,7 +28,7 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
 
     // If there is a file uploaded
     if (!empty($_FILES['files']['name'][0])) {
-        $uploadDirectory = 'Documents/';
+        $uploadDirectory = '/tmp/Documents/';
 
         foreach ($_FILES['files']['name'] as $key => $name) {
             $fileTmpName = $_FILES['files']['tmp_name'][$key];
