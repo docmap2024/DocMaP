@@ -365,6 +365,28 @@
                 justify-content: center; /* Center horizontally */
             }
 
+            /* Search bar styles */
+            #inviteUserModal .search-container {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            #inviteUserModal .search-input {
+                flex: 1;
+                padding: 8px 12px;
+                border: 2px solid #ddd;
+                border-radius: 5px;
+                font-size: 16px;
+                transition: border-color 0.3s ease;
+            }
+
+            #inviteUserModal .search-input:focus {
+                outline: none;
+                border-color: #9b2035;
+                box-shadow: 0 0 0 2px rgba(155, 32, 53, 0.2);
+            }
+
             #inviteUserModal .modal-content {
                 background-color: #fff;
                 padding: 30px;
@@ -406,7 +428,7 @@
 
             /*---------- User Table inside Modal ----------*/
             #inviteUserModal .user-table-container {
-                margin-top: 20px;
+                margin-top: 5px;
                 max-height: 400px; /* Adjusted max-height for better fit */
                 overflow-y: auto; /* Enable vertical scrolling */
                 border: 1px solid #ccc;
@@ -418,12 +440,10 @@
             #inviteUserModal .user-info-table {
                 width: 100%; /* Ensure the table fits within the container */
                 border-collapse: collapse;
-                table-layout: fixed; /* Prevent table from overflowing */
             }
 
             #inviteUserModal .user-info-table th,
             #inviteUserModal .user-info-table td {
-                text-align: left;
                 padding: 12px; /* Increased padding for better readability */
                 border: 1px solid #ddd;
                 word-wrap: break-word; /* Ensure long text wraps within cells */
@@ -447,6 +467,19 @@
                 margin-left: auto;
                 margin-right: auto;
                 cursor: pointer;
+            }
+
+            /* Make checkbox column smaller */
+            #inviteUserModal .user-info-table th:first-child,
+            #inviteUserModal .user-info-table td:first-child {
+                width: 50px; /* Fixed width for checkbox column */
+                text-align: center;
+            }
+
+            /* Other columns will take remaining space */
+            #inviteUserModal .user-info-table th:not(:first-child),
+            #inviteUserModal .user-info-table td:not(:first-child) {
+                width: auto;
             }
 
             /*---------- Button Styles ----------*/
@@ -563,6 +596,11 @@
                         <span class="close" onclick="closeModal('inviteUserModal')">&times;</span>
                         <h2>Invite Users to Department</h2>
                         <form id="inviteUsersForm" method="POST" action="send_invitations.php">
+                            <!-- Search Bar -->
+                            <div class="search-container">
+                                <input type="text" id="userSearchInput" class="search-input" placeholder="Search users..." onkeyup="filterUserTable()">
+                            </div>
+                            
                             <div class="user-table-container">
                                 <table id="usersTable" class="user-info-table">
                                     <thead>
@@ -1102,6 +1140,33 @@
 
                 function closeModal(modalId) {
                     document.getElementById(modalId).style.display = 'none';
+                }
+            </script>
+
+            <script>
+                // Function to filter the user table based on search input
+                function filterUserTable() {
+                    const input = document.getElementById("userSearchInput");
+                    const filter = input.value.toUpperCase();
+                    const table = document.getElementById("usersTable");
+                    const tr = table.getElementsByTagName("tr");
+
+                    // Loop through all table rows (except header)
+                    for (let i = 1; i < tr.length; i++) {
+                        let found = false;
+                        // Loop through all columns except first (checkbox column)
+                        for (let j = 1; j < tr[i].cells.length; j++) {
+                            const td = tr[i].cells[j];
+                            if (td) {
+                                const txtValue = td.textContent || td.innerText;
+                                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                                    found = true;
+                                    break; // No need to check other columns if found in one
+                                }
+                            }
+                        }
+                        tr[i].style.display = found ? "" : "none";
+                    }
                 }
             </script>
         </body>
