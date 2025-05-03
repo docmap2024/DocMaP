@@ -157,6 +157,7 @@ $conn->close();
     <!-- Load Font Awesome CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <title>Dashboard | Home</title>
+    <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
     <style>
         .title {
             padding-bottom: 30px;
