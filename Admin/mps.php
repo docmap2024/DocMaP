@@ -485,7 +485,7 @@ function sendMessage() {
                             <div class="footer">
                                 <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
                                     <div class="footer-logo">
-                                        <img src="  img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                        <img src="  ../img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
                                         ${data.Logo ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
                                     </div>
                                     <div class="footer-details">
