@@ -8,13 +8,26 @@ if (!isset($_SESSION['user_id'])) {
 // Include your database connection file here
 include 'connection.php';
 
-// Log file path
-$log_file = __DIR__ . '/logfile.log'; // Ensure the log file path is correct
+// Log file path - now in /tmp directory
+$log_file = '/tmp/logfile.log';  // Changed to use /tmp
 
-// Function to log messages
+// Function to log messages with /tmp support
 function logMessage($message) {
-    global $log_file; // Use global variable to access log file
-    error_log(date('Y-m-d H:i:s') . " - " . $message . PHP_EOL, 3, $log_file);
+    global $log_file;
+    
+    // Ensure directory exists and is writable
+    if (!file_exists('/tmp')) {
+        mkdir('/tmp', 0777, true);
+    }
+    
+    $log_entry = date('Y-m-d H:i:s') . " - " . $message . PHP_EOL;
+    
+    // Write to /tmp log file
+    if (file_put_contents($log_file, $log_entry, FILE_APPEND) === false) {
+        // Fallback to system error log if writing to /tmp fails
+        error_log("Failed to write to log file: " . $log_file);
+        error_log($log_entry);  // Write to default system log
+    }
 }
 
 ini_set('log_errors', 1);
