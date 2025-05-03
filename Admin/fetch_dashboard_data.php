@@ -27,11 +27,13 @@ $sql = "
     JOIN repetition r ON pi.Repetition_ID = r.Repetition_ID
     JOIN transition t ON pi.Transition_ID = t.Transition_ID
     JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
-    WHERE 1=1
-    GROUP BY sy.Year_Range";
+    WHERE 1=1";
+
+// Add GROUP BY before any conditions
+$sql .= " GROUP BY sy.Year_Range";
 
 if ($yearRange) {
-    $sql .= " AND sy.Year_Range = ?";
+    $sql .= " HAVING sy.Year_Range = ?";  // Changed from WHERE to HAVING
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $yearRange);
     $stmt->execute();
@@ -56,11 +58,13 @@ $mpsQuery = "
     FROM mps m
     JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
     JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
-    WHERE 1=1
-    GROUP BY q.Quarter_Name, sy.Year_Range";
+    WHERE 1=1";
+
+// Add GROUP BY before any conditions
+$mpsQuery .= " GROUP BY q.Quarter_Name, sy.Year_Range";
 
 if ($yearRange) {
-    $mpsQuery .= " AND sy.Year_Range = ?";
+    $mpsQuery .= " HAVING sy.Year_Range = ?";  // Changed from WHERE to HAVING
     $stmt = $conn->prepare($mpsQuery);
     $stmt->bind_param("s", $yearRange);
     $stmt->execute();
@@ -74,7 +78,6 @@ while ($row = $mpsResult->fetch_assoc()) {
     $mpsData[] = $row;
 }
 
-// Fetch productivity data (this would need to be adjusted based on your actual data structure)
 // Fetch productivity data
 $productivityQuery = "
     SELECT 
@@ -82,13 +85,12 @@ $productivityQuery = "
         COUNT(*) as SubmittedTasks,
         SUM(CASE WHEN Status = 'Approved' THEN 1 ELSE 0 END) as ApprovedTasks
     FROM task_user
-    WHERE SubmitDate IS NOT NULL
-    GROUP BY DATE_FORMAT(SubmitDate, '%Y-%m')  -- Already present
-    ORDER BY Month";
+    WHERE SubmitDate IS NOT NULL";
 
 if ($yearRange) {
-    $productivityQuery .= " AND YEAR(SubmitDate) BETWEEN ? AND ?";
     $years = explode('-', $yearRange);
+    $productivityQuery .= " AND YEAR(SubmitDate) BETWEEN ? AND ?";
+    $productivityQuery .= " GROUP BY DATE_FORMAT(SubmitDate, '%Y-%m') ORDER BY Month";
     $stmt = $conn->prepare($productivityQuery);
     $stmt->bind_param("ss", $years[0], $years[1]);
     $stmt->execute();
