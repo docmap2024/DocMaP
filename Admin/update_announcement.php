@@ -3,7 +3,7 @@
 include 'connection.php';
 
 // Set log file path to /tmp which is always writable
-$log_file = '/tmp/update_announcement.log';
+$log_file = '/tmp/logfile.log';
 
 // Custom logging function with error handling
 function write_log($message) {
