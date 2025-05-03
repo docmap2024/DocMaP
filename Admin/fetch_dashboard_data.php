@@ -26,7 +26,7 @@ $sql = "
     JOIN cohort_survival c ON pi.Cohort_ID = c.Cohort_ID
     JOIN repetition r ON pi.Repetition_ID = r.Repetition_ID
     JOIN transition t ON pi.Transition_ID = t.Transition_ID
-    JOIN cchoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
+    JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
     WHERE 1=1";
 
 if ($yearRange) {
