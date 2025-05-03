@@ -8,7 +8,7 @@ date_default_timezone_set('Asia/Manila');
 
 // Create or open a log file to write logs
 function write_log($message) {
-    $logfile = 'logfile.log'; // Log file path
+    $logfile = '/tmp/logfile.log'; // Log file path
     $timestamp = date("Y-m-d H:i:s"); // Get current timestamp
     $logMessage = "[{$timestamp}] {$message}\n"; // Format log message
     file_put_contents($logfile, $logMessage, FILE_APPEND); // Append log message to the file
