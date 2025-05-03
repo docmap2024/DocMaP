@@ -1002,11 +1002,9 @@
                     document.getElementById('deptNameInput').value = deptName;
                     document.getElementById('inviteUserPinInput').value = pin;
 
+                    document.getElementById('inviteUserModal').style.display = 'none';
                 }
 
-                document.addEventListener('DOMContentLoaded', function() {
-                    document.getElementById('inviteUserModal').style.display = 'none';
-                });
 
                 // Function to close the modal
                 function closeModal(modalId) {
