@@ -352,7 +352,7 @@
             
             /*---------- Modal Styles for #inviteUserModal ----------*/
             #inviteUserModal {
-                display: none !important; /* Hidden by default */
+                display: none; /* Hidden by default */
                 position: fixed;
                 z-index: 1000;
                 left: 0;
