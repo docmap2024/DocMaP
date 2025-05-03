@@ -2,22 +2,38 @@
 // Database connection
 include 'connection.php';
 
+// Set log file path to /tmp which is always writable
+$log_file = '/tmp/update_announcement.log';
+
+// Custom logging function with error handling
+function write_log($message) {
+    global $log_file;
+    $timestamp = date('Y-m-d H:i:s');
+    $log_entry = "[$timestamp] $message\n";
+    
+    // Write to log file
+    if (file_put_contents($log_file, $log_entry, FILE_APPEND) === false) {
+        // Fallback to system error log if file writing fails
+        error_log("Failed to write to log file: $log_entry");
+    }
+}
+
 // Handle AJAX request for updating a task
 if (isset($_POST['update_task_id'])) {
     // Log all POST data
-    error_log("POST Data: " . print_r($_POST, true) . "\n", 3, 'logfile.log');
+    write_log("POST Data: " . print_r($_POST, true));
 
     $taskID = $_POST['update_task_id'];
     $title = $_POST['update_title'];
     $taskContent = $_POST['update_instructions'];
-    $actionType = $_POST['actionType']; // Added actionType from the form
+    $actionType = $_POST['actionType'];
 
     // Initialize contentIDs variable
     $contentIDs = null;
 
-    // Check if grades were submitted (content IDs are optional now)
+    // Check if grades were submitted
     if (isset($_POST['update_grade']) && !empty($_POST['update_grade'])) {
-        $contentIDs = implode(',', $_POST['update_grade']); // Combine selected grades into a comma-separated string
+        $contentIDs = implode(',', $_POST['update_grade']);
     }
 
     // Validate actionType
@@ -32,7 +48,6 @@ if (isset($_POST['update_task_id'])) {
         exit;
     }
 
-    // Set as null since no field exists
     $dueDate = NULL;
     $dueTime = NULL;
 
@@ -40,7 +55,7 @@ if (isset($_POST['update_task_id'])) {
     $scheduleDate = isset($_POST['update_schedule_date']) ? $_POST['update_schedule_date'] : null;
     $scheduleTime = isset($_POST['update_schedule_time']) ? $_POST['update_schedule_time'] : null;
 
-    // Validate schedule date and time for scheduled tasks
+    // Validate schedule date and time
     if ($actionType == 'Schedule') {
         if (empty($scheduleDate) || empty($scheduleTime)) {
             $response = [
@@ -53,8 +68,8 @@ if (isset($_POST['update_task_id'])) {
         }
     }
 
-    // Log the update request details to logfile.log
-    error_log("Update Task - TaskID: $taskID, ContentIDs: $contentIDs, Title: $title, DueDate: $dueDate, DueTime: $dueTime, Instructions: $taskContent, ActionType: $actionType\n", 3, 'logfile.log');
+    // Log the update request details
+    write_log("Update Task - TaskID: $taskID, ContentIDs: $contentIDs, Title: $title, DueDate: $dueDate, DueTime: $dueTime, Instructions: $taskContent, ActionType: $actionType");
 
     // Prepare base SQL
     $sql = "UPDATE tasks SET Title = ?, taskContent = ?, DueDate = ?, DueTime = ?, Status = ?";
@@ -66,7 +81,7 @@ if (isset($_POST['update_task_id'])) {
 
     // Append SQL for scheduled tasks
     if ($actionType == 'Schedule' && $scheduleDate && $scheduleTime) {
-        error_log("Schedule Date: $scheduleDate, Schedule Time: $scheduleTime\n", 3, 'logfile.log');
+        write_log("Schedule Date: $scheduleDate, Schedule Time: $scheduleTime");
         $sql .= ", Schedule_Date = ?, Schedule_Time = ?";
     }
 
@@ -83,7 +98,7 @@ if (isset($_POST['update_task_id'])) {
         } else {
             $stmt->bind_param('sssssssi', $title, $taskContent, $dueDate, $dueTime, $status, $scheduleDate, $scheduleTime, $taskID);
         }
-        error_log("Prepared statement with schedule date and time\n", 3, 'logfile.log');
+        write_log("Prepared statement with schedule date and time");
     } else {
         $status = ($actionType == 'Assign') ? 'Assign' : 'Draft';
         if ($contentIDs !== null) {
@@ -98,24 +113,21 @@ if (isset($_POST['update_task_id'])) {
     if ($stmt->execute()) {
         $response['success'] = true;
         $response['message'] = 'Announcement updated successfully!';
-        // Log successful update
-        error_log("Announcement update successful - TaskID: $taskID, Status: $actionType\n", 3, 'logfile.log');
+        write_log("Announcement update successful - TaskID: $taskID, Status: $actionType");
 
         // Update task_department if contentID is not provided
         if ($contentIDs === null && isset($_POST['department']) && !empty($_POST['department'])) {
             $departments = $_POST['department'];
+            write_log("Updating task_department for TaskID: $taskID with Departments: " . implode(',', $departments));
 
-            // Log the departments array
-            error_log("Updating task_department for TaskID: $taskID with Departments: " . implode(',', $departments) . "\n", 3, 'logfile.log');
-
-            // Delete existing department associations for the task
+            // Delete existing department associations
             $deleteSql = "DELETE FROM task_department WHERE TaskID = ?";
             $deleteStmt = $conn->prepare($deleteSql);
             $deleteStmt->bind_param('i', $taskID);
             if ($deleteStmt->execute()) {
-                error_log("Deleted existing department associations for TaskID: $taskID\n", 3, 'logfile.log');
+                write_log("Deleted existing department associations for TaskID: $taskID");
             } else {
-                error_log("Failed to delete department associations for TaskID: $taskID. Error: " . $deleteStmt->error . "\n", 3, 'logfile.log');
+                write_log("Failed to delete department associations for TaskID: $taskID. Error: " . $deleteStmt->error);
             }
             $deleteStmt->close();
 
@@ -125,9 +137,9 @@ if (isset($_POST['update_task_id'])) {
             foreach ($departments as $deptID) {
                 $insertStmt->bind_param('ii', $taskID, $deptID);
                 if ($insertStmt->execute()) {
-                    error_log("Inserted department association for TaskID: $taskID, DeptID: $deptID\n", 3, 'logfile.log');
+                    write_log("Inserted department association for TaskID: $taskID, DeptID: $deptID");
                 } else {
-                    error_log("Failed to insert department association for TaskID: $taskID, DeptID: $deptID. Error: " . $insertStmt->error . "\n", 3, 'logfile.log');
+                    write_log("Failed to insert department association for TaskID: $taskID, DeptID: $deptID. Error: " . $insertStmt->error);
                 }
             }
             $insertStmt->close();
@@ -135,10 +147,9 @@ if (isset($_POST['update_task_id'])) {
     } else {
         $response['success'] = false;
         $response['message'] = 'Failed to update announcement.';
-        // Log error details
-        error_log("Update Announcement Error: " . $stmt->error . "\n", 3, 'logfile.log');
-        error_log("SQL Query: $sql\n", 3, 'logfile.log');
-        error_log("Parameters: ContentIDs: $contentIDs, Title: $title, TaskContent: $taskContent, DueDate: $dueDate, DueTime: $dueTime, Status: $status, TaskID: $taskID\n", 3, 'logfile.log');
+        write_log("Update Announcement Error: " . $stmt->error);
+        write_log("SQL Query: $sql");
+        write_log("Parameters: ContentIDs: $contentIDs, Title: $title, TaskContent: $taskContent, DueDate: $dueDate, DueTime: $dueTime, Status: $status, TaskID: $taskID");
     }
 
     // Close statement and connection
