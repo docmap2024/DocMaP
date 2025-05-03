@@ -69,7 +69,7 @@ $gradeLevelQuery = "
     SELECT DISTINCT fs.ContentID, fs.Title, fs.Captions
     FROM feedcontent fs
     INNER JOIN mps m ON fs.ContentID = m.ContentID
-    GROUP BY fs.Title, fs.Captions
+    GROUP BY fs.ContentID, fs.Title, fs.Captions
 ";
 $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
 ?>
@@ -81,7 +81,7 @@ $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPS</title>
-<link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
+    <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
