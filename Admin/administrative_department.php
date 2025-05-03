@@ -363,7 +363,6 @@
                 background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black background */
                 align-items: center; /* Center vertically */
                 justify-content: center; /* Center horizontally */
-                display: flex; /* Enable flexbox for centering */
             }
 
             #inviteUserModal .modal-content {
@@ -559,7 +558,7 @@
                 </div>
 
                 <!-- Modal for Inviting Users -->
-                <div id="inviteUserModal" class="modal" style="display: none;">
+                <div id="inviteUserModal" class="modal">
                     <div class="modal-content">
                         <span class="close" onclick="closeModal('inviteUserModal')">&times;</span>
                         <h2>Invite Users to Department</h2>
@@ -1002,7 +1001,7 @@
                     document.getElementById('deptNameInput').value = deptName;
                     document.getElementById('inviteUserPinInput').value = pin;
 
-                    document.getElementById('inviteUserModal').style.display = 'none';
+                    document.getElementById('inviteUserModal').style.display = 'flex';
                 }
 
 
