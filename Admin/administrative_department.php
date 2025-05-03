@@ -549,7 +549,7 @@
                         <h2>Enter PIN</h2>
                         <form id="pinValidationForm">
                             <div class="input-container">
-                                <input type="password" id="pinInput" name="pinInput" maxlength="4" placeholder="Enter 4-digit PIN" required>
+                                <input type="password" id="pinValidationInput" name="pinInput" maxlength="4" placeholder="Enter 4-digit PIN" required>
                                 <i class="fas fa-eye" id="togglePinInput"></i>
                             </div>
                             <button type="submit">Submit</button>
@@ -610,7 +610,7 @@
                             </div>
                             <input type="hidden" name="deptId" id="deptIdInput">
                             <input type="hidden" name="deptName" id="deptNameInput">
-                            <input type="hidden" name="pin" id="pinInput">
+                            <input type="hidden" name="pin" id="pinValidationInput">
                             <button type="submit" class="btn btn-primary">Send Invitations</button>
                         </form>
                     </div>
@@ -917,7 +917,7 @@
                     // Submit handler
                     $('#pinValidationForm').off('submit').on('submit', function (e) {
                         e.preventDefault();
-                        const enteredPin = $('#pinInput').val();
+                        const enteredPin = $('#pinValidationInput').val();
 
                         $.ajax({
                             url: 'get_school_department_pin.php',
@@ -960,12 +960,12 @@
                 $('#pinValidationModalClose').click(function () {
                     $('#pinValidationModal').css('display', 'none');
                     $('#pinError').hide();
-                    $('#pinInput').val('');
+                    $('#pinValidationInput').val('');
                 });
 
                 // Toggle PIN visibility
                 $('#togglePinInput').click(function () {
-                    const pinInput = $('#pinInput');
+                    const pinInput = $('#pinValidationInput');
                     const icon = $(this);
                     if (pinInput.attr('type') === 'password') {
                         pinInput.attr('type', 'text');
@@ -1000,7 +1000,7 @@
                     // Set department details in hidden inputs
                     document.getElementById('deptIdInput').value = deptId;
                     document.getElementById('deptNameInput').value = deptName;
-                    document.getElementById('pinInput').value = pin;
+                    document.getElementById('pinValidationInput').value = pin;
 
                 }
 
@@ -1070,7 +1070,7 @@
                         data: {
                             deptId: $('#deptIdInput').val(),
                             deptName: $('#deptNameInput').val(),
-                            pin: $('#pinInput').val(),
+                            pin: $('#pinValidationInput').val(),
                             userIDs: selectedUsers
                         },
                         success: function (response) {
