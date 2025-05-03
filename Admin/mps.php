@@ -50,14 +50,16 @@ if ($resultQuarter) {
 }
 $queryMPS = "SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_Name, 
                     CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
-                    m.TotalNumOfStudents, m.TotalNumTested,  m.MPS,sy.Year_Range AS SY,
+                    m.TotalNumOfStudents, m.TotalNumTested, m.MPS, sy.Year_Range AS SY,
                     CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
              FROM mps m
              INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
              INNER JOIN feedcontent fc ON m.ContentID = fc.ContentID
              INNER JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
              INNER JOIN useracc ua ON m.UserID = ua.UserID
-             WHERE  q.Quarter_ID = '$quarterID'";
+             WHERE q.Quarter_ID = '$quarterID'
+             ORDER BY 
+                 CAST(SUBSTRING(fc.Title, 7) AS UNSIGNED)  -- Extracts '7' from 'Grade 7' and sorts numerically
 $resultMPS = mysqli_query($conn, $queryMPS);
 
 // Fetch the School Year data from the database
