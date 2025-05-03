@@ -3,7 +3,7 @@ include 'connection.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'vendor/autoload.php'; // Path to Composer autoload file
+require __DIR__ . 'vendor/autoload.php'; // Path to Composer autoload file
 
 header('Content-Type: application/json');
 
