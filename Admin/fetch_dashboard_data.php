@@ -12,12 +12,12 @@ $yearRange = $_GET['year_range'] ?? null;
 // Fetch performance data with optional filter
 $sql = "
     SELECT sy.Year_Range, 
-           SUM(e.Enroll_Gross) AS total_enrollment, 
-           AVG(d.Dropout_Rate) AS avg_dropout_rate, 
-           AVG(p.Promotion_Rate) AS avg_promotion_rate, 
-           AVG(c.Cohort_Rate) AS avg_cohort_rate, 
-           AVG(r.Repeaters_Rate) AS avg_repetition_rate, 
-           AVG(t.Transition_Rate) AS avg_transition_rate
+        SUM(e.Enroll_Gross) AS total_enrollment, 
+        AVG(d.Dropout_Rate) AS avg_dropout_rate, 
+        AVG(p.Promotion_Rate) AS avg_promotion_rate, 
+        AVG(c.Cohort_Rate) AS avg_cohort_rate, 
+        AVG(r.Repeaters_Rate) AS avg_repetition_rate, 
+        AVG(t.Transition_Rate) AS avg_transition_rate
     FROM performance_indicator pi
     JOIN grade g ON pi.Grade_ID = g.Grade_ID
     JOIN enroll e ON pi.Enroll_ID = e.Enroll_ID
@@ -27,7 +27,8 @@ $sql = "
     JOIN repetition r ON pi.Repetition_ID = r.Repetition_ID
     JOIN transition t ON pi.Transition_ID = t.Transition_ID
     JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
-    WHERE 1=1";
+    WHERE 1=1
+    GROUP BY sy.Year_Range";
 
 if ($yearRange) {
     $sql .= " AND sy.Year_Range = ?";
@@ -55,7 +56,8 @@ $mpsQuery = "
     FROM mps m
     JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
     JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
-    WHERE 1=1";
+    WHERE 1=1
+    GROUP BY q.Quarter_Name, sy.Year_Range";
 
 if ($yearRange) {
     $mpsQuery .= " AND sy.Year_Range = ?";
@@ -80,7 +82,9 @@ $productivityQuery = "
         COUNT(*) as SubmittedTasks,
         SUM(CASE WHEN Status = 'Approved' THEN 1 ELSE 0 END) as ApprovedTasks
     FROM task_user
-    WHERE SubmitDate IS NOT NULL";
+    WHERE SubmitDate IS NOT NULL
+    GROUP BY DATE_FORMAT(SubmitDate, '%Y-%m')  -- Already present
+    ORDER BY Month";
 
 if ($yearRange) {
     $productivityQuery .= " AND YEAR(SubmitDate) BETWEEN ? AND ?";
