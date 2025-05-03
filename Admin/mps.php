@@ -66,10 +66,10 @@ $schoolyearResult = mysqli_query($conn, $schoolyearQuery);
 
 // Fetch DISTINCT grade levels that have records in mps (for admin module)
 $gradeLevelQuery = "
-    SELECT DISTINCT fs.ContentID, fs.Title, fs.Captions
+    SELECT ANY_VALUE(fs.ContentID) AS ContentID, fs.Title, fs.Captions
     FROM feedcontent fs
     INNER JOIN mps m ON fs.ContentID = m.ContentID
-    GROUP BY fs.ContentID, fs.Title, fs.Captions
+    GROUP BY fs.Title, fs.Captions
 ";
 $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
 ?>
