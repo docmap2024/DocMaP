@@ -1580,11 +1580,11 @@ $conn->close();
             });
         </script>
 
-        <script>
-            // Search functionality for Chairperson modal
-            document.getElementById('chairpersonSearch').addEventListener('input', function() {
+<script>
+            // Search functionality for Coordinator modal
+            document.getElementById('coordinatorSearch').addEventListener('input', function() {
                 const filter = this.value.toLowerCase();
-                const rows = document.querySelectorAll('#chairpersonUserTable tbody tr');
+                const rows = document.querySelectorAll('#coordinatorUserTable tbody tr');
                 
                 rows.forEach(row => {
                     const fullName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
@@ -1615,14 +1615,15 @@ $conn->close();
                 });
             });
 
-            // Clear search when modal is closed
+            // Clear search when Coordinator modal is closed
             document.getElementById('closeModal').addEventListener('click', function() {
-                document.getElementById('chairpersonSearch').value = '';
-                const rows = document.querySelectorAll('#chairpersonUserTable tbody tr');
+                document.getElementById('coordinatorSearch').value = '';
+                const rows = document.querySelectorAll('#coordinatorUserTable tbody tr');
                 rows.forEach(row => row.style.display = '');
-                document.getElementById('assignChairpersonModal').style.display = 'none';
+                document.getElementById('assignCoordinatorModal').style.display = 'none';
             });
 
+            // Clear search when Department Head modal is closed
             document.getElementById('closeDeptHeadModal').addEventListener('click', function() {
                 document.getElementById('deptHeadSearch').value = '';
                 const rows = document.querySelectorAll('#deptHeadUserTable tbody tr');
@@ -1630,31 +1631,24 @@ $conn->close();
                 document.getElementById('assignDeptHeadModal').style.display = 'none';
             });
 
-            // Modal open functions (existing code)
-            document.getElementById('assignChairpersonBtn').addEventListener('click', function() {
-                document.getElementById('assignChairpersonModal').style.display = 'flex';
-            });
-
-            document.getElementById('assignDeptHeadBtn').addEventListener('click', function() {
-                document.getElementById('assignDeptHeadModal').style.display = 'block';
-            });
-
-            // Window click handler (existing code)
+            // Window click handler for both modals
             window.onclick = function(event) {
-                const modal = document.getElementById('assignDeptHeadModal');
-                if (event.target == modal) {
+                // For Coordinator modal
+                const coordModal = document.getElementById('assignCoordinatorModal');
+                if (event.target == coordModal) {
+                    document.getElementById('coordinatorSearch').value = '';
+                    const rows = document.querySelectorAll('#coordinatorUserTable tbody tr');
+                    rows.forEach(row => row.style.display = '');
+                    coordModal.style.display = 'none';
+                }
+                
+                // For Department Head modal
+                const deptModal = document.getElementById('assignDeptHeadModal');
+                if (event.target == deptModal) {
                     document.getElementById('deptHeadSearch').value = '';
                     const rows = document.querySelectorAll('#deptHeadUserTable tbody tr');
                     rows.forEach(row => row.style.display = '');
-                    modal.style.display = 'none';
-                }
-                
-                const chairModal = document.getElementById('assignChairpersonModal');
-                if (event.target == chairModal) {
-                    document.getElementById('chairpersonSearch').value = '';
-                    const rows = document.querySelectorAll('#chairpersonUserTable tbody tr');
-                    rows.forEach(row => row.style.display = '');
-                    chairModal.style.display = 'none';
+                    deptModal.style.display = 'none';
                 }
             };
         </script>
