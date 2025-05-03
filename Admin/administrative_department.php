@@ -352,7 +352,7 @@
             
             /*---------- Modal Styles for #inviteUserModal ----------*/
             #inviteUserModal {
-                display: none; /* Hidden by default */
+                display: none !important; /* Hidden by default */
                 position: fixed;
                 z-index: 1000;
                 left: 0;
@@ -559,7 +559,7 @@
                 </div>
 
                 <!-- Modal for Inviting Users -->
-                <div id="inviteUserModal" class="modal">
+                <div id="inviteUserModal" class="modal" style="display: none;">
                     <div class="modal-content">
                         <span class="close" onclick="closeModal('inviteUserModal')">&times;</span>
                         <h2>Invite Users to Department</h2>
@@ -1002,9 +1002,11 @@
                     document.getElementById('deptNameInput').value = deptName;
                     document.getElementById('pinInput').value = pin;
 
-                    // Open the modal
-                    document.getElementById('inviteUserModal').style.display = 'flex';
                 }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.getElementById('inviteUserModal').style.display = 'none';
+                });
 
                 // Function to close the modal
                 function closeModal(modalId) {
