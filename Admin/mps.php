@@ -60,6 +60,7 @@ $queryMPS = "SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_
              WHERE q.Quarter_ID = '$quarterID'
              ORDER BY 
                  CAST(SUBSTRING(fc.Title, 7) AS UNSIGNED)  -- Extracts '7' from 'Grade 7' and sorts numerically
+                 ";
 $resultMPS = mysqli_query($conn, $queryMPS);
 
 // Fetch the School Year data from the database
