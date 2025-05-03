@@ -3,8 +3,18 @@ session_start();
 require 'connection.php';
 
 function logMessage($message) {
-    $log_file = __DIR__ . '/logfile.log';
-    error_log(date('Y-m-d H:i:s') . " - " . $message . PHP_EOL, 3, $log_file);
+    // Change to /tmp directory and add a prefix to avoid conflicts
+    $log_file = '/tmp/myapp_logfile.log';  // Using /tmp with unique filename
+    
+    // Create the complete log entry with timestamp
+    $log_entry = date('Y-m-d H:i:s') . " - " . $message . PHP_EOL;
+    
+    // Write to the log file in /tmp
+    if (file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX) === false) {
+        // Fallback to system error log if writing to /tmp fails
+        error_log("Failed to write to log file in /tmp");
+        error_log($log_entry);  // Write to default system log
+    }
 }
 
 header('Content-Type: application/json');
