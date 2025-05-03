@@ -610,7 +610,7 @@
                             </div>
                             <input type="hidden" name="deptId" id="deptIdInput">
                             <input type="hidden" name="deptName" id="deptNameInput">
-                            <input type="hidden" name="pin" id="pinValidationInput">
+                            <input type="hidden" name="pin" id="inviteUserPinInput">
                             <button type="submit" class="btn btn-primary">Send Invitations</button>
                         </form>
                     </div>
@@ -1000,7 +1000,7 @@
                     // Set department details in hidden inputs
                     document.getElementById('deptIdInput').value = deptId;
                     document.getElementById('deptNameInput').value = deptName;
-                    document.getElementById('pinValidationInput').value = pin;
+                    document.getElementById('inviteUserPinInput').value = pin;
 
                 }
 
@@ -1070,7 +1070,7 @@
                         data: {
                             deptId: $('#deptIdInput').val(),
                             deptName: $('#deptNameInput').val(),
-                            pin: $('#pinValidationInput').val(),
+                            pin: $('#inviteUserPinInput').val(),
                             userIDs: selectedUsers
                         },
                         success: function (response) {
