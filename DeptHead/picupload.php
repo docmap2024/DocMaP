@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Ensure the upload directory exists
-$upload_dir = 'img/UserProfile/';
+$upload_dir = '../img/UserProfile/';
 if (!is_dir($upload_dir)) {
     mkdir($upload_dir, 0755, true);
 }

@@ -412,7 +412,7 @@ function fetchSchoolDetailsAndPrint() {
             <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
                 ${data.DHead_FullName}
             </span>
-            <img src="img/e_sig/${data.DHead_Signature}" 
+            <img src="../img/e_sig/${data.DHead_Signature}" 
                 style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
         </div>
         <hr style="max-width: 50%; margin: 0 auto;" />
