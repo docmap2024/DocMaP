@@ -67,18 +67,32 @@ if ($resultQuarter) {
 
 // Fetch MPS data
 $queryMPS = "
-    SELECT m.mpsID, m.UserID, m.ContentID, q.School_Year_ID, q.Quarter_Name, 
-           CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
-           m.TotalNumOfStudents, m.TotalNumTested, m.MPS, sy.Year_Range AS SY,
-           CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
-    FROM mps m
-    INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
-    INNER JOIN feedcontent fc ON m.ContentID = fc.ContentID
-    INNER JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
-    INNER JOIN useracc ua ON m.UserID = ua.UserID
-    INNER JOIN department d ON fc.dept_ID = d.dept_ID
-    WHERE q.Quarter_ID = ?
-      AND d.dept_ID = ?;
+    SELECT 
+    m.mpsID, 
+    m.UserID, 
+    m.ContentID, 
+    q.School_Year_ID, 
+    q.Quarter_Name, 
+    CONCAT(fc.Title, ' - ', fc.Captions) AS GradeSection, 
+    m.TotalNumOfStudents, 
+    m.TotalNumTested, 
+    m.MPS, 
+    sy.Year_Range AS SY,
+    CONCAT(ua.fname, ' ', ua.lname) AS SubTeacher
+FROM 
+    mps m
+INNER JOIN quarter q ON m.Quarter_ID = q.Quarter_ID
+INNER JOIN feedcontent fc ON m.ContentID = fc.ContentID
+INNER JOIN schoolyear sy ON q.School_Year_ID = sy.School_Year_ID
+INNER JOIN useracc ua ON m.UserID = ua.UserID
+INNER JOIN department d ON fc.dept_ID = d.dept_ID
+WHERE 
+    q.Quarter_ID = ?
+    AND d.dept_ID = ?
+ORDER BY 
+    fc.Title ASC, 
+    fc.Captions ASC;
+
 ";
 
 // Prepare the statement
@@ -291,7 +305,7 @@ if ($stmt = mysqli_prepare($conn, $gradeLevelQuery)) {
                         <tr>
                             <th>School Year</th>
                             <th>Quarter</th>
-                            <th>Grade Section</th>
+                            <th>Grade - Section</th>
                             <th>Teacher</th>
                             <th>Total No. Students</th>
                             <th>Total No. Tested</th>
@@ -392,18 +406,7 @@ function fetchSchoolDetailsAndPrint() {
             printContent += `
                 <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start;">
     <!-- Prepared by (Subject Teacher) -->
-    <div style="text-align: center; flex: 1; position: relative;">
-        <span>Prepared by:</span><br/><br/>
-        <div style="position: relative; display: inline-block;">
-            <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
-                ${data.Teacher_FullName}
-            </span>
-            <img src="../img/e_sig/${data.Teacher_Signature}" 
-                style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
-        </div>
-        <hr style="max-width: 50%; margin: 0 auto;" />
-        <span>Subject Teacher</span>
-    </div>
+    
 
     <!-- Noted by (Department Head) -->
     <div style="text-align: center; flex: 1; position: relative;">
@@ -416,7 +419,7 @@ function fetchSchoolDetailsAndPrint() {
                 style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
         </div>
         <hr style="max-width: 50%; margin: 0 auto;" />
-        <span>Department Head</span>
+        <span>${data.DHead_Role}</span>
     </div>
 
     <!-- Approved by (Principal) -->
@@ -430,15 +433,15 @@ function fetchSchoolDetailsAndPrint() {
                 style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
         </div>
         <hr style="max-width: 50%; margin: 0 auto;" />
-        <span>Principal</span>
+        <span>${data.Principal_Role}</span>
     </div>
 </div>
 
 <!-- Footer Section -->
 <div class="footer" style="display: flex; align-items: center; justify-content: space-between; margin-top: 50px; padding: 10px; border-top: 2.5px solid black;">
     <div class="footer-left" style="display: flex; align-items: center; margin-left: 50px; flex: 1;">
-        <img src="../img/Logo/DEPED_MATATAGLOGO.png" style="width: 280px; height: auto; margin-right: 10px;" />
-        <img src="../img/Logo/66fd785fc56f4.png" style="width: 110px; height: auto;" />
+        <img src="../img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 280px; height: auto; margin-right: 10px;" />
+        <img src="../img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
     </div>
     <div class="footer-right" style="text-align: left; font-size: 12px; flex: 2; margin-left:30px; font-size:18px;">
         <p>${data.Address} ${data.City_Muni} School ID: ${data.School_ID}</p>
@@ -548,10 +551,15 @@ function fetchSchoolDetailsAndPrint() {
             win.document.close();
 
             win.onload = function() {
-                win.focus();
-                win.print();
-                
-            };
+    win.focus(); // Make sure the window is focused
+    win.print();
+
+    // Give it a bit of time before closing
+    setTimeout(function() {
+        win.close();
+    }, 500); // 500ms delay (you can adjust this if needed)
+};
+
 
             actionColumns.forEach(function(column) {
                 column.style.display = '';
