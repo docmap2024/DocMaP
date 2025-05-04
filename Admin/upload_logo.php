@@ -53,7 +53,7 @@ $unique_filename = uniqid() . '.' . $file_ext;
 // GitHub Repository Details
 $githubRepo = "docmap2024/DocMaP"; // GitHub username/repo
 $branch = "main";
-$uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/Attachments/Logo/$unique_filename";
+$uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/img/Logo/$unique_filename";
 
 // Fetch GitHub Token from Environment Variables
 $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
