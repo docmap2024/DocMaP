@@ -65,7 +65,9 @@ mysqli_close($conn);
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
-     <link rel="icon" type="image/png" href="img/Logo/docmap-logo-1.png">
+     <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
+     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
     <title>Profile</title>
     <style>
 
@@ -81,12 +83,13 @@ mysqli_close($conn);
         }
 
         .profile-picture {
-            width: 150px;
-            height: 150px;
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 10px;
             position: relative;
+            
         }
 
         .button-group {
@@ -99,12 +102,14 @@ mysqli_close($conn);
             background-color: #9B2035;
             color: white;
             border: none;
-            padding: 5px;
-            border-radius: 5px;
+            padding: 10px 15px; /* Top/Bottom: 10px, Left/Right: 20px */
+            border-radius: 50px;
             font-size: 16px;
             cursor: pointer;
-            border-radius: 50px;
+            text-align: center;
+           
         }
+
 
         .btn-edit {
             background-color: #9B2035;
@@ -377,7 +382,8 @@ mysqli_close($conn);
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
                                                 <a href="#" class="btn-edit btn-custom" data-toggle="modal" data-target="#uploadModal" id="btnedit">
-                                                    <i class='bx bx-image-add' style="font-size:20px;"></i>
+                                                    <i class="material-icons" style="font-size: 20px;">person_add</i>
+
                                                 </a>
                                                 <a href="#" class="btn-custom " data-toggle="modal" data-target="#changePasswordModal">
                                                     Change Credentials
@@ -386,11 +392,16 @@ mysqli_close($conn);
                                         </div>
                                         <!-- New Button -->
                                        <div class="col-12 text-center">
-                                            <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
+                                            <a href="#" class="btn-custom <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
                                             id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
-                                                <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
+                                                <?php if ($has_esig): ?>
+                                                    <i class='bx bx-show'style ="font-size:20px;"></i> E-Signature
+                                                <?php else: ?>
+                                                    Upload E-Signature
+                                                <?php endif; ?>
                                             </a>
                                         </div>
+
 
                                     </div>
                                 </div>
@@ -604,6 +615,13 @@ mysqli_close($conn);
                                     </button>
                                 </div>
                                 <div class="modal-body">
+                                    <?php if ($profile_picture): ?>
+                                        <div class="profile-container text-center">
+                                            <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-center">No profile picture available.</p>
+                                    <?php endif; ?>
                                     <form id="uploadForm" enctype="multipart/form-data">
                                         <div class="form-group">
                                             <label for="file">Choose file</label>
@@ -638,7 +656,7 @@ mysqli_close($conn);
                                         <!-- Form Section -->
                                         <div class="col-md-6 d-flex justify-content-center align-items-center">
                                             <div class="modal-form text-center">
-                                                <img src="img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
+                                                <img src="../img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
                                                 <h2>Change Credentials</h2>
                                                 <div class="progress-bar mb-3">
                                                     <div class="progress-container">
@@ -677,6 +695,8 @@ mysqli_close($conn);
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+
+
 <script>
     $(document).ready(function () {
     $('#viewEsignature').on('click', function () {
@@ -687,7 +707,7 @@ mysqli_close($conn);
             success: function (response) {
                 if (response.esig) {
                     // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                    $('#eSignatureBox').html(`<img src="../img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
                 } else {
                     // Display "No Image" if the esig column is null
                     $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
@@ -859,12 +879,14 @@ $(document).ready(function () {
             success: function (response) {
                 var data = JSON.parse(response);
                 if (data.status === 'success') {
-                    $('#profile-picture').attr('src', 'img/UserProfile/' + data.filename);
+                    $('#profile-picture').attr('src', '../img/UserProfile/' + data.filename);
                     $('#uploadModal').modal('hide');
                     Swal.fire({
                         icon: 'success',
                         title: 'Success',
                         text: 'Profile picture updated successfully.'
+                    }).then(() => {
+                        location.reload(); // ✅ reloads the page after user clicks OK
                     });
                 } else {
                     Swal.fire({

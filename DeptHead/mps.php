@@ -540,7 +540,7 @@ function fetchSchoolDetailsAndPrint() {
                     </head>
                     <body>
                     ${printContent}
-                    <img src="img/Logo/${data.Logo}" class="watermark" style="width: 700px;" />
+                    <img src="../img/Logo/${data.Logo}" class="watermark" style="width: 700px;" />
                 </body>
                 </html>
             `);
