@@ -694,8 +694,7 @@ mysqli_close($conn);
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- Include jQuery BEFORE your script -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
 
 <script>
