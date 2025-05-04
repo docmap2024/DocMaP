@@ -1644,10 +1644,11 @@ mysqli_close($conn);
             printWindow.document.write(reportContent);
             printWindow.document.close();
 
-            setTimeout(function() {
-                printWindow.print();
-                printWindow.close();
-            }, 500);
+            printWindow.onload = function() {
+    printWindow.focus(); // optional, ensures the print dialog shows up
+    printWindow.print();
+    printWindow.close();
+};
         },
         error: function(xhr, status, error) {
             alert("Error fetching school details: " + error);
