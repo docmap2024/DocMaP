@@ -13,12 +13,8 @@ $log_file = __DIR__ . '/logfile.log'; // Ensure the log file path is correct
 
 // Function to log messages
 function logMessage($message) {
-    global $log_file; // Use global variable to access log file
-    error_log(date('Y-m-d H:i:s') . " - " . $message . PHP_EOL, 3, $log_file);
+    error_log(date('Y-m-d H:i:s') . " - " . $message);
 }
-
-ini_set('log_errors', 1);
-ini_set('error_log', $log_file);
 
 // Initialize variables
 $task_title = "";
