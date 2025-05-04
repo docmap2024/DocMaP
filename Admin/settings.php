@@ -298,7 +298,7 @@ mysqli_close($conn);
                                 <?php if ($school_details): ?>
                                     <div class="d-flex align-items-center">
                                         <div class="image-container">
-                                            <img src="../img/Logo/<?php echo $school_details['Logo']; ?>" alt="School Logo" class="img-fluid">
+                                            <img src="./img/Logo/<?php echo $school_details['Logo']; ?>" alt="School Logo" class="img-fluid">
                                         </div>
                                         <div class="button-container ml-2">
                                             <button class=" btnProfile" id="uploadLogoButton" data-toggle="modal" data-target="#uploadLogoModal">Upload Logo</button>
@@ -458,13 +458,13 @@ mysqli_close($conn);
                             </button>
                         </div>
                         <div class="modal-body">
-                            <form id="uploadLogoForm" enctype="multipart/form-data">
+                            <form id="uploadLogoForm" enctype="multipart/form-data" method="post">
                                 <div class="form-group">
                                     <label for="logoFile">Choose a file:</label>
-                                    <input type="file" class="form-control-file" id="logoFile" name="logoFile" accept=".png, .jpg, .jpeg" required>
+                                    <input type="file" class="form-control-file" id="logoFile" name="logoFile" accept=".png,.jpg,.jpeg" required>
                                 </div>
                                 <input type="hidden" name="school_id" value="<?php echo $school_details['School_ID']; ?>">
-                                <button type="submit" class="btn btn-primary">Upload</button>
+                                <button type="submit" id="uploadLogoBtn" class="btn btn-primary">Upload</button>
                             </form>
                         </div>
                     </div>
@@ -1124,40 +1124,60 @@ mysqli_close($conn);
     // Event handler for uploading the logo
     $('#uploadLogoBtn').click(function (e) {
         e.preventDefault();
-        var formData = new FormData($('#uploadLogoForm')[0]); // Ensure this matches your form ID
-
+        console.log("Upload button clicked");
+        
+        var formData = new FormData($('#uploadLogoForm')[0]);
+        
         $.ajax({
-            url: 'upload_logo.php', // Ensure this path is correct
+            url: 'upload_logo.php',
             type: 'POST',
             data: formData,
             contentType: false,
             processData: false,
-            success: function (response) {
-                var data = JSON.parse(response);
+            dataType: 'json', // Explicitly expect JSON
+            success: function (data) {
+                console.log("Success response:", data);
+                
                 if (data.status === 'success') {
-                    $('.image-container img').attr('src', '../img/Logo/' + data.filename);
-                    $('#uploadLogoModal').modal('hide'); // Hide the modal on success
+                    // Update the image source with cache-busting parameter
+                    var newSrc = 'img/Logo/' + data.filename + '?t=' + new Date().getTime();
+                    $('.image-container img').attr('src', newSrc);
+                    
+                    $('#uploadLogoModal').modal('hide');
                     Swal.fire({
                         icon: 'success',
                         title: 'Success',
-                        text: 'Logo updated successfully.'
+                        text: data.message
                     }).then(function () {
-                        location.reload(); // Refresh the page after success
+                        location.reload();
                     });
                 } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: data.message
+                        text: data.message || 'Unknown error occurred'
                     });
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Upload failed',
-                    text: textStatus
-                });
+                console.error("AJAX error:", jqXHR.responseText, textStatus, errorThrown);
+                
+                try {
+                    // Try to parse the response if it might be JSON
+                    var errorResponse = JSON.parse(jqXHR.responseText);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Failed',
+                        text: errorResponse.message || 'Unknown error occurred'
+                    });
+                } catch (e) {
+                    // If not JSON, show raw response
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Failed',
+                        text: jqXHR.responseText || textStatus
+                    });
+                }
             }
         });
     });

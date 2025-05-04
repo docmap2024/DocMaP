@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Ensure the upload directory exists
-$upload_dir = '../img/Logo/';
+$upload_dir = 'Admin/img/Logo/';
 if (!is_dir($upload_dir)) {
     mkdir($upload_dir, 0755, true);
 }
