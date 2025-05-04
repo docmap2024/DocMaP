@@ -190,6 +190,51 @@ if (!$result) {
 }
 
 
+// Fetch tasks
+$sql_tasks = "
+    SELECT 
+    ts.TaskID,
+    ts.Title,
+    ts.DueDate,
+    ts.DueTime,
+    ts.ContentID,
+    ts.TaskContent,
+    ts.Type,
+    CONCAT(fc.Title, ' - ', fc.Captions) AS feedContentTitle,
+    fc.ContentColor,
+    ts.UserID AS CreatorID
+FROM tasks ts
+INNER JOIN useracc ua_creator ON ts.UserID = ua_creator.UserID
+INNER JOIN feedcontent fc ON ts.ContentID = fc.ContentID
+WHERE ua_creator.role = 'Department Head'
+  AND ua_creator.dept_ID = ?
+  AND (ts.Status = 'Assign' OR ts.Status IS NULL)
+
+";
+
+if ($stmt_tasks = $conn->prepare($sql_tasks)) {
+    $stmt_tasks->bind_param("i", $dept_id);
+    $stmt_tasks->execute();
+    $result_tasks = $stmt_tasks->get_result();
+
+    $events = [];
+    while ($row = $result_tasks->fetch_assoc()) {
+        $events[] = [
+            'type' => $row['Type'],
+            'title' => $row['Title'],
+            'start' => "{$row['DueDate']}T{$row['DueTime']}",
+            'color' => $row['ContentColor'],
+            'content' => $row['TaskContent'],
+            'feedContentTitle' => "{$row['Type']}: {$row['feedContentTitle']}",
+            'task_id' => $row['TaskID'],
+            'content_id' => $row['ContentID'],
+        ];
+    }
+
+    $stmt_tasks->close();
+} else {
+    echo "Error preparing tasks query";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -590,9 +635,8 @@ if (!$result) {
     transform: rotate(180deg); /* Rotate left arrow */
 }
 
-.fc-next-button span {
-  /* No rotation needed for right arrow */
-}
+
+
 /* Style for the FullCalendar buttons */
 .fc-button {
     background-color: #9B2035; /* Maroon background */
@@ -639,7 +683,16 @@ if (!$result) {
     width: 120px;                /* Set the width to make it more compact */
     height: 30px;                /* Adjust height */
 }
-
+.modal-body i {
+            color: #9b2035;
+            margin-right: 10px;
+        }
+        /* Icon styles */
+        .modal-body i {
+            color: #9b2035;
+            margin-right: 10px;
+            font-size: 24px; /* Increase font size */
+        }
     </style>
     
 </head>
@@ -801,6 +854,33 @@ if (!$result) {
 
         </div>
     </div>
+     <!-- Event Details Modal -->
+     <div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background-color:transparent;">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                        <p><i class='bx bx-news'></i> <strong><span id="eventFeedContentTitle"  style="font-weight:bold;font-size:30px; color: #9B2035;"></span></strong></p>
+                        <p><i class='bx bx-bookmark'></i> <strong>Title: <span id="eventTitle"></span></strong></p>
+                        <p><i class='bx bx-calendar'></i> <span id="eventDueDate"></span></p>
+
+                            
+                            
+                        </div>
+                        <div class="task-details-link">
+                            <a href="#" id="taskDetailsLink" class="btn btn-link">
+                                <i class='bx bx-right-arrow-alt'></i>
+                            </a>
+                        </div>
+
+                        
+                    </div>
+                </div>
+            </div>
 </main>
 
 
@@ -808,8 +888,10 @@ if (!$result) {
     </section>
     <!-- NAVBAR -->
 
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
 	<script src="assets/js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="assets/js/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -817,6 +899,7 @@ if (!$result) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.41/moment-timezone-with-data.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar-timegrid.min.js"></script>
     <script>
     // Function to load the latest tasks from the server
     function loadRecentMPS() {
@@ -1046,60 +1129,58 @@ function fetchTeacherData(year) {
 
 
 
+const events = <?php echo json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 
-
-
-
-
-
-$(document).ready(function() {
-    $('#calendar').fullCalendar({
-        header: {
-            center: 'title',  // Empty center
-            left: 'prev,next', 
-            right: ''  // Add 'today' button to the right
-        },
-        defaultDate: moment().format('YYYY-MM-DD'),
-        timeZone: 'Asia/Manila',
-        navLinks: true,
-        editable: true,
-        height: 400,
-        buttonIcons: false, 
-        themeSystem: 'standard',
-        firstDay: 0, 
-        dayCellClass: function(date, cell) {
-            return 'fc-day-grid-event';
-        },
-        dayRender: function(date, cell) {
-            let today = moment().tz('Asia/Manila').startOf('day');
-            let calendarDate = date.startOf('day');
-
-            if (calendarDate.isSame(today)) {
-                cell.addClass('fc-today'); 
-            }
-        },
-        viewRender: function(view, element) {
-            // Customize the header (arrows only)
-            // Customize title format (Month YYYY)
-            $('.fc-toolbar .fc-center h2').html(view.title.replace(/(\w+) (\d+)/, '$1 $2')); // Removes the day
-        },
-        footer: { 
-            right: 'today,month,agendaWeek,agendaDay',
-
-        },
-        // Customize button behavior
-        customButtons: {
-            today: {
-                text: 'Today',  // Button text
-                click: function() {
-                    // Navigate to today's date
-                    $('#calendar').fullCalendar('gotoDate', moment());
+    $(document).ready(function() {
+        $('#calendar').fullCalendar({
+            header: {
+                center: 'title',
+                left: 'prev,next',
+                right: ''
+            },
+            footer: {
+                right: 'today,month,agendaWeek,agendaDay',
+            },
+            customButtons: {
+                today: {
+                    text: 'Today',
+                    click: function() {
+                        $('#calendar').fullCalendar('gotoDate', moment());
+                    }
                 }
-            }
-        }
-    });
-});
+            },
+            defaultDate: moment().format('YYYY-MM-DD'),
+            timeZone: 'Asia/Manila',
+            navLinks: true,
+            editable: true,
+            height: 400,
+            buttonIcons: false,
+            themeSystem: 'standard',
+            firstDay: 0,
 
+            events: events,
+
+            dayRender: function(date, cell) {
+                let today = moment().tz('Asia/Manila').startOf('day');
+                let calendarDate = date.clone().startOf('day');
+
+                if (calendarDate.isSame(today)) {
+                    cell.css("background-color", "rgba(155, 32, 53, 0.2)");
+                    cell.css("color", "#9b2035");
+                }
+            },
+
+            eventClick: function(event) {
+                $('#eventTitle').text(event.title);
+                const dueDateTime = moment(event.start).tz('Asia/Manila').format('MMMM Do YYYY, h:mm A');
+                $('#eventDueDate').text(dueDateTime);
+                $('#eventFeedContentTitle').text(event.feedContentTitle || 'No feed content title available.');
+                $('#eventContent').html(event.content || '<em>No details available.</em>');
+                $('#taskDetailsLink').attr('href', `taskdetails.php?task_id=${encodeURIComponent(event.task_id)}&content_id=${encodeURIComponent(event.content_id)}`);
+                $('#eventModal').modal('show');
+            }
+        });
+    });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
@@ -1312,6 +1393,8 @@ function formatTime(time) {
         }]
     };
 
+    var chart = new ApexCharts(document.querySelector("#chart1"), options);
+    chart.render();
 
     // Event listener for year selection
     document.getElementById('yearSelect').addEventListener('change', updateChart);
