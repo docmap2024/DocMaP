@@ -468,7 +468,7 @@ function sendMessage() {
                                 <div style="text-align: center; flex: 1;">
                                     <span>Approved by:</span><br/><br/>
                                     <div style="margin-bottom: -55px; margin-top: -65px;">
-                                        <img src="./img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                        <img src="${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
                                     </div>
                                     <span style="font-weight:bold;">${data.Principal_FullName}</span><br/>
                                     <hr style="max-width: 30%; margin: 0 auto;" />
@@ -483,7 +483,7 @@ function sendMessage() {
                                 <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
                                     <div class="footer-logo">
                                         <img src="  ./img/Logo/DEPED_MATATAGLOGO.png" style="width: 170px; height: auto; margin-right: 10px;" />
-                                        ${data.Logo ? `<img src="./img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
+                                        ${data.Logo ? `<img src="${data.Logo}" alt="School Logo" style="width: 80px; height: auto;">` : ''}
                                     </div>
                                     <div class="footer-details">
                                         <p style="margin-bottom: -5px;">${data.Address || ''} ${data.City_Muni || ''} ${data.School_ID ? 'School ID: ' + data.School_ID : ''}</p>
