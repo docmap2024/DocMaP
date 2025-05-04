@@ -17,23 +17,6 @@ if (!isset($_SESSION['user_id'])) {
     exit(json_encode(['status' => 'error', 'message' => 'User not logged in']));
 }
 
-// Set upload directory - use absolute path
-$upload_dir = __DIR__ . '/img/Logo/';
-
-// Create directory if it doesn't exist
-if (!file_exists($upload_dir)) {
-    if (!mkdir($upload_dir, 0755, true)) {
-        http_response_code(500);
-        exit(json_encode(['status' => 'error', 'message' => 'Failed to create upload directory']));
-    }
-}
-
-// Check if directory is writable
-if (!is_writable($upload_dir)) {
-    http_response_code(500);
-    exit(json_encode(['status' => 'error', 'message' => 'Upload directory not writable']));
-}
-
 // Check if file was uploaded
 if (!isset($_FILES['logoFile']) || $_FILES['logoFile']['error'] !== UPLOAD_ERR_OK) {
     $error_message = 'No file uploaded or upload error';
@@ -66,22 +49,65 @@ if (!in_array($file_ext, $allowed_extensions)) {
 
 // Generate unique filename
 $unique_filename = uniqid() . '.' . $file_ext;
-$file_path = $upload_dir . $unique_filename;
 
-// Move the uploaded file
-if (!move_uploaded_file($file['tmp_name'], $file_path)) {
+// GitHub Repository Details
+$githubRepo = "docmap2024/DocMaP"; // GitHub username/repo
+$branch = "main";
+$uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/Attachments/Logo/$unique_filename";
+
+// Fetch GitHub Token from Environment Variables
+$githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
+if (!$githubToken) {
     http_response_code(500);
-    exit(json_encode(['status' => 'error', 'message' => 'Failed to save uploaded file']));
+    exit(json_encode(['status' => 'error', 'message' => 'GitHub token not configured']));
 }
 
-// Update database
+// Prepare File Data for GitHub
+$content = base64_encode(file_get_contents($file['tmp_name']));
+$data = json_encode([
+    "message" => "Uploading school logo",
+    "content" => $content,
+    "branch" => $branch
+]);
+
+$headers = [
+    "Authorization: token $githubToken",
+    "Content-Type: application/json",
+    "User-Agent: DocMaP"
+];
+
+// GitHub API Call
+$ch = curl_init($uploadUrl);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+if ($response === false) {
+    http_response_code(500);
+    exit(json_encode(['status' => 'error', 'message' => 'GitHub upload failed: ' . curl_error($ch)]));
+}
+
+$responseData = json_decode($response, true);
+curl_close($ch);
+
+if ($httpCode != 201) {
+    http_response_code(500);
+    exit(json_encode(['status' => 'error', 'message' => 'GitHub upload failed with status: ' . $httpCode]));
+}
+
+// Get the download URL from GitHub response
+$githubDownloadUrl = $responseData['content']['download_url'];
+
+// Update database with GitHub URL
 try {
     $stmt = $conn->prepare("UPDATE school_details SET Logo = ? WHERE school_details_ID = 1");
-    $stmt->bind_param("s", $unique_filename);
+    $stmt->bind_param("s", $githubDownloadUrl);
     
     if (!$stmt->execute()) {
-        // Delete the uploaded file if DB update fails
-        unlink($file_path);
         http_response_code(500);
         exit(json_encode(['status' => 'error', 'message' => 'Database update failed: ' . $conn->error]));
     }
@@ -92,14 +118,11 @@ try {
     echo json_encode([
         'status' => 'success', 
         'message' => 'Logo updated successfully', 
-        'filename' => $unique_filename
+        'filename' => $unique_filename,
+        'url' => $githubDownloadUrl
     ]);
     
 } catch (Exception $e) {
-    // Clean up file if something went wrong
-    if (file_exists($file_path)) {
-        unlink($file_path);
-    }
     http_response_code(500);
     exit(json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]));
 }
