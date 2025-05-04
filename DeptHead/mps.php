@@ -548,8 +548,9 @@ function fetchSchoolDetailsAndPrint() {
             win.document.close();
 
             win.onload = function() {
+                win.focus();
                 win.print();
-                win.close();
+                
             };
 
             actionColumns.forEach(function(column) {
