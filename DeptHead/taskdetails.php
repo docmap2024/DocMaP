@@ -1647,7 +1647,7 @@ mysqli_close($conn);
             printWindow.onload = function() {
     printWindow.focus(); // optional, ensures the print dialog shows up
     printWindow.print();
-    printWindow.close();
+ 
 };
         },
         error: function(xhr, status, error) {
