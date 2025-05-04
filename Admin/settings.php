@@ -298,7 +298,7 @@ mysqli_close($conn);
                                 <?php if ($school_details): ?>
                                     <div class="d-flex align-items-center">
                                         <div class="image-container">
-                                            <img src="./img/Logo/<?php echo $school_details['Logo']; ?>" alt="School Logo" class="img-fluid">
+                                            <img src="<?php echo $school_details['Logo']; ?>" alt="School Logo" class="img-fluid">
                                         </div>
                                         <div class="button-container ml-2">
                                             <button class=" btnProfile" id="uploadLogoButton" data-toggle="modal" data-target="#uploadLogoModal">Upload Logo</button>
