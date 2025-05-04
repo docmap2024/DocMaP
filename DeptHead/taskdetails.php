@@ -443,126 +443,57 @@ mysqli_close($conn);
             padding-left: 20px; /* Space to the left of the attachments */
         }
         .document-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Optional: For a slight shadow */
-            border: 1px solid #ddd; /* Optional: Border for better visibility */
-        
-        }
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Optional: For a slight shadow */
+    border: 1px solid #ddd; /* Optional: Border for better visibility */
+  
+}
 
-        .document-link {
-            text-decoration: none;
-            color: #007bff;
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            align-items: center;
-        }
+.document-link {
+    text-decoration: none;
+    color: #007bff;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
 
-        .document-name {
-            flex-grow: 1;
-            font-size: 14px;
-            color: black;
-        }
+.document-name {
+    flex-grow: 1;
+    font-size: 14px;
+    color: black;
+}
 
-        .document-icon-container {
-            width: 30px;
-            height: 30px;
-            background-color: #9b2035;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-left: 10px;
-        }
+.document-icon-container {
+    width: 30px;
+    height: 30px;
+    background-color: #9b2035;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px;
+}
 
-        .document-icon {
-            font-size: 18px;
-            color: white;
-        }
+.document-icon {
+    font-size: 18px;
+    color: white;
+}
 
-        .comment-icon { 
-            font-size: 18px;
-            color: white;
-        }
-        .status-title{
-            font-weight:bold;
-            color:#9b2035;
-        }
-
-        .comment-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 10px;
-            max-width: 90%;
-        }
-
-        .comment-item.current-user {
-            margin-left: auto;
-            max-width: 85%;
-        }
-
-        .comment-item img {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-        }
-
-        .comment-item:not(.current-user) img {
-            margin-right: 10px;
-        }
-
-        .comment-item.current-user img {
-            margin-left: 10px;
-        }
-
-        .comment-content {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 18px;
-        }
-
-        .comment-item:not(.current-user) .comment-content {
-            background-color: #f1f1f1;
-            margin-right: 10px;
-        }
-
-        .comment-item.current-user .comment-content {
-            background-color: #e3f2fd;
-            margin-left: 10px;
-        }
-
-        .date-divider {
-            text-align: center;
-            margin: 20px 0;
-            position: relative;
-        }
-
-        .date-divider span {
-            background: #f0f0f0;
-            padding: 5px 15px;
-            border-radius: 20px;
-            color: #666;
-            font-size: 0.9em;
-            position: relative;
-            z-index: 1;
-        }
-
-        .date-divider:before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #ddd;
-            z-index: 0;
-        }
+.comment-icon {
+    font-size: 18px;
+    color: white;
+}
+.status-title{
+    font-weight:bold;
+    color:#9b2035;
+}
 
 
     </style>
@@ -916,26 +847,24 @@ mysqli_close($conn);
 
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
-                                                                <div class="row mx-2"> <!-- Using Bootstrap margin utility instead of inline styles -->
-                                                                    <?php if (!empty($documents)): ?>
-                                                                        <?php foreach ($documents as $doc): ?>
-                                                                            <?php $displayName = preg_replace('/^\d+_/', '', $doc['file_name']); ?>
-                                                                            <div class="col-md-12 document-container mb-3"> <!-- Using Bootstrap spacing -->
-                                                                                <span class="document-name text-truncate d-inline-block" style="max-width: 100%;">
-                                                                                    <?php echo htmlspecialchars($displayName); ?>
-                                                                                </span>
-                                                                                <span class="document-icon-container ms-3"> <!-- Using Bootstrap margin-left utility -->
-                                                                                    <i class="bx bxs-file document-icon"></i>
-                                                                                </span>
-                                                                            </div>
-                                                                        <?php endforeach; ?>
+                                                            <div class="row" style="margin-left: 10px; margin-right: 10px;">
+                                                                <?php foreach ($documents as $doc): ?>
+                                                                    <?php if (!empty($doc['file_name'])): ?>
+                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                <?php echo htmlspecialchars($displayName); ?>
+                                                                            </span>
+                                                                            <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                <i class="bx bxs-file document-icon"></i>
+                                                                            </span>
+                                                                        </div>
                                                                     <?php else: ?>
-                                                                        <div class="col-md-12 mb-3">
-                                                                            <span class="text-muted">No documents submitted</span>
+                                                                        <div class="col-md-12" style="margin-bottom: 15px;">
+                                                                            <span style="color: #888;">No documents submitted</span>
                                                                         </div>
                                                                     <?php endif; ?>
-                                                                </div>
-
+                                                                <?php endforeach; ?>
+                                                            </div>
 
                                                             <!-- Approval Comment Textarea -->
                                                             <form id="approveForm<?php echo $userID; ?>">
@@ -974,26 +903,24 @@ mysqli_close($conn);
 
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
-                                                                <div class="row mx-2"> <!-- Using Bootstrap margin utility instead of inline styles -->
-                                                                    <?php if (!empty($documents)): ?>
-                                                                        <?php foreach ($documents as $doc): ?>
-                                                                            <?php $displayName = preg_replace('/^\d+_/', '', $doc['file_name']); ?>
-                                                                            <div class="col-md-12 document-container mb-3"> <!-- Using Bootstrap spacing -->
-                                                                                <span class="document-name text-truncate d-inline-block" style="max-width: 100%;">
-                                                                                    <?php echo htmlspecialchars($displayName); ?>
-                                                                                </span>
-                                                                                <span class="document-icon-container ms-3"> <!-- Using Bootstrap margin-left utility -->
-                                                                                    <i class="bx bxs-file document-icon"></i>
-                                                                                </span>
-                                                                            </div>
-                                                                        <?php endforeach; ?>
+                                                            <div class="row" style="margin-left: 10px; margin-right: 10px;">
+                                                                <?php foreach ($documents as $doc): ?>
+                                                                    <?php if (!empty($doc['file_name'])): ?>
+                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                <?php echo htmlspecialchars($displayName); ?>
+                                                                            </span>
+                                                                            <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                <i class="bx bxs-file document-icon"></i>
+                                                                            </span>
+                                                                        </div>
                                                                     <?php else: ?>
-                                                                        <div class="col-md-12 mb-3">
-                                                                            <span class="text-muted">No documents submitted</span>
+                                                                        <div class="col-md-12" style="margin-bottom: 15px;">
+                                                                            <span style="color: #888;">No documents submitted</span>
                                                                         </div>
                                                                     <?php endif; ?>
-                                                                </div>
-
+                                                                <?php endforeach; ?>
+                                                            </div>
 
                                                             <!-- Comment Textarea -->
                                                             <form id="rejectForm<?php echo $userID; ?>">
@@ -1206,26 +1133,24 @@ mysqli_close($conn);
 
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
-                                                                <div class="row mx-2"> <!-- Using Bootstrap margin utility instead of inline styles -->
-                                                                    <?php if (!empty($documents)): ?>
-                                                                        <?php foreach ($documents as $doc): ?>
-                                                                            <?php $displayName = preg_replace('/^\d+_/', '', $doc['file_name']); ?>
-                                                                            <div class="col-md-12 document-container mb-3"> <!-- Using Bootstrap spacing -->
-                                                                                <span class="document-name text-truncate d-inline-block" style="max-width: 100%;">
-                                                                                    <?php echo htmlspecialchars($displayName); ?>
-                                                                                </span>
-                                                                                <span class="document-icon-container ms-3"> <!-- Using Bootstrap margin-left utility -->
-                                                                                    <i class="bx bxs-file document-icon"></i>
-                                                                                </span>
-                                                                            </div>
-                                                                        <?php endforeach; ?>
+                                                            <div class="row" style="margin-left: 10px; margin-right: 10px;">
+                                                                <?php foreach ($documents as $doc): ?>
+                                                                    <?php if (!empty($doc['file_name'])): ?>
+                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                <?php echo htmlspecialchars($displayName); ?>
+                                                                            </span>
+                                                                            <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                <i class="bx bxs-file document-icon"></i>
+                                                                            </span>
+                                                                        </div>
                                                                     <?php else: ?>
-                                                                        <div class="col-md-12 mb-3">
-                                                                            <span class="text-muted">No documents submitted</span>
+                                                                        <div class="col-md-12" style="margin-bottom: 15px;">
+                                                                            <span style="color: #888;">No documents submitted</span>
                                                                         </div>
                                                                     <?php endif; ?>
-                                                                </div>
-
+                                                                <?php endforeach; ?>
+                                                            </div>
 
                                                             <!-- Comment Textarea -->
                                                             <form id="rejectForm<?php echo $userID; ?>">
@@ -1398,25 +1323,24 @@ mysqli_close($conn);
 
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
-                                                                <div class="row mx-2"> <!-- Using Bootstrap margin utility instead of inline styles -->
-                                                                    <?php if (!empty($documents)): ?>
-                                                                        <?php foreach ($documents as $doc): ?>
-                                                                            <?php $displayName = preg_replace('/^\d+_/', '', $doc['file_name']); ?>
-                                                                            <div class="col-md-12 document-container mb-3"> <!-- Using Bootstrap spacing -->
-                                                                                <span class="document-name text-truncate d-inline-block" style="max-width: 100%;">
-                                                                                    <?php echo htmlspecialchars($displayName); ?>
-                                                                                </span>
-                                                                                <span class="document-icon-container ms-3"> <!-- Using Bootstrap margin-left utility -->
-                                                                                    <i class="bx bxs-file document-icon"></i>
-                                                                                </span>
-                                                                            </div>
-                                                                        <?php endforeach; ?>
+                                                            <div class="row" style="margin-left: 10px; margin-right: 10px;">
+                                                                <?php foreach ($documents as $doc): ?>
+                                                                    <?php if (!empty($doc['file_name'])): ?>
+                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                <?php echo htmlspecialchars($doc['file_name']); ?>
+                                                                            </span>
+                                                                            <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                <i class="bx bxs-file document-icon"></i>
+                                                                            </span>
+                                                                        </div>
                                                                     <?php else: ?>
-                                                                        <div class="col-md-12 mb-3">
-                                                                            <span class="text-muted">No documents submitted</span>
+                                                                        <div class="col-md-12" style="margin-bottom: 15px;">
+                                                                            <span style="color: #888;">No documents submitted</span>
                                                                         </div>
                                                                     <?php endif; ?>
-                                                                </div>
+                                                                <?php endforeach; ?>
+                                                            </div>
 
                                                             <!-- Approval Comment Textarea -->
                                                             <form id="approveForm<?php echo $userID; ?>">
@@ -1566,100 +1490,175 @@ mysqli_close($conn);
             });
         }
 
-        // Function to generate the report and open it in a new window
-        function generateReport(taskID, contentID, taskTitle, feedContentTitleCaption, deptName) {
-            $.ajax({
-                url: 'getSchoolDetails.php',
-                method: 'GET',
-                success: function(data) {
-                    console.log(data); // Check the response in the console
-                    console.log("../img/Logo/" + data.Logo);
+     function generateReport(taskID, contentID, taskTitle, feedContentTitleCaption, deptName) {
+    $.ajax({
+        url: 'getSchoolDetails.php',
+        method: 'GET',
+        success: function(data) {
+            console.log(data);
 
-                    // Prepare the logo and school details for the print view
-                    var logo = data.Logo ? '<img src="../img/Logo/' + data.Logo + '" style="width: 130px; height: auto; margin-right:20px;" />' : '<p>No Logo Available</p>';
-                    var schoolDetails = ` 
-                        <div class="header-content">
-                            <div class="logo">${logo}</div>
-                            <div class="school-details">
-                                <p>Republic of the ${data.Country}</p>
-                                <p>${data.Organization}</p>
-                                <p>${data.Region}</p>
-                                <h2 style="font-weight: bold; font-size: 1.5em;">${data.Name}</h2>
-                                <p>${data.Address}</p>
-                                <p>School ID: ${data.School_ID}</p>
-                            </div>
+            var logo = data.Logo ? '<img src="../img/Logo/DEPEDLOGO.png" style="width: 90px; height: auto;" />' : '<p>No Logo Available</p>';
+            var teacherSignature = data.Teacher_Signature ? `<img src="/img/e_sig/${data.Teacher_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
+            var DHeadSignature = data.DHead_Signature ? `<img src="/img/e_sig/${data.DHead_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
+
+            var schoolDetails = `
+                <div class="header-content" style="text-align: center;">
+                    <div class="logo">${logo}</div>
+                    <div class="school-details">
+                        <p style='font-family: "Old English Text MT", serif; font-weight:bold; font-size:20px;'>Republic of the ${data.Country}</p>
+                        <p  style='font-family: "Old English Text MT", serif;font-weight:bold; font-size:28px;'>${data.Organization}</p>
+                        <p style="text-transform: uppercase; font-family: 'Tahoma'; font-weight: bold; font-size: 13px;">REGION ${data.Region}</p>
+                        <p style="text-transform: uppercase; font-family: 'Tahoma'; font-weight: 900; font-size: 16px;">SCHOOLS DIVISION OF BATANGAS</p>
+                        <p style="text-transform: uppercase; font-family: 'Tahoma'; font-weight: 900; font-size: 16px;">LIAN SUB-OFFICE</p>
+                        <p style="text-transform: uppercase;font-weight: 900; font-family: 'Tahoma'; font-size: 16px;">${data.Name} - ${data.School_ID}</p>
+                    </div>
+                </div>
+                <hr style="border: 1.5px solid black; margin: 10px 0;" />
+                <div class="additional-titles" style="text-align: center; font-family: 'Tahoma'; font-weight:bold;">
+                    <h3 style="font-family: 'Tahoma'; font-weight: 900; font-size: 24px;">Submission Report</h3>
+                    <h4>${feedContentTitleCaption}</h4>
+                    <h4>Department: ${deptName}</h4>
+                </div>
+            `;
+
+            const signatureSection = `
+                <div class="signature-section" style="margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start;">
+                    
+                    <div style="text-align: center; flex: 1; position: relative;">
+                        <span>Prepared by:</span><br/><br/>
+                        <div style="position: relative; display: inline-block;">
+                            <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
+                                ${data.DHead_FullName}
+                            </span>
+                            ${data.DHead_Signature ? `
+                                <img src="../img/e_sig/${data.DHead_Signature}" 
+                                    style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
+                            ` : ''}
                         </div>
-                        <hr/>
-                        <div class="additional-titles" style="text-align: center; font-family: 'Times New Roman', serif;">
-                            <h3>Submission Report</h3>
-                            <h4>${feedContentTitleCaption}</h4>
-                            <h4>${deptName}</h4>
-                        </div>
-                    `;
+                        <hr style="max-width: 50%; margin: 0 auto;" />
+                        <span style="font-weight:bold;">${data.DHead_Role || 'Department Head'}</span>
+                    </div>
+                </div>
+            `;
 
-                    // Prepare the report HTML content (without opening a new window)
-                    const reportContent = `
-                        <html>
-                        <head>
-                            <title>Report for Task ${taskTitle}</title>
-                            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-                            <style>
-                                body { font-family: Arial, sans-serif; padding: 20px; }
-                                h1 { text-align: center; }
-                                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                                th, td { padding: 8px; text-align: center; border: 1px solid #ddd; } /* Centering all cells */
-                                th { background-color: #f2f2f2; }
-                                .header-content { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
-                                .logo {}
-                                .school-details { text-align: center; font-family: 'Times New Roman', serif; }
-                                .school-details h2 { font-size: 1.5em; font-weight: bold; }
-                                .school-details p { margin: 0; }
-                                hr { border-top: 1px solid black; width: 100%; margin-top: 10px; }
-                                .additional-titles { margin-top: 10px; margin-bottom: 50px; }
-                                .additional-titles h3, .additional-titles h4 { margin: 5px 0; font-weight: bold; }
-                                .signature-section { margin-top: 50px; text-align: center; display: flex; justify-content: space-between; align-items: flex-start; }
-                                .signature-section div { flex: 1; text-align: center; }
-                                .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; pointer-events: none; z-index: -1; }
-                            </style>
-                        </head>
-                        <body>
-                            ${schoolDetails}
-                            <h1>Report for "${taskTitle}"</h1>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>#</th> <!-- Change UserID column to # -->
-                                        <th>First Name</th>
-                                        <th>Last Name</th>
-                                        <th>Document(s)</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${generateTableRows()}
-                                </tbody>
-                            </table>
-                        </body>
-                        </html>
-                    `;
+            const footerSection = `
+                <div class="footer" style="display: flex; align-items: center; justify-content: space-between; margin-top: 50px; padding: 10px; border-top: 2.5px solid black;">
+                    <div class="footer-left" style="display: flex; align-items: center; margin-left: 50px; flex: 1;">
+                        <img src="../img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 280px; height: auto; margin-right: 10px;" />
+                        <img src="../img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
+                    </div>
+                    <div class="footer-right" style="text-align: left; font-size: 18px; flex: 2; margin-left:30px;">
+                        <p>${data.Address} ${data.City_Muni} School ID: ${data.School_ID}</p>
+                        <p>Contact nos.: ${data.Mobile_No} Landline: ${data.Landline || 'N/A'}</p>
+                        <p>Email: ${data.Email || 'N/A'}</p>
+                    </div>
+                </div>
+            `;
 
-                    // Open a new window and print the content
-                    const printWindow = window.open('', '', 'width=900,height=700');
-                    printWindow.document.open();
-                    printWindow.document.write(reportContent);
-                    printWindow.document.close();
+            const reportContent = `
+    <html>
+    <head>
+        <title>Report for Task ${taskTitle}</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        ${/* include updated styles */''}
+        <style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
 
-                    // Wait for content to load before triggering print
-                    setTimeout(function() {
-                        printWindow.print();
-                        printWindow.close();
-                    }, 500); // Delay to ensure content is fully loaded
-                },
-                error: function(xhr, status, error) {
-                    alert("Error fetching school details: " + error);
-                }
-            });
+    .page-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .content {
+        flex: 1;
+    }
+
+    h1 {
+        text-align: center;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th, td {
+        padding: 8px;
+        text-align: center;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    .school-details p {
+        margin: 0;
+    }
+
+    .footer {
+        border-top: 2.5px solid black;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+</style>
+
+    </head>
+    <body>
+        <div class="page-container">
+            <div class="content">
+                ${schoolDetails}
+                <h1>Report for "${taskTitle}"</h1>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Document(s)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${generateTableRows()}
+                    </tbody>
+                </table>
+                ${signatureSection}
+            </div>
+            ${footerSection}
+        </div>
+    </body>
+    </html>
+`;
+
+
+            const printWindow = window.open('', '', 'width=900,height=700');
+            printWindow.document.open();
+            printWindow.document.write(reportContent);
+            printWindow.document.close();
+
+            setTimeout(function() {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        },
+        error: function(xhr, status, error) {
+            alert("Error fetching school details: " + error);
         }
+    });
+}
+
 
         // Function to generate table rows dynamically with sequential numbering
         function generateTableRows() {
@@ -1986,155 +1985,48 @@ document.addEventListener('DOMContentLoaded', function() {
         const commentsContainer = document.getElementById(`commentsContainer${userID}`);
         commentsContainer.innerHTML = '<p>Loading comments...</p>';
 
-        const taskId = document.querySelector('[name="task_id"]').value;
-        const contentIdInput = document.querySelector('[name="content_id"]');
-        const contentId = contentIdInput ? contentIdInput.value : null;
+        const taskId = document.querySelector(`[name="task_id"]`).value;
+        const contentId = document.querySelector(`[name="content_id"]`).value;
 
-        console.log('Fetching comments with:', { taskId, contentId, userID });
+        // AJAX request to fetch comments
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `fetch_comments.php?task_id=${taskId}&content_id=${contentId}&user_id=${userID}`, true);
 
-        // Build URL with optional content_id
-        let url = `fetch_comments.php?task_id=${taskId}&user_id=${userID}`;
-        if (contentId) {
-            url += `&content_id=${contentId}`;
-        }
-
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(response => {
-                console.log('Received response:', response);
-                
-                commentsContainer.innerHTML = '';
-                
-                if (response.success && response.comments.length > 0) {
-                    // Group comments by date
-                    const groupedComments = {};
-                    const today = new Date();
-                    const yesterday = new Date(today);
-                    yesterday.setDate(yesterday.getDate() - 1);
-
-                    response.comments.forEach(comment => {
-                        const commentDate = new Date(comment.timestamp);
-                        const dateKey = commentDate.toDateString();
-                        
-                        if (!groupedComments[dateKey]) {
-                            groupedComments[dateKey] = [];
-                        }
-                        groupedComments[dateKey].push(comment);
-                    });
-
-                    // Create date dividers and comments
-                    Object.keys(groupedComments).forEach(dateKey => {
-                        const comments = groupedComments[dateKey];
-                        const commentDate = new Date(dateKey);
-
-                        // Create date divider
-                        const dateDivider = document.createElement('div');
-                        dateDivider.classList.add('date-divider');
-                        
-                        let dividerText;
-                        if (commentDate.toDateString() === today.toDateString()) {
-                            dividerText = 'Today';
-                        } else if (commentDate.toDateString() === yesterday.toDateString()) {
-                            dividerText = 'Yesterday';
-                        } else {
-                            dividerText = commentDate.toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            });
-                        }
-
-                        dateDivider.innerHTML = `<span>${dividerText}</span>`;
-                        commentsContainer.appendChild(dateDivider);
-
-                        // Add comments for this date
-                        comments.forEach(comment => {
-                            // Format the timestamp (time only since date is in divider)
-                            const formattedTimestamp = new Date(comment.timestamp).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                            });
-                            
-                            const commentDiv = document.createElement('div');
-                            commentDiv.className = 'comment-item';
-                            
-                            // Add current-user class if it's the current user's comment
-                            if (comment.isCurrentUser) {
-                                commentDiv.classList.add('current-user');
-                            }
-                            
-                            const img = document.createElement('img');
-                            img.src = comment.profile;
-                            img.alt = `${comment.fname} ${comment.lname}'s profile`;
-                            
-                            const contentDiv = document.createElement('div');
-                            contentDiv.className = 'comment-content';
-                            
-                            const nameSpan = document.createElement('strong');
-                            nameSpan.style.color = '#9b2035';
-                            nameSpan.textContent = `${comment.fname} ${comment.lname}`;
-                            
-                            const timeSpan = document.createElement('span');
-                            timeSpan.style.cssText = 'color: gray; font-size: 0.8em; margin-left: 5px;';
-                            timeSpan.innerHTML = `&bull; ${formattedTimestamp}`;
-                            
-                            const commentPara = document.createElement('p');
-                            commentPara.style.margin = '0';
-                            commentPara.textContent = comment.Comment;
-                            
-                            contentDiv.appendChild(nameSpan);
-                            contentDiv.appendChild(timeSpan);
-                            contentDiv.appendChild(commentPara);
-                            
-                            // Append elements in the correct order
-                            commentDiv.appendChild(img);
-                            commentDiv.appendChild(contentDiv);
-                            
-                            commentsContainer.appendChild(commentDiv);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        commentsContainer.innerHTML = ''; // Clear previous content
+                        response.comments.forEach(comment => {
+                            const commentHTML = `
+                                <div class="comment-item" style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                                    <img src="${comment.profile}" alt="${comment.fname} ${comment.lname}'s profile" style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                                    <div style="flex: 1;">
+                                        <strong style="color: #9b2035;">${comment.fname} ${comment.lname}</strong>
+                                        <span style="color: gray; font-size: 0.8em; margin-left: 5px;">&bull; ${comment.timestamp}</span> <!-- Dot icon and timestamp -->
+                                        <p style="margin: 0;">${comment.Comment}</p>
+                                    </div>
+                                </div>
+                            `;
+                            commentsContainer.innerHTML += commentHTML;
                         });
-                    });
-                } else {
-                    commentsContainer.innerHTML = '<p>No comments available.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading comments:', error);
-                commentsContainer.innerHTML = '<p>Error loading comments. Please try again.</p>';
-            });
-    }
 
-    // Helper function to format timestamp
-    function formatTimestamp(timestamp) {
-        const months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        
-        // Parse the timestamp (assuming format: YYYY/MM/DD HH:MM)
-        const [datePart, timePart] = timestamp.split(' ');
-        const [year, month, day] = datePart.split('/');
-        const [hours, minutes] = timePart.split(':');
-        
-        // Convert to 12-hour format
-        let hour12 = parseInt(hours);
-        const ampm = hour12 >= 12 ? 'PM' : 'AM';
-        hour12 = hour12 % 12;
-        hour12 = hour12 ? hour12 : 12; // Convert 0 to 12
-        
-        // Get month name
-        const monthName = months[parseInt(month) - 1];
-        
-        // Format as "Month Day, Year at HH:MM AM/PM"
-        return `${monthName} ${day}, ${year} at ${hour12}:${minutes} ${ampm}`;
+
+                    } else {
+                        commentsContainer.innerHTML = '<p>No comments available.</p>';
+                    }
+                } else {
+                    commentsContainer.innerHTML = '<p>Error loading comments.</p>';
+                }
+            }
+        };
+
+        xhr.send();
     }
 });
+
+
 </script>
 
 
