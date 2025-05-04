@@ -31,6 +31,52 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] == UPLOAD_ERR_OK) {
 
         if ($stmt->execute()) {
             echo json_encode(['status' => 'success', 'message' => 'Profile updated successfully', 'filename' => $unique_filename]);
+
+            // Upload the file to GitHub
+            $githubRepo = "docmap2024/DocMaP"; // Your GitHub username/repo
+            $branch = "main"; // Branch where you want to upload
+            $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/img/UserProfile/$unique_filename";
+
+            $content = base64_encode(file_get_contents($file_path));
+            $data = json_encode([
+                "message" => "Adding a new profile image",
+                "content" => $content,
+                "branch" => $branch
+            ]);
+
+            $githubToken = getenv('GITHUB_TOKEN');
+
+            if (!$githubToken) {
+                echo json_encode(['status' => 'error', 'message' => 'GitHub token is not set in the environment variables.']);
+                exit();
+            }
+
+            $headers = [
+                "Authorization: token $githubToken",
+                "Content-Type: application/json",
+                "User-Agent: DocMaP"
+            ];
+
+            $ch = curl_init($uploadUrl);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+            $responseGitHub = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode != 201) {
+                echo json_encode(['status' => 'error', 'message' => 'Error uploading file to GitHub']);
+                exit();
+            }
+
+            $responseData = json_decode($responseGitHub, true);
+            $githubDownloadUrl = $responseData['content']['download_url'];
+
+            echo json_encode(['status' => 'success', 'message' => 'File uploaded to GitHub successfully', 'download_url' => $githubDownloadUrl]);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Database update failed']);
         }
