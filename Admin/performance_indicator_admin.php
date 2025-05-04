@@ -14,7 +14,7 @@ $userId = $_SESSION['user_id'];
 $schoolYearsQuery = "
     SELECT DISTINCT sy.School_Year_ID, sy.Year_Range
     FROM schoolyear sy
-    JOIN Performance_Indicator pi ON sy.School_Year_ID = pi.School_Year_ID
+    JOIN performance_indicator pi ON sy.School_Year_ID = pi.School_Year_ID
     ORDER BY sy.Year_Range DESC";
 $schoolYearsResult = $conn->query($schoolYearsQuery);
 $schoolYears = [];
@@ -37,7 +37,7 @@ $preparersQuery = "
         u.URank AS Preparer_Rank,
         u.esig AS Teacher_Signature
     FROM 
-        Performance_Indicator pi
+        performance_indicator pi
     JOIN 
         useracc u ON pi.UserID = u.UserID
     JOIN
@@ -87,17 +87,17 @@ if ($preparersResult && $preparersResult->num_rows > 0) {
                     t.Transition_Rate,
                     a.Age_Group_12To15,
                     n.NAT_Score
-                FROM Performance_Indicator pi
+                FROM performance_indicator pi
                 JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
-                JOIN Grade g ON pi.Grade_ID = g.Grade_ID
-                JOIN Enroll e ON pi.Enroll_ID = e.Enroll_ID
-                JOIN Dropout d ON pi.Dropout_ID = d.Dropout_ID
-                JOIN Promotion p ON pi.Promotion_ID = p.Promotion_ID
-                JOIN Cohort_Survival c ON pi.Cohort_ID = c.Cohort_ID
-                JOIN Repetition r ON pi.Repetition_ID = r.Repetition_ID
-                JOIN Age a ON pi.Age_ID = a.Age_ID
-                JOIN NAT n ON pi.NAT_ID = n.NAT_ID
-                JOIN Transition t ON pi.Transition_ID = t.Transition_ID
+                JOIN grade g ON pi.Grade_ID = g.Grade_ID
+                JOIN enroll e ON pi.Enroll_ID = e.Enroll_ID
+                JOIN dropout d ON pi.Dropout_ID = d.Dropout_ID
+                JOIN promotion p ON pi.Promotion_ID = p.Promotion_ID
+                JOIN cohort_survival c ON pi.Cohort_ID = c.Cohort_ID
+                JOIN repetition r ON pi.Repetition_ID = r.Repetition_ID
+                JOIN age a ON pi.Age_ID = a.Age_ID
+                JOIN nat n ON pi.NAT_ID = n.NAT_ID
+                JOIN transition t ON pi.Transition_ID = t.Transition_ID
                 WHERE sy.School_Year_ID = $yearId
                 ORDER BY g.Grade_Level";
             $result = $conn->query($query);
@@ -122,17 +122,17 @@ if ($preparersResult && $preparersResult->num_rows > 0) {
                 t.Transition_Rate,
                 a.Age_Group_12To15,
                 n.NAT_Score
-            FROM Performance_Indicator pi
+            FROM performance_indicator pi
             JOIN schoolyear sy ON pi.School_Year_ID = sy.School_Year_ID
-            JOIN Grade g ON pi.Grade_ID = g.Grade_ID
-            JOIN Enroll e ON pi.Enroll_ID = e.Enroll_ID
-            JOIN Dropout d ON pi.Dropout_ID = d.Dropout_ID
-            JOIN Promotion p ON pi.Promotion_ID = p.Promotion_ID
-            JOIN Cohort_Survival c ON pi.Cohort_ID = c.Cohort_ID
-            JOIN Repetition r ON pi.Repetition_ID = r.Repetition_ID
-            JOIN Age a ON pi.Age_ID = a.Age_ID
-            JOIN NAT n ON pi.NAT_ID = n.NAT_ID
-            JOIN Transition t ON pi.Transition_ID = t.Transition_ID
+            JOIN grade g ON pi.Grade_ID = g.Grade_ID
+            JOIN enroll e ON pi.Enroll_ID = e.Enroll_ID
+            JOIN dropout d ON pi.Dropout_ID = d.Dropout_ID
+            JOIN promotion p ON pi.Promotion_ID = p.Promotion_ID
+            JOIN cohort_survival c ON pi.Cohort_ID = c.Cohort_ID
+            JOIN repetition r ON pi.Repetition_ID = r.Repetition_ID
+            JOIN age a ON pi.Age_ID = a.Age_ID
+            JOIN nat n ON pi.NAT_ID = n.NAT_ID
+            JOIN transition t ON pi.Transition_ID = t.Transition_ID
             WHERE sy.School_Year_ID = $selectedYear
             ORDER BY g.Grade_Level";
         $result = $conn->query($query);
