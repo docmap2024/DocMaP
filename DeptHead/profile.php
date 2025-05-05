@@ -365,13 +365,21 @@ mysqli_close($conn);
                         <!-- Left Column -->
                         <div class="col-md-5 mt-5">
                             <div class="container-content">
-                                <?php if ($profile_picture): ?>
-                                    <div class="profile-container text-center">
-                                        <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                    </div>
-                                <?php else: ?>
-                                    <p class="text-center">No profile picture available.</p>
-                                <?php endif; ?>
+                            <?php
+$profileImagePath = !empty($profile_picture)
+    ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture
+    : "default_profile_image.jpg";
+?>
+
+<?php if ($profile_picture): ?>
+    <div class="profile-container text-center">
+        <span class='user-name' id='profile-username'><?php echo $fullName; ?></span>
+        <img src="<?php echo $profileImagePath; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
+    </div>
+<?php else: ?>
+    <p class="text-center">No profile picture available.</p>
+<?php endif; ?>
+
 
                                 <div class="text-center mt-3 full-name"><?php echo $full_name; ?></div>
                                 <div class="container mt-3">
