@@ -2243,7 +2243,7 @@ foreach ($tasks as $task) {
             const formData = new FormData(document.getElementById('taskForm'));
 
             // Make an AJAX request to your PHP script (upload_task.php)
-            fetch('upload_task.php', {
+            fetch('../Admin/upload_task.php', {
                 method: 'POST',
                 body: formData
             })

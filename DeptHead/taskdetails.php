@@ -839,29 +839,32 @@ mysqli_close($conn);
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <p>Are you sure you want to approve the submission?</p>
+                                                        <p>Are you sure you want to approve the submission?</p>
 
-                                                            <!-- Files Display Section -->
-                                                            <h6>Files:</h6>
-                                                            <div class="row" style="margin-left: 10px; margin-right: 10px;">
-                                                                <?php foreach ($documents as $doc): ?>
-                                                                    <?php if (!empty($doc['file_name'])): ?>
-                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
-                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($displayName); ?>
-                                                                            </span>
-                                                                            <span class="document-icon-container" style="margin-left: 15px;">
-                                                                                <i class="bx bxs-file document-icon"></i>
-                                                                            </span>
-                                                                        </div>
-                                                                    <?php else: ?>
-                                                                        <div class="col-md-12" style="margin-bottom: 15px;">
-                                                                            <span style="color: #888;">No documents submitted</span>
-                                                                        </div>
-                                                                    <?php endif; ?>
-                                                                <?php endforeach; ?>
-                                                            </div>
-
+                                                        <!-- Files Display Section -->
+                                                        <h6>Files:</h6>
+                                                        <div class="row" style="margin-left: 10px; margin-right: 10px;">
+                                                            <?php foreach ($documents as $doc): ?>
+                                                                <?php
+                                                                    // Remove the leading numbers followed by an underscore
+                                                                    $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                ?>
+                                                                <?php if (!empty($doc['file_name'])): ?>
+                                                                    <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                        <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                            <?php echo htmlspecialchars($displayName); ?>
+                                                                        </span>
+                                                                        <span class="document-icon-container" style="margin-left: 15px;">
+                                                                            <i class="bx bxs-file document-icon"></i>
+                                                                        </span>
+                                                                    </div>
+                                                                <?php else: ?>
+                                                                    <div class="col-md-12" style="margin-bottom: 15px;">
+                                                                        <span style="color: #888;">No documents submitted</span>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
                                                             <!-- Approval Comment Textarea -->
                                                             <form id="approveForm<?php echo $userID; ?>">
                                                                 <div class="mb-3">
@@ -1323,29 +1326,32 @@ mysqli_close($conn);
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <p>Are you sure you want to approve the submission?</p>
+                                                        <p>Are you sure you want to approve the submission?</p>
 
-                                                            <!-- Files Display Section -->
-                                                            <h6>Files:</h6>
-                                                            <div class="row" style="margin-left: 10px; margin-right: 10px;">
-                                                                <?php foreach ($documents as $doc): ?>
-                                                                    <?php if (!empty($doc['file_name'])): ?>
-                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
-                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($doc['file_name']); ?>
-                                                                            </span>
-                                                                            <span class="document-icon-container" style="margin-left: 15px;">
-                                                                                <i class="bx bxs-file document-icon"></i>
-                                                                            </span>
-                                                                        </div>
-                                                                    <?php else: ?>
-                                                                        <div class="col-md-12" style="margin-bottom: 15px;">
-                                                                            <span style="color: #888;">No documents submitted</span>
-                                                                        </div>
-                                                                    <?php endif; ?>
-                                                                <?php endforeach; ?>
-                                                            </div>
-
+                                                        <!-- Files Display Section -->
+                                                        <h6>Files:</h6>
+                                                        <div class="row" style="margin-left: 10px; margin-right: 10px;">
+                                                            <?php foreach ($documents as $doc): ?>
+                                                                <?php 
+                                                                    // Clean up document display name
+                                                                    $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                ?>
+                                                                <?php if (!empty($doc['file_name'])): ?>
+                                                                    <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                        <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                            <?php echo htmlspecialchars($displayName); ?>
+                                                                        </span>
+                                                                        <span class="document-icon-container" style="margin-left: 15px;">
+                                                                            <i class="bx bxs-file document-icon"></i>
+                                                                        </span>
+                                                                    </div>
+                                                                <?php else: ?>
+                                                                    <div class="col-md-12" style="margin-bottom: 15px;">
+                                                                        <span style="color: #888;">No documents submitted</span>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
                                                             <!-- Approval Comment Textarea -->
                                                             <form id="approveForm<?php echo $userID; ?>">
                                                                 <div class="mb-3">
