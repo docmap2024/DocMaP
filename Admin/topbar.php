@@ -111,7 +111,7 @@
             $userId = $_SESSION['user_id'];
 
             // Query to fetch profile image filename and user name
-            $sql = "SELECT Profile, CONCAT(fname, ' ', lname) AS fullname FROM useracc WHERE UserID = ?";
+            $sql = "SELECT profile, CONCAT(fname, ' ', lname) AS fullname FROM useracc WHERE UserID = ?";
             $stmt = $conn->prepare($sql);
 
             if ($stmt) {
