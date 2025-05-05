@@ -638,7 +638,6 @@ mysqli_close($conn);
                             // Display the fetched e-signature image directly from GitHub URL
                             $('#eSignatureBox').html(`
                                 <img src="${response.esig}" alt="E-Signature" class="img-fluid">
-                                <p class="mt-2 text-muted">Image hosted on GitHub</p>
                             `);
                         } else {
                             // Display "No Image" if the esig column is null
