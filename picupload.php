@@ -1,7 +1,13 @@
 <?php
 session_start();
 include 'connection.php';
-include 'log_function.php'; // Optional, use only if available
+
+// Function to write to log file
+function write_log($message) {
+    $logfile = '/tmp/logfile.log';
+    $timestamp = date("Y-m-d H:i:s");
+    file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
+}
 
 if (!isset($_SESSION['user_id'])) {
     write_log("Profile upload attempt by non-logged-in user");
