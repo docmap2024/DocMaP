@@ -622,7 +622,7 @@ function fetchSchoolDetailsAndPrint() {
 
             var schoolDetails = `
                 <div class="header-content" style="text-align: center;">
-                    <div class="logo">${logo}</div>
+                    <div class="logo">${depedlogo}</div>
                     <div class="school-details">
                         <p style='font-family: "Old English Text MT", serif; font-weight:bold; font-size:20px;'>Republic of the ${data.Country}</p>
                         <p  style='font-family: "Old English Text MT", serif;font-weight:bold; font-size:28px;'>${data.Organization}</p>
