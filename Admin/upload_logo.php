@@ -53,7 +53,7 @@ $unique_filename = uniqid() . '.' . $file_ext;
 // GitHub Repository Details
 $githubRepo = "docmap2024/DocMaP"; // GitHub username/repo
 $branch = "main";
-$uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/img/Logo/$unique_filename";
+$uploadUrl = "https://api.github.com/repos/$githubRepo/contents/img/Logo/$unique_filename";
 
 // Fetch GitHub Token from Environment Variables
 $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
@@ -105,7 +105,7 @@ $githubDownloadUrl = $responseData['content']['download_url'];
 // Update database with GitHub URL
 try {
     $stmt = $conn->prepare("UPDATE school_details SET Logo = ? WHERE school_details_ID = 1");
-    $stmt->bind_param("s",$githubDownloadUrl);
+    $stmt->bind_param("s", $unique_filename);
     
     if (!$stmt->execute()) {
         http_response_code(500);
