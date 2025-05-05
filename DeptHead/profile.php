@@ -65,7 +65,7 @@ mysqli_close($conn);
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/styles.css">
-     <link rel="icon" type="image/png" href="img/Logo/docmap-logo-1.png">
+     <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 
     <title>Profile</title>
@@ -707,7 +707,7 @@ mysqli_close($conn);
             success: function (response) {
                 if (response.esig) {
                     // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                    $('#eSignatureBox').html(`<img src="../img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
                 } else {
                     // Display "No Image" if the esig column is null
                     $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
