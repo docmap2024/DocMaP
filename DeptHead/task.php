@@ -2784,7 +2784,7 @@ function closeDropdown(dropdownId) {
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch('../Admin/delete_task.php', {
+                    fetch('delete_task.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ task_id: taskId })
