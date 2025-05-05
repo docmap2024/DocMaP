@@ -2291,7 +2291,7 @@ foreach ($tasks as $task) {
             const formData = new FormData(document.getElementById('taskForm'));
 
             // Make an AJAX request to your PHP script (upload_task.php)
-            fetch('upload_task.php', {
+            fetch('../Admin/upload_task.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2340,7 +2340,7 @@ foreach ($tasks as $task) {
             const formData = new FormData(document.getElementById('taskForm'));
 
             // Make an AJAX request to your PHP script (upload_task.php)
-            fetch('upload_task.php', {
+            fetch('../Admin/upload_task.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2602,10 +2602,10 @@ function closeDropdown(dropdownId) {
 
             // Handle form submission based on the action (Assign, Draft, Schedule)
             if (actionType === 'Assign') {
-                form.action = 'update_task.php';
+                form.action = '../Admin/update_task.php';
                 updateTask(); // Submit the form for Assign
             } else if (actionType === 'Draft') {
-                form.action = 'update_task.php';
+                form.action = '../Admin/update_task.php';
                 updateTask_Draft(); // Submit the form for Draft
             } else if (actionType === 'Schedule') {
                 // Open the schedule modal for scheduling
@@ -2634,7 +2634,7 @@ function closeDropdown(dropdownId) {
                 console.log(`${key}: ${value}`);
             }
 
-            fetch('update_task.php', {
+            fetch('../Admin/update_task.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2682,7 +2682,7 @@ function closeDropdown(dropdownId) {
                 console.log(`${key}: ${value}`);
             }
 
-            fetch('update_task.php', {
+            fetch('../Admin/update_task.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2734,7 +2734,7 @@ function closeDropdown(dropdownId) {
                 console.log(`${key}: ${value}`);
             }
 
-            fetch('update_task.php', {
+            fetch('../Admin/update_task.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2784,7 +2784,7 @@ function closeDropdown(dropdownId) {
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch('delete_task.php', {
+                    fetch('../Admin/delete_task.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ task_id: taskId })
@@ -2833,7 +2833,7 @@ function closeDropdown(dropdownId) {
 
 
         function autoUpdateScheduledTasks() {
-            const apiUrl = 'auto_assign_tasks.php';
+            const apiUrl = '../Admin/auto_assign_tasks.php';
             console.log('Fetching from URL:', apiUrl); // Log the API URL being fetched
 
             fetch(apiUrl)
