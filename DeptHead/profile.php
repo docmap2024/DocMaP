@@ -694,7 +694,7 @@ mysqli_close($conn);
             success: function (response) {
                 if (response.esig) {
                     // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                    $('#eSignatureBox').html(`<img src="../img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
                 } else {
                     // Display "No Image" if the esig column is null
                     $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
@@ -738,7 +738,7 @@ $(document).ready(function () {
         var formData = new FormData(this);
 
         $.ajax({
-            url: 'upload_esig.php', // The PHP script to handle upload
+            url: '../Admin/upload_esig.php', // The PHP script to handle upload
             type: 'POST',
             data: formData,
             contentType: false,
@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         };
 
         // Send data to the backend using AJAX
-        fetch('edit_user.php', {
+        fetch('../edit_user.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -858,7 +858,7 @@ $(document).ready(function () {
         var formData = new FormData($('#uploadForm')[0]);
 
         $.ajax({
-            url: 'picupload.php',
+            url: '../picupload.php',
             type: 'POST',
             data: formData,
             contentType: false,
@@ -897,7 +897,7 @@ $(document).ready(function () {
     var userId = $('#userId').val(); // Assuming you have a hidden input for userId
 
     $.ajax({
-        url: 'changepassword.php',
+        url: '../changepassword.php',
         type: 'POST',
         data: { email: email, userId: userId },
         success: function (response) {
