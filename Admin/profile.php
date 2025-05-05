@@ -41,6 +41,18 @@ if (mysqli_num_rows($result) > 0) {
 // Construct the full path to the profile picture
 $profile_picture_path = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture;
 
+// Query to check if the user's e-signature column (esig) is NULL or not
+$esig_query = "SELECT esig FROM useracc WHERE UserID = $user_id";
+$esig_result = mysqli_query($conn, $esig_query);
+
+// Check e-signature status
+$has_esig = false;
+if ($esig_result && mysqli_num_rows($esig_result) > 0) {
+    $esig_row = mysqli_fetch_assoc($esig_result);
+    $has_esig = !empty($esig_row['esig']); // If esig is not empty or NULL, user has a signature
+}
+
+
 // Close database connection
 mysqli_close($conn);
 ?>
@@ -628,53 +640,27 @@ mysqli_close($conn);
 
     <Script>
         $(document).ready(function () {
-            // Function to load signature
-            function loadSignature() {
+            $('#viewEsignature').on('click', function () {
                 $.ajax({
-                    url: 'fetch_esig.php',
+                    url: 'fetch_esig.php', // Backend script to fetch the e-signature
                     type: 'POST',
                     dataType: 'json',
                     success: function (response) {
                         if (response.esig) {
-                            // Add cache-busting parameter
-                            const timestamp = new Date().getTime();
+                            // Display the fetched e-signature image directly from GitHub URL
                             $('#eSignatureBox').html(`
-                                <img src="${response.esig}?t=${timestamp}" 
-                                    alt="E-Signature" 
-                                    class="img-fluid"
-                                    onerror="this.onerror=null;this.src='default_signature.png'">
+                                <img src="${response.esig}" alt="E-Signature" class="img-fluid">
                             `);
                         } else {
-                            $('#eSignatureBox').html(`
-                                <p class="text-muted">No signature available</p>
-                                <button class="btn btn-sm btn-primary mt-2" id="uploadEsigBtn">
-                                    Upload Signature
-                                </button>
-                            `);
+                            // Display "No Image" if the esig column is null
+                            $('#eSignatureBox').html('<p class="text-muted">No signature available</p>');
                         }
                     },
                     error: function () {
-                        $('#eSignatureBox').html(`
-                            <p class="text-danger">Error loading signature</p>
-                            <button class="btn btn-sm btn-primary mt-2" id="uploadEsigBtn">
-                                Upload Signature
-                            </button>
-                        `);
+                        // Handle errors
+                        $('#eSignatureBox').html('<p class="text-danger">Error fetching signature</p>');
                     }
                 });
-            }
-
-            // Load signature on page load
-            loadSignature();
-            
-            // Reload when view button clicked
-            $('#viewEsignature').on('click', function () {
-                loadSignature();
-            });
-
-            // Handle upload button if shown
-            $(document).on('click', '#uploadEsigBtn', function() {
-                $('#uploadESigModal').modal('show');
             });
         });
 
