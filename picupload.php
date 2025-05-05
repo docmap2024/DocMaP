@@ -2,7 +2,6 @@
 session_start();
 include 'connection.php';
 
-// Function to write to log file
 function write_log($message) {
     $logfile = '/tmp/logfile.log';
     $timestamp = date("Y-m-d H:i:s");
@@ -17,23 +16,39 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-    $uploadDir = 'img/UserProfile/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+if (isset($_FILES['file'])) {
+    // File validation checks
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!in_array($_FILES['file']['type'], $allowedTypes)) {
+        echo json_encode(['status' => 'error', 'message' => 'Only JPEG, PNG, and GIF images are allowed']);
+        exit;
     }
 
-    $fileTmpPath = $_FILES['file']['tmp_name'];
-    $fileName = $_FILES['file']['name'];
-    $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+    $maxSize = 2 * 1024 * 1024; // 2MB
+    if ($_FILES['file']['size'] > $maxSize) {
+        echo json_encode(['status' => 'error', 'message' => 'File too large. Max 2MB allowed.']);
+        exit;
+    }
 
-    // Generate new file name with 6-digit random number
-    $newFileName = sprintf('%06d_%s', random_int(100000, 999999), basename($fileName));
-    $newFilePath = $uploadDir . $newFileName;
+    if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        $fileTmpPath = $_FILES['file']['tmp_name'];
+        $fileName = $_FILES['file']['name'];
+        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
 
-    // Move to local directory
-    if (move_uploaded_file($fileTmpPath, $newFilePath)) {
-        // GitHub details
+        // Sanitize filename
+        $fileName = preg_replace('/[^a-zA-Z0-9\.\-_]/', '', $fileName);
+        // Generate new file name
+        $newFileName = sprintf('%06d_%s', random_int(100000, 999999), basename($fileName));
+
+        // Get file content directly from temp file
+        $fileContent = file_get_contents($fileTmpPath);
+        if ($fileContent === false) {
+            write_log("Failed to read uploaded file: $fileName");
+            echo json_encode(['status' => 'error', 'message' => 'Failed to process file']);
+            exit;
+        }
+
+        // GitHub upload
         $githubRepo = "docmap2024/DocMaP";
         $branch = "main";
         $githubFileName = "UserProfile/" . $newFileName;
@@ -46,7 +61,7 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
             exit;
         }
 
-        $content = base64_encode(file_get_contents($newFilePath));
+        $content = base64_encode($fileContent);
         $data = json_encode([
             "message" => "Adding new profile image",
             "content" => $content,
@@ -56,7 +71,8 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         $headers = [
             "Authorization: token $githubToken",
             "Content-Type: application/json",
-            "User-Agent: DocMaP"
+            "User-Agent: DocMaP",
+            "Accept: application/vnd.github.v3+json"
         ];
 
         $ch = curl_init($uploadUrl);
@@ -64,16 +80,12 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-
-        // Remove local file after upload
-        if (file_exists($newFilePath)) {
-            unlink($newFilePath);
-            write_log("Local profile image deleted: $newFilePath");
-        }
 
         if ($response === false || $httpCode != 201) {
             write_log("GitHub upload failed for profile image: $newFileName - HTTP Code: $httpCode");
@@ -84,9 +96,9 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         $responseData = json_decode($response, true);
         $githubDownloadUrl = $responseData['content']['download_url'];
 
-        // Maintain your SQL query structure
+        // Update database with filename (as per your requirement)
         $stmt = $conn->prepare("UPDATE useracc SET profile = ? WHERE UserID = ?");
-        $stmt->bind_param("si", $newFileName, $user_id); // Do NOT change this per instructions
+        $stmt->bind_param("si", $newFileName, $user_id);
 
         if ($stmt->execute()) {
             write_log("Profile updated with new image: $newFileName");
@@ -97,16 +109,16 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         }
         $stmt->close();
     } else {
-        write_log("Error moving uploaded profile file: $fileName");
-        echo json_encode(['status' => 'error', 'message' => 'File move failed']);
+        $errorMsg = 'File upload error.';
+        if (isset($_FILES['file']['error'])) {
+            $errorMsg .= ' Error code: ' . $_FILES['file']['error'];
+        }
+        write_log($errorMsg);
+        echo json_encode(['status' => 'error', 'message' => $errorMsg]);
     }
 } else {
-    $errorMsg = 'No file uploaded or invalid file.';
-    if (isset($_FILES['file']['error'])) {
-        $errorMsg .= ' Error code: ' . $_FILES['file']['error'];
-    }
-    write_log($errorMsg);
-    echo json_encode(['status' => 'error', 'message' => $errorMsg]);
+    write_log("No file uploaded");
+    echo json_encode(['status' => 'error', 'message' => 'No file uploaded.']);
 }
 
 $conn->close();
