@@ -1,40 +1,32 @@
 <?php
-// Database connection
-include 'connection.php';
+// Log errors but don't show them in output
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/error.log');
+error_reporting(E_ALL);
 
-$logFile = 'logfile.log'; // Log file
+header('Content-Type: application/json');
+include '../connection.php';
 
 // Get JSON input
-$requestData = json_decode(file_get_contents("php://input"), true);
+$data = json_decode(file_get_contents("php://input"), true);
+$task_id = $data['task_id'] ?? null;
 
-// Check if task_id is received
-if (isset($requestData['task_id'])) {
-    $task_id = $requestData['task_id'];
-    error_log("Received request to delete task with ID: " . $task_id . "\n", 3, $logFile);
-
-    // SQL query to delete the task
-    $sql = "DELETE FROM tasks WHERE TaskID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('i', $task_id);
-
-    if ($stmt->execute()) {
-        error_log("Task with ID " . $task_id . " deleted successfully.\n", 3, $logFile);
-        $response = array('success' => true, 'message' => 'Task deleted successfully.');
-    } else {
-        error_log("Failed to delete task with ID " . $task_id . ": " . $stmt->error . "\n", 3, $logFile);
-        $response = array('success' => false, 'message' => 'Failed to delete task.');
-    }
-
-    $stmt->close();
-    $conn->close();
-} else {
-    // Log missing task_id error
-    error_log("Error: Task ID not provided.\n", 3, $logFile);
-    $response = array('success' => false, 'message' => 'Task ID not provided.');
+if (!$task_id) {
+    echo json_encode(['success' => false, 'message' => 'Task ID is missing.']);
+    exit;
 }
 
-// Return JSON response
-header('Content-Type: application/json');
-echo json_encode($response);
-exit;
+// Prepare and execute delete query
+$stmt = $conn->prepare("DELETE FROM tasks WHERE TaskID = ?");
+$stmt->bind_param("i", $task_id);
+
+if ($stmt->execute()) {
+    echo json_encode(['success' => true]);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Database error.']);
+}
+
+$stmt->close();
+$conn->close();
 ?>
