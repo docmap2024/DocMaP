@@ -1,30 +1,52 @@
 <?php
 session_start();
-include 'connection.php'; // Include your database connection file
-include 'log_function.php'; // Include your logging function if available
+include 'connection.php';
+
+// Function to write to log file
+function write_log($message) {
+    $logfile = '/tmp/logfile.log';
+    $timestamp = date("Y-m-d H:i:s");
+    file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
+}
 
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 
     // Check if a file was uploaded
-    if (isset($_FILES['esignatureFile']) && $_FILES['esignatureFile']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = 'img/e_sig/';
-        $fileTmpPath = $_FILES['esignatureFile']['tmp_name'];
-        $fileName = $_FILES['esignatureFile']['name'];
-        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $fileMimeType = $_FILES['esignatureFile']['type'];
-        $fileSize = $_FILES['esignatureFile']['size'];
+    if (isset($_FILES['esignatureFile'])) {
+        // File validation checks
+        $maxSize = 2 * 1024 * 1024; // 2MB
+        if ($_FILES['esignatureFile']['size'] > $maxSize) {
+            echo json_encode(['status' => 'error', 'message' => 'File too large. Max 2MB allowed.']);
+            exit;
+        }
 
-        // Generate new file name with 6-digit random number
-        $newFileName = sprintf('%06d_%s', random_int(100000, 999999), basename($fileName));
-        $newFilePath = $uploadDir . $newFileName;
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/gif'];
+        if (!in_array($_FILES['esignatureFile']['type'], $allowedTypes)) {
+            echo json_encode(['status' => 'error', 'message' => 'Only PNG, JPEG, and GIF images are allowed.']);
+            exit;
+        }
 
-        // First, move the file to the local target directory
-        if (move_uploaded_file($fileTmpPath, $newFilePath)) {
+        if ($_FILES['esignatureFile']['error'] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $_FILES['esignatureFile']['tmp_name'];
+            $fileName = $_FILES['esignatureFile']['name'];
+            
+            // Sanitize filename
+            $fileName = preg_replace('/[^a-zA-Z0-9\.\-_]/', '', $fileName);
+            $newFileName = sprintf('%06d_%s', random_int(100000, 999999), $fileName);
+
+            // Get file content directly from temp file
+            $fileContent = file_get_contents($fileTmpPath);
+            if ($fileContent === false) {
+                write_log("Failed to read uploaded file: $fileName");
+                echo json_encode(['status' => 'error', 'message' => 'Failed to process file']);
+                exit;
+            }
+
             // GitHub Repository Details
-            $githubRepo = "docmap2024/DocMaP"; // GitHub username/repo
+            $githubRepo = "docmap2024/DocMaP";
             $branch = "main";
-            $githubFileName = "e_sig/" . $newFileName; // Store in e_signatures folder
+            $githubFileName = "e_sig/" . $newFileName;
             $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/img/$githubFileName";
         
             // Fetch GitHub Token from Environment Variables
@@ -36,7 +58,7 @@ if (isset($_SESSION['user_id'])) {
             }
         
             // Prepare File Data for GitHub
-            $content = base64_encode(file_get_contents($newFilePath));
+            $content = base64_encode($fileContent);
             $data = json_encode([
                 "message" => "Adding new e-signature file",
                 "content" => $content,
@@ -46,7 +68,8 @@ if (isset($_SESSION['user_id'])) {
             $headers = [
                 "Authorization: token $githubToken",
                 "Content-Type: application/json",
-                "User-Agent: DocMaP"
+                "User-Agent: DocMaP",
+                "Accept: application/vnd.github.v3+json"
             ];
         
             // GitHub API Call
@@ -55,29 +78,26 @@ if (isset($_SESSION['user_id'])) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
-            
-            // Delete Local File After Upload to GitHub
-            if (file_exists($newFilePath)) {
-                unlink($newFilePath);
-                write_log("Local e-signature file deleted: $newFilePath");
-            }
 
             if ($response === false) {
-                write_log("GitHub upload failed for e-signature file: $newFileName");
+                write_log("GitHub upload failed: $curlError");
                 echo json_encode(['status' => 'error', 'message' => 'File upload to cloud storage failed.']);
                 exit;
             } 
             
             $responseData = json_decode($response, true);
-            if ($httpCode == 201) { // Successful upload
+            if ($httpCode == 201) {
                 $githubDownloadUrl = $responseData['content']['download_url'];
-                write_log("E-signature file uploaded to GitHub: $newFileName, Download URL: $githubDownloadUrl");
+                write_log("E-signature uploaded to GitHub: $newFileName, URL: $githubDownloadUrl");
         
-                // Update the database with the GitHub URL
+                // Update database with GitHub URL
                 $query = "UPDATE useracc SET esig = ? WHERE UserID = ?";
                 $stmt = $conn->prepare($query);
                 $stmt->bind_param('si', $githubDownloadUrl, $user_id);
@@ -85,24 +105,25 @@ if (isset($_SESSION['user_id'])) {
                 if ($stmt->execute()) {
                     echo json_encode(['status' => 'success']);
                 } else {
-                    write_log("Database update failed for e-signature: " . $stmt->error);
+                    write_log("Database update failed: " . $stmt->error);
                     echo json_encode(['status' => 'error', 'message' => 'Database update failed.']);
                 }
             } else {
-                write_log("GitHub upload failed for e-signature file: $newFileName - HTTP Code: $httpCode");
-                echo json_encode(['status' => 'error', 'message' => 'File upload to cloud storage failed.']);
+                write_log("GitHub API error: HTTP $httpCode - " . print_r($responseData, true));
+                $errorMsg = isset($responseData['message']) ? $responseData['message'] : 'File upload to cloud storage failed.';
+                echo json_encode(['status' => 'error', 'message' => $errorMsg]);
             }
         } else {
-            write_log("Error moving uploaded e-signature file: $fileName");
-            echo json_encode(['status' => 'error', 'message' => 'File upload failed.']);
+            $errorMsg = 'File upload error.';
+            if (isset($_FILES['esignatureFile']['error'])) {
+                $errorMsg .= ' Error code: ' . $_FILES['esignatureFile']['error'];
+            }
+            write_log($errorMsg);
+            echo json_encode(['status' => 'error', 'message' => $errorMsg]);
         }
     } else {
-        $errorMsg = 'No file uploaded or invalid file.';
-        if (isset($_FILES['esignatureFile']['error'])) {
-            $errorMsg .= ' Error code: ' . $_FILES['esignatureFile']['error'];
-        }
-        write_log($errorMsg);
-        echo json_encode(['status' => 'error', 'message' => $errorMsg]);
+        write_log("No file uploaded");
+        echo json_encode(['status' => 'error', 'message' => 'No file uploaded.']);
     }
 } else {
     write_log("E-signature upload attempt by non-logged-in user");
