@@ -1,7 +1,13 @@
 <?php
 session_start();
 include 'connection.php'; // Include your database connection file
-include 'log_function.php'; // Include your logging function if available
+
+// Function to write to log file
+function write_log($message) {
+    $logfile = '/tmp/logfile.log'; // Use tmp directory
+    $timestamp = date("Y-m-d H:i:s");
+    file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
+}
 
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
