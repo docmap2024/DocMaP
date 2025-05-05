@@ -31,7 +31,7 @@ if (isset($_FILES['file'])) {
     }
 
     if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
-        $conn->begin_transaction(); // Start transaction
+        $conn->begin_transaction();
         
         try {
             $fileTmpPath = $_FILES['file']['tmp_name'];
@@ -43,7 +43,7 @@ if (isset($_FILES['file'])) {
             // Generate new file name
             $newFileName = sprintf('%06d_%s', random_int(100000, 999999), basename($fileName));
 
-            // Get file content directly from temp file
+            // Get file content
             $fileContent = file_get_contents($fileTmpPath);
             if ($fileContent === false) {
                 throw new Exception("Failed to read uploaded file: $fileName");
@@ -93,7 +93,7 @@ if (isset($_FILES['file'])) {
             $responseData = json_decode($response, true);
             $githubDownloadUrl = $responseData['content']['download_url'];
 
-            // Update database with filename
+            // Update database
             $stmt = $conn->prepare("UPDATE useracc SET profile = ? WHERE UserID = ?");
             if (!$stmt) {
                 throw new Exception("Database prepare failed: " . $conn->error);
@@ -112,18 +112,19 @@ if (isset($_FILES['file'])) {
                 throw new Exception("No rows affected - user may not exist");
             }
 
-            $conn->commit(); // Commit transaction if all successful
+            $conn->commit();
             
-            write_log("Profile successfully updated: $newFileName");
+            // Return both filename and full URL for frontend updates
             echo json_encode([
                 'status' => 'success', 
                 'message' => 'Profile updated', 
                 'filename' => $newFileName,
+                'full_url' => "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $newFileName,
                 'github_url' => $githubDownloadUrl
             ]);
 
         } catch (Exception $e) {
-            $conn->rollback(); // Rollback on any error
+            $conn->rollback();
             write_log("Error: " . $e->getMessage());
             echo json_encode([
                 'status' => 'error', 
