@@ -865,45 +865,45 @@ mysqli_close($conn);
                     }
                 });
             });
-        });
+            
 
             $('#changePasswordBtn').click(function (e) {
-            e.preventDefault();
-            var email = $('#email').val();
-            var userId = $('#userId').val(); // Assuming you have a hidden input for userId
+                e.preventDefault();
+                var email = $('#email').val();
+                var userId = $('#userId').val(); // Assuming you have a hidden input for userId
 
-            $.ajax({
-                url: '../changepassword.php',
-                type: 'POST',
-                data: { email: email, userId: userId },
-                success: function (response) {
-                    if (response.status === 'success') {
-                        Swal.fire({
-                            title: 'OTP Sent',
-                            text: response.message,
-                            icon: 'success'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                window.location.href = '../verify_otp2.php?email=' + response.email + '&userId=' + userId;
-                            }
-                        });
-                    } else {
+                $.ajax({
+                    url: '../changepassword.php',
+                    type: 'POST',
+                    data: { email: email, userId: userId },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            Swal.fire({
+                                title: 'OTP Sent',
+                                text: response.message,
+                                icon: 'success'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = '../verify_otp2.php?email=' + response.email + '&userId=' + userId;
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
                         Swal.fire({
                             icon: 'error',
-                            title: 'Error',
-                            text: response.message
+                            title: 'Request failed',
+                            text: textStatus
                         });
                     }
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Request failed',
-                        text: textStatus
-                    });
-                }
+                });
             });
-        });
 
         });
 
