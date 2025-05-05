@@ -39,7 +39,7 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // Construct the full path to the profile picture
-$profile_picture_path = '../img/UserProfile/' . $profile_picture;
+$profile_picture_path = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture;
 
 // Close database connection
 mysqli_close($conn);
@@ -809,7 +809,9 @@ mysqli_close($conn);
                     success: function (response) {
                         var data = JSON.parse(response);
                         if (data.status === 'success') {
-                            $('#profile-picture').attr('src', '../img/UserProfile/' + data.filename);
+                            // Update to use GitHub URL instead of local path
+                            var githubUrl = 'https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/' + data.filename;
+                            $('#profile-picture').attr('src', githubUrl + '?t=' + new Date().getTime());
                             $('#uploadModal').modal('hide');
                             Swal.fire({
                                 icon: 'success',
