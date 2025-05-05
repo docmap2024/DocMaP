@@ -165,7 +165,7 @@ mysqli_close($conn);
 
     .modal-illustration {
         flex: 1;
-        background: url("assets/images/passw.png") no-repeat center center;
+        background: url("../assets/images/passw.png") no-repeat center center;
         background-size: cover;
         height: 100%;
         min-height: 500px; /* Ensures a minimum height if the content is smaller */
@@ -645,7 +645,7 @@ mysqli_close($conn);
                                         <!-- Form Section -->
                                         <div class="col-md-6 d-flex justify-content-center align-items-center">
                                             <div class="modal-form text-center">
-                                                <img src="img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
+                                                <img src="../img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
                                                 <h2>Change Credentials</h2>
                                                 <div class="progress-bar mb-3">
                                                     <div class="progress-container">
@@ -866,7 +866,7 @@ $(document).ready(function () {
             success: function (response) {
                 var data = JSON.parse(response);
                 if (data.status === 'success') {
-                    $('#profile-picture').attr('src', 'img/UserProfile/' + data.filename);
+                    $('#profile-picture').attr('src', '../img/UserProfile/' + data.filename);
                     $('#uploadModal').modal('hide');
                     Swal.fire({
                         icon: 'success',
