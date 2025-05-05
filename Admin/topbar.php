@@ -122,7 +122,7 @@
                 $stmt->close(); // Close statement after fetching results
 
                 // Build path to profile image
-                $profileImagePath = "../img/UserProfile/" . $profileImage;
+                $profileImagePath = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profileImage;
 
                 // Check if the profile image exists
                 if (file_exists($profileImagePath)) {
