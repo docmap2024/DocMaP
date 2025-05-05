@@ -168,7 +168,7 @@ mysqli_close($conn);
 
     .modal-illustration {
         flex: 1;
-        background: url("assets/images/passw.png") no-repeat center center;
+        background: url("../assets/images/passw.png") no-repeat center center;
         background-size: cover;
         height: 100%;
         min-height: 500px; /* Ensures a minimum height if the content is smaller */
