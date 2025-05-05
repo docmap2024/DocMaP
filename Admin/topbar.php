@@ -124,13 +124,14 @@
                 // Build path to profile image
                 $profileImagePath = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profileImage;
 
-                // Check if the profile image exists
-                if (file_exists($profileImagePath)) {
-                    echo "<span class='user-name'>{$fullName}</span>";
-                    echo "<img src='{$profileImagePath}' alt='Profile Image' class='profile-image'>";
+                echo "<span class='user-name'>{$fullName}</span>";
+            
+                // Check if we have a profile image filename
+                if (!empty($profileImage)) {
+                    // Always use the GitHub URL - let the browser handle if the image doesn't exist
+                    echo "<img src='{$profileImagePath}' alt='Profile Image' class='profile-image' onerror='this.src=\"default_profile_image.jpg\"'>";
                 } else {
-                    // Default image if profile image not found
-                    echo "<span class='user-name'>{$fullName}</span>";
+                    // No profile image in database
                     echo "<img src='default_profile_image.jpg' alt='Profile Image' class='profile-image'>";
                 }
             } else {
