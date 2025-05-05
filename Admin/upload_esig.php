@@ -100,7 +100,7 @@ if (isset($_SESSION['user_id'])) {
                 // Update database with GitHub URL
                 $query = "UPDATE useracc SET esig = ? WHERE UserID = ?";
                 $stmt = $conn->prepare($query);
-                $stmt->bind_param('si', $githubDownloadUrl, $user_id);
+                $stmt->bind_param('si', $newFileName, $user_id);
 
                 if ($stmt->execute()) {
                     echo json_encode(['status' => 'success']);
