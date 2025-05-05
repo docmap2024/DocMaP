@@ -636,7 +636,7 @@ mysqli_close($conn);
                     success: function (response) {
                         if (response.esig) {
                             // Display the fetched e-signature image
-                            $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                            $('#eSignatureBox').html(`<img src="../img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
                         } else {
                             // Display "No Image" if the esig column is null
                             $('#eSignatureBox').html('<p>No Image</p>');
