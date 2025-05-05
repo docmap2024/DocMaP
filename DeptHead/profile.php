@@ -824,7 +824,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         };
 
         // Send data to the backend using AJAX
-        fetch('edit_user.php', {
+        fetch('../edit_user.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -946,7 +946,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 var userId = $('#userId').val(); // Assuming you have a hidden input for userId
 
                 $.ajax({
-                    url: 'changepassword.php',
+                    url: '../changepassword.php',
                     type: 'POST',
                     data: { email: email, userId: userId },
                     success: function (response) {
