@@ -701,7 +701,7 @@ mysqli_close($conn);
     $(document).ready(function () {
     $('#viewEsignature').on('click', function () {
         $.ajax({
-            url: 'fetch_esig.php', // Backend script to fetch the e-signature
+            url: '../fetch_esig.php', // Backend script to fetch the e-signature
             type: 'POST',
             dataType: 'json',
             success: function (response) {
