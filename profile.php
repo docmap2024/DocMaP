@@ -695,6 +695,8 @@ mysqli_close($conn);
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+
+
 <script>
     $(document).ready(function () {
     $('#viewEsignature').on('click', function () {

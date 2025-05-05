@@ -7,7 +7,7 @@ if (isset($_SESSION['user_id'])) {
 
     // Check if a file was uploaded
     if (isset($_FILES['esignatureFile']) && $_FILES['esignatureFile']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = 'img/e_sig/';
+        $uploadDir = '../img/e_sig/';
         $fileTmpPath = $_FILES['esignatureFile']['tmp_name'];
         $fileName = $_FILES['esignatureFile']['name'];
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
