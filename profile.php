@@ -698,30 +698,31 @@ mysqli_close($conn);
 
 
 <script>
-   $(document).ready(function () {
-            $('#viewEsignature').on('click', function () {
-                $.ajax({
-                    url: 'fetch_esig.php', // Backend script to fetch the e-signature
-                    type: 'POST',
-                    dataType: 'json',
-                    success: function (response) {
-                        if (response.esig) {
-                            // Display the fetched e-signature image directly from GitHub URL
-                            $('#eSignatureBox').html(`
-                                <img src="${response.esig}" alt="E-Signature" class="img-fluid">
-                            `);
-                        } else {
-                            // Display "No Image" if the esig column is null
-                            $('#eSignatureBox').html('<p class="text-muted">No signature available</p>');
-                        }
-                    },
-                    error: function () {
-                        // Handle errors
-                        $('#eSignatureBox').html('<p class="text-danger">Error fetching signature</p>');
-                    }
-                });
-            });
+    $(document).ready(function () {
+    $('#viewEsignature').on('click', function () {
+        $.ajax({
+            url: 'fetch_esig.php', // Backend script to fetch the e-signature
+            type: 'POST',
+            dataType: 'json',
+            success: function (response) {
+                if (response.esig) {
+                    // Display the fetched e-signature image
+                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                } else {
+                    // Display "No Image" if the esig column is null
+                    $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
+                }
+            },
+            error: function () {
+                // Handle errors
+                $('#eSignatureBox').html('<p>Error fetching data.</p>');
+            }
         });
+    });
+
+    // Upload New E-Signature button action
+    
+});
 
     $(document).ready(function () {
         // SweetAlert for Upload New E-Signature
