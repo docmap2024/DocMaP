@@ -147,7 +147,7 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        transition: all 0.3s ease;
+        transition: all 0.7s ease;
     }
 
     /* Loading state */
