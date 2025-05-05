@@ -800,10 +800,6 @@ mysqli_close($conn);
                 e.preventDefault();
                 var formData = new FormData($('#uploadForm')[0]);
 
-                // Show loading state (optional but recommended)
-                $('#uploadBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
-                $('#profile-picture').addClass('updating');
-
                 $.ajax({
                     url: '../picupload.php',
                     type: 'POST',
@@ -815,27 +811,20 @@ mysqli_close($conn);
                             var data = typeof response === 'string' ? JSON.parse(response) : response;
                             
                             if (data.status === 'success') {
-                                // 1. First update the visible images immediately
+                                // Update the profile picture in the top bar
                                 $('#profile-picture').attr('src', data.full_url + '?t=' + new Date().getTime());
-                                $('.user-profile-image').attr('src', data.full_url + '?t=' + new Date().getTime());
                                 
-                                // 2. Show success message
+                                // Show success message
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Success',
-                                    text: data.message,
-                                    timer: 2000,  // Auto-close after 2 seconds
-                                    showConfirmButton: false
+                                    text: data.message
                                 }).then(() => {
-                                    // 3. Close modal
                                     $('#uploadModal').modal('hide');
-                                    
-                                    // 4. Refresh the page after a slight delay
-                                    setTimeout(function() {
-                                        location.reload();
-                                    }, 500); // 0.5 second delay
                                 });
                                 
+                                // Optional: Update profile picture in other places
+                                $('.user-profile-image').attr('src', data.full_url + '?t=' + new Date().getTime());
                             } else {
                                 Swal.fire({
                                     icon: 'error',
@@ -857,15 +846,10 @@ mysqli_close($conn);
                             title: 'Upload failed',
                             text: xhr.responseText || 'Unknown error occurred'
                         });
-                    },
-                    complete: function() {
-                        // Remove loading states
-                        $('#uploadBtn').prop('disabled', false).html('Upload');
-                        $('#profile-picture').removeClass('updating');
                     }
                 });
             });
-            
+
 
             $('#changePasswordBtn').click(function (e) {
                 e.preventDefault();
