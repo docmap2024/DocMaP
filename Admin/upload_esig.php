@@ -8,7 +8,7 @@ if (isset($_SESSION['user_id'])) {
 
     // Check if a file was uploaded
     if (isset($_FILES['esignatureFile']) && $_FILES['esignatureFile']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = 'img/e_sig/';
+        $uploadDir = '../img/e_sig/';
         $fileTmpPath = $_FILES['esignatureFile']['tmp_name'];
         $fileName = $_FILES['esignatureFile']['name'];
         $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
@@ -25,7 +25,7 @@ if (isset($_SESSION['user_id'])) {
             $githubRepo = "docmap2024/DocMaP"; // GitHub username/repo
             $branch = "main";
             $githubFileName = "e_sig/" . $newFileName; // Store in e_signatures folder
-            $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/img/$githubFileName";
+            $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/img/$githubFileName";
         
             // Fetch GitHub Token from Environment Variables
             $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
