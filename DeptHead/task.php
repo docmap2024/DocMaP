@@ -2801,11 +2801,14 @@ function closeDropdown(dropdownId) {
                             // More reliable way to find and remove the row
                             const row = document.querySelector(`[data-task-id="${taskId}"]`);
                             if (row) {
-                                row.remove();
-                            } else {
-                                // If row not found, reload the page
-                                location.reload();
-                            }
+                        row.remove();
+                    } else {
+                        // If row not found, wait 3 seconds then reload the page
+                        setTimeout(() => {
+                            location.reload();
+                        }, 3000); // 3000 milliseconds = 3 seconds
+                    }
+
                         } else {
                             Swal.fire('Error!', data.message || 'Failed to delete the task.', 'error');
                         }

@@ -2125,7 +2125,7 @@ if (isset($_POST['task_id'])) {
 
     <script>
         function autoUpdateScheduledTasks() {
-            const apiUrl = 'auto_assign_announcement.php';
+            const apiUrl = '../Admin/auto_assign_announcement.php';
             console.log('Fetching from URL:', apiUrl); // Log the API URL being fetched
 
             fetch(apiUrl)
