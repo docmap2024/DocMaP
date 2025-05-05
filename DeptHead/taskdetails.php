@@ -893,7 +893,7 @@ mysqli_close($conn);
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <p>Are you sure you want to reject the submission from 
+                                                        <p>Are you sure you want to reject the submission from 
                                                                 <strong><?php echo htmlspecialchars($user['fname'] . ' ' . $user['lname']); ?></strong>?
                                                             </p>
 
@@ -901,6 +901,10 @@ mysqli_close($conn);
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
                                                                 <?php foreach ($documents as $doc): ?>
+                                                                    <?php
+                                                                        // Remove the leading numbers followed by an underscore
+                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                    ?>
                                                                     <?php if (!empty($doc['file_name'])): ?>
                                                                         <div class="col-md-12 document-container" style="margin-bottom: 15px;">
                                                                             <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
@@ -1123,7 +1127,7 @@ mysqli_close($conn);
                                                             </button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <p>Are you sure you want to reject the submission from 
+                                                        <p>Are you sure you want to reject the submission from 
                                                                 <strong><?php echo htmlspecialchars($user['fname'] . ' ' . $user['lname']); ?></strong>?
                                                             </p>
 
@@ -1132,6 +1136,10 @@ mysqli_close($conn);
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
                                                                 <?php foreach ($documents as $doc): ?>
                                                                     <?php if (!empty($doc['file_name'])): ?>
+                                                                        <?php 
+                                                                            // Clean up document display name
+                                                                            $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                        ?>
                                                                         <div class="col-md-12 document-container" style="margin-bottom: 15px;">
                                                                             <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
                                                                                 <?php echo htmlspecialchars($displayName); ?>
@@ -1494,8 +1502,8 @@ mysqli_close($conn);
             console.log(data);
 
             var logo = data.Logo ? '<img src="../img/Logo/DEPEDLOGO.png" style="width: 90px; height: auto;" />' : '<p>No Logo Available</p>';
-            var teacherSignature = data.Teacher_Signature ? `<img src="/img/e_sig/${data.Teacher_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
-            var DHeadSignature = data.DHead_Signature ? `<img src="/img/e_sig/${data.DHead_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
+            var teacherSignature = data.Teacher_Signature ? ` <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Teacher_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
+            var DHeadSignature = data.DHead_Signature ? ` <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.DHead_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
 
             var schoolDetails = `
                 <div class="header-content" style="text-align: center;">
@@ -1527,7 +1535,7 @@ mysqli_close($conn);
                                 ${data.DHead_FullName}
                             </span>
                             ${data.DHead_Signature ? `
-                                <img src="../img/e_sig/${data.DHead_Signature}" 
+                                 <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.DHead_Signature}" 
                                     style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
                             ` : ''}
                         </div>
