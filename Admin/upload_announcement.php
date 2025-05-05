@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 include 'connection.php';
 
 // Log file path
-$log_file = 'logfile.log';
+$log_file = '/tmp/logfile.log';
 
 // Function to write to log file
 function write_log($message) {
