@@ -5,26 +5,26 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Include your database connection file
 include 'connection.php';
 
-// Get user_id from session
 $user_id = $_SESSION['user_id'];
 
-// Query to fetch profile picture and user details from useracc table
-$sql = "SELECT * FROM useracc WHERE UserID = $user_id";
-$result = mysqli_query($conn, $sql);
+// Use prepared statements for safety
+$stmt = $conn->prepare("SELECT * FROM useracc WHERE UserID = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
 
-// Fetch user details
 $profile_picture = '';
-if (mysqli_num_rows($result) > 0) {
-    $row = mysqli_fetch_assoc($result);
-    $profile_picture = $row['profile'];
+if ($result && $result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+
+    $profile_picture = !empty($row['profile']) ? $row['profile'] : 'default.png'; // fallback to default if empty
     $full_name = $row['fname'] . ' ' . $row['mname'] . '. ' . $row['lname'];
     $ufname = $row['fname'];
     $umname = $row['mname'];
     $ulname = $row['lname'];
-    $bday = $row['bday']; // yyyy-mm-dd format
+    $bday = $row['bday'];
     $sex = $row['sex'];
     $address = $row['address'];
     $email = $row['email'];
@@ -32,28 +32,33 @@ if (mysqli_num_rows($result) > 0) {
     $password = $row['Password'];
     $mobile = $row['mobile'];
 
-    // Calculate the age based on bday
+    // Age calculation
     $birthDate = new DateTime($bday);
     $today = new DateTime();
-    $age = $today->diff($birthDate)->y; // Difference in years
+    $age = $today->diff($birthDate)->y;
 }
 
-// Construct the full path to the profile picture
+// Construct image path
 $profile_picture_path = 'img/UserProfile/' . $profile_picture;
 
-// Query to check if the user's e-signature column (esig) is NULL or not
-$esig_query = "SELECT esig FROM useracc WHERE UserID = $user_id";
-$esig_result = mysqli_query($conn, $esig_query);
-
-// Check e-signature status
-$has_esig = false;
-if ($esig_result && mysqli_num_rows($esig_result) > 0) {
-    $esig_row = mysqli_fetch_assoc($esig_result);
-    $has_esig = !empty($esig_row['esig']); // If esig is not empty or NULL, user has a signature
+// Check if file exists
+if (!file_exists($profile_picture_path)) {
+    $profile_picture_path = 'img/UserProfile/default.png'; // fallback image
 }
 
-// Close database connection
-mysqli_close($conn);
+// Check for e-signature
+$esig_stmt = $conn->prepare("SELECT esig FROM useracc WHERE UserID = ?");
+$esig_stmt->bind_param("i", $user_id);
+$esig_stmt->execute();
+$esig_result = $esig_stmt->get_result();
+
+$has_esig = false;
+if ($esig_result && $esig_result->num_rows > 0) {
+    $esig_row = $esig_result->fetch_assoc();
+    $has_esig = !empty($esig_row['esig']);
+}
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
