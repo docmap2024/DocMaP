@@ -35,7 +35,7 @@
                     $filename = $row_template['filename']; // Get the filename
 
                     // Generate the path to the file in the Admin/Templates folder
-                    $file_path = "Admin/Templates/" . $filename;
+                    $file_path = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/Admin/Templates/" . $filename;
 
                     // Determine the file extension
                     $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
