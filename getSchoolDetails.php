@@ -23,7 +23,7 @@ $sql = "
         sd.`Region`, 
         sd.`Country`, 
         sd.`Organization`, 
-        sd.`Logo`, 
+        sd.`Logo` AS School_Logo, 
         sm.`Mobile_No`,
         t.`sex` AS Teacher_Sex,
         p.`sex` AS Principal_Sex,
