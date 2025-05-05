@@ -19,7 +19,7 @@ $profile_picture = '';
 if ($result && $result->num_rows > 0) {
     $row = $result->fetch_assoc();
 
-    $profile_picture = !empty($row['profile']) ? $row['profile'] : 'default.png'; // fallback to default if empty
+    $profile_picture = !empty($row['profile']) ? $row['profile'] : 'profile.jpg'; // fallback to default if empty
     $full_name = $row['fname'] . ' ' . $row['mname'] . '. ' . $row['lname'];
     $ufname = $row['fname'];
     $umname = $row['mname'];
