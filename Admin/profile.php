@@ -635,22 +635,22 @@ mysqli_close($conn);
                     dataType: 'json',
                     success: function (response) {
                         if (response.esig) {
-                            // Display the fetched e-signature image
-                            $('#eSignatureBox').html(`<img src="../img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                            // Display the fetched e-signature image directly from GitHub URL
+                            $('#eSignatureBox').html(`
+                                <img src="${response.esig}" alt="E-Signature" class="img-fluid">
+                                <p class="mt-2 text-muted">Image hosted on GitHub</p>
+                            `);
                         } else {
                             // Display "No Image" if the esig column is null
-                            $('#eSignatureBox').html('<p>No Image</p>');
+                            $('#eSignatureBox').html('<p class="text-muted">No signature available</p>');
                         }
                     },
                     error: function () {
                         // Handle errors
-                        $('#eSignatureBox').html('<p>Error fetching data.</p>');
+                        $('#eSignatureBox').html('<p class="text-danger">Error fetching signature</p>');
                     }
                 });
             });
-
-            // Upload New E-Signature button action
-        
         });
 
         $(document).ready(function () {
