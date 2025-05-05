@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'connection.php';
+include 'connection.php'; // Include your database connection file
 
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
@@ -12,14 +12,7 @@ if (isset($_SESSION['user_id'])) {
     $result = $stmt->get_result();
 
     if ($row = $result->fetch_assoc()) {
-        $esig = $row['esig'];
-        if ($esig) {
-            // Convert filename to full GitHub URL
-            $githubUrl = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/" . $esig;
-            echo json_encode(['esig' => $githubUrl]);
-        } else {
-            echo json_encode(['esig' => null]);
-        }
+        echo json_encode(['esig' => $row['esig']]);
     } else {
         echo json_encode(['esig' => null]);
     }
