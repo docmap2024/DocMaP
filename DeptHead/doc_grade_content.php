@@ -331,27 +331,28 @@ a {
     </div>
 
     <div class="row" id="documents-list">
-        <?php if (!empty($documents)): ?>
-            <?php foreach ($documents as $document): ?>
-                <div class="col-md-4 mb-4">
-                    <a href="../Documents/<?php echo htmlspecialchars($document['name']); ?>" target="_blank" class="document-item" data-date="<?php echo htmlspecialchars($document['TimeStamp']); ?>" data-user="<?php echo $document['UserID']; ?>">
-                        <i class="<?php echo getFileIcon($document['mimeType']); ?> icon"></i>
-                        <div class="document-name">
-                            <?php 
-                            $displayName = preg_replace('/^[^_]*_/', '', $document['name']);
-                            echo htmlspecialchars($displayName); 
-                            ?>
-                            <i class="fas fa-info-circle info-icon" data-toggle="modal" data-target="#modal-<?php echo $document['DocuID']; ?>" title="View Details"></i>
-                        </div>
-                    </a>
-                </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="col-12">
-                <div class="no-documents-message">No documents found.</div>
+    <?php if (!empty($documents)): ?>
+        <?php foreach ($documents as $document): ?>
+            <div class="col-md-4 mb-4">
+                <a href="https://raw.githubusercontent.com/docmap2024/DocMaP/main/Documents/<?php echo htmlspecialchars($document['name']); ?>" target="_blank" class="document-item" data-date="<?php echo htmlspecialchars($document['TimeStamp']); ?>" data-user="<?php echo $document['UserID']; ?>">
+                    <i class="<?php echo getFileIcon($document['mimeType']); ?> icon"></i>
+                    <div class="document-name">
+                        <?php 
+                        $displayName = preg_replace('/^[^_]*_/', '', $document['name']);
+                        echo htmlspecialchars($displayName); 
+                        ?>
+                        <i class="fas fa-info-circle info-icon" data-toggle="modal" data-target="#modal-<?php echo $document['DocuID']; ?>" title="View Details"></i>
+                    </div>
+                </a>
             </div>
-        <?php endif; ?>
-    </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div class="col-12">
+            <div class="no-documents-message">No documents found.</div>
+        </div>
+    <?php endif; ?>
+</div>
+
 </div>
 
 
