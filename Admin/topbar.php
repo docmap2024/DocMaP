@@ -98,19 +98,13 @@
     <span class="divider"></span>
     <div class="profile">
         <?php
-        // Ensure session is started at the beginning of the script if not already started
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
-
-        // Include database connection
         include 'connection.php';
 
-        // Check if user is logged in
         if (isset($_SESSION['user_id'])) {
             $userId = $_SESSION['user_id'];
-
-            // Query to fetch profile image filename and user name
             $sql = "SELECT profile, CONCAT(fname, ' ', lname) AS fullname FROM useracc WHERE UserID = ?";
             $stmt = $conn->prepare($sql);
 
@@ -119,30 +113,16 @@
                 $stmt->execute();
                 $stmt->bind_result($profileImage, $fullName);
                 $stmt->fetch();
-                $stmt->close(); // Close statement after fetching results
+                $stmt->close();
 
-                // Build path to profile image
-                $profileImagePath = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profileImage;
-
-                echo "<span class='user-name'>{$fullName}</span>";
-            
-                // Check if we have a profile image filename
-                if (!empty($profileImage)) {
-                    // Always use the GitHub URL - let the browser handle if the image doesn't exist
-                    echo "<img src='{$profileImagePath}' alt='Profile Image' class='profile-image' onerror='this.src=\"default_profile_image.jpg\"'>";
-                } else {
-                    // No profile image in database
-                    echo "<img src='default_profile_image.jpg' alt='Profile Image' class='profile-image'>";
-                }
-            } else {
-                echo "Error preparing statement: " . $conn->error;
+                $profileImagePath = !empty($profileImage) 
+                    ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profileImage
+                    : "default_profile_image.jpg";
+                
+                echo "<span class='user-name' id='profile-username'>{$fullName}</span>";
+                echo "<img src='{$profileImagePath}' alt='Profile Image' class='profile-image' id='profile-picture'>";
             }
-        } else {
-            echo "User not logged in.";
         }
-
-        // Close database connection at the end of the script
-        $conn->close();
         ?>
         <ul class="profile-link">
             <li><a href="profile.php"><i class='bx bxs-user-circle icon'></i> Profile</a></li>
@@ -167,6 +147,13 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    /* Loading state */
+    .profile-image.updating {
+        opacity: 0.7;
+        filter: grayscale(30%);   /* Optional visual effect */
     }
     
     /* Notification System - Consistent Styles */
