@@ -100,20 +100,85 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
             continue; // Skip to the next file
         }
 
-        // Try to upload file
+        // Try to upload file locally first
         if (move_uploaded_file($fileTmpName, $target_file)) {
-            write_log("File uploaded: $fileName, Stored at: $target_file");
+            write_log("File uploaded locally: $fileName, Stored at: $target_file");
 
-            // Store file details in an array to insert after task creation
-            $uploadedFiles[] = [
-                'fileName' => $fileName, // Use the new file name with random number
-                'fileMimeType' => $fileMimeType,
-                'fileSize' => $fileSize,
-                'target_file' => $target_file
+            // GitHub Repository Details
+            $githubRepo = "docmap2024/DocMaP";
+            $branch = "main";
+            $uploadUrl = "https://api.github.com/repos/$githubRepo/contents//Admin/Attachments/$fileName";
+        
+            // Fetch GitHub Token from Environment Variables
+            $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
+            if (!$githubToken) {
+                write_log("GitHub token not found in environment variables");
+                $allFilesUploaded = false;
+                continue;
+            }
+        
+            // Prepare File Data for GitHub
+            $content = base64_encode(file_get_contents($target_file));
+            $data = json_encode([
+                "message" => "Adding a new file to upload folder",
+                "content" => $content,
+                "branch" => $branch
+            ]);
+        
+            $headers = [
+                "Authorization: token $githubToken",
+                "Content-Type: application/json",
+                "User-Agent: DocMaP",
+                "Accept: application/vnd.github.v3+json"
             ];
+        
+            // GitHub API Call
+            $ch = curl_init($uploadUrl);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        
+            if ($response === false) {
+                write_log("GitHub upload failed for file: $fileName - " . curl_error($ch));
+                $allFilesUploaded = false;
+            } else {
+                $responseData = json_decode($response, true);
+                if ($httpCode == 201) { // Successful upload
+                    $githubDownloadUrl = $responseData['content']['download_url'];
+                    write_log("File uploaded to GitHub: $fileName, Download URL: $githubDownloadUrl");
+        
+                    // Store file details with GitHub URL
+                    $uploadedFiles[] = [
+                        'fileName' => $fileName,
+                        'fileMimeType' => $fileMimeType,
+                        'fileSize' => $fileSize,
+                        'target_file' => $githubDownloadUrl // Using GitHub URL instead of local path
+                    ];
+                    
+                    // Remove local file after successful GitHub upload
+                    if (file_exists($target_file)) {
+                        unlink($target_file);
+                        write_log("Local file removed: $target_file");
+                    }
+                } else {
+                    write_log("GitHub upload failed for file: $fileName - HTTP Code: $httpCode");
+                    if (isset($responseData['message'])) {
+                        write_log("GitHub error message: " . $responseData['message']);
+                    }
+                    $allFilesUploaded = false;
+                }
+            }
+        
+            curl_close($ch);
         } else {
-            write_log("Error uploading file: $fileOriginalName");
-            $allFilesUploaded = false; // Mark overall process as failed
+            write_log("Error uploading file locally: $fileOriginalName");
+            $allFilesUploaded = false;
         }
     }
 } else {
