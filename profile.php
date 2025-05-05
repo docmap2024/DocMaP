@@ -39,7 +39,7 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // Construct the full path to the profile picture
-$profile_picture_path = 'img/UserProfile/' . $profile_picture;
+$profile_picture_path = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture;
 
 // Query to check if the user's e-signature column (esig) is NULL or not
 $esig_query = "SELECT esig FROM useracc WHERE UserID = $user_id";
@@ -698,87 +698,86 @@ mysqli_close($conn);
 
 
 <script>
+   $(document).ready(function () {
+            $('#viewEsignature').on('click', function () {
+                $.ajax({
+                    url: 'fetch_esig.php', // Backend script to fetch the e-signature
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.esig) {
+                            // Display the fetched e-signature image directly from GitHub URL
+                            $('#eSignatureBox').html(`
+                                <img src="${response.esig}" alt="E-Signature" class="img-fluid">
+                            `);
+                        } else {
+                            // Display "No Image" if the esig column is null
+                            $('#eSignatureBox').html('<p class="text-muted">No signature available</p>');
+                        }
+                    },
+                    error: function () {
+                        // Handle errors
+                        $('#eSignatureBox').html('<p class="text-danger">Error fetching signature</p>');
+                    }
+                });
+            });
+        });
+
     $(document).ready(function () {
-    $('#viewEsignature').on('click', function () {
-        $.ajax({
-            url: 'fetch_esig.php', // Backend script to fetch the e-signature
-            type: 'POST',
-            dataType: 'json',
-            success: function (response) {
-                if (response.esig) {
-                    // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
-                } else {
-                    // Display "No Image" if the esig column is null
-                    $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
+        // SweetAlert for Upload New E-Signature
+        $('#uploadNewESignature').on('click', function () {
+            Swal.fire({
+                title: 'Warning!',
+                html: `Make sure the image has no background.<br>
+                    If your image still has a background, 
+                    <a href="https://www.remove.bg/" target="_blank">click here</a> to remove it.`,
+                icon: 'warning',
+                showCancelButton: false,
+                confirmButtonText: 'Okay',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Open the Upload Modal
+                    $('#uploadESigModal').modal('show');
                 }
-            },
-            error: function () {
-                // Handle errors
-                $('#eSignatureBox').html('<p>Error fetching data.</p>');
-            }
+            });
+        });
+
+        // Handle the AJAX upload
+        $('#uploadESigForm').on('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            // Prepare form data
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: 'upload_esig.php', // The PHP script to handle upload
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    // Handle success response
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your e-signature has been uploaded successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'Okay'
+                    }).then(() => {
+                        location.reload(); // Reload the page or update UI
+                    });
+                },
+                error: function () {
+                    // Handle error response
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'There was an error uploading your e-signature. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'Okay'
+                    });
+                }
+            });
         });
     });
-
-    // Upload New E-Signature button action
-    
-});
-
-$(document).ready(function () {
-    // SweetAlert for Upload New E-Signature
-    $('#uploadNewESignature').on('click', function () {
-        Swal.fire({
-            title: 'Warning!',
-            html: `Make sure the image has no background.<br>
-                   If your image still has a background, 
-                   <a href="https://www.remove.bg/" target="_blank">click here</a> to remove it.`,
-            icon: 'warning',
-            showCancelButton: false,
-            confirmButtonText: 'Okay',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Open the Upload Modal
-                $('#uploadESigModal').modal('show');
-            }
-        });
-    });
-
-    // Handle the AJAX upload
-    $('#uploadESigForm').on('submit', function (e) {
-        e.preventDefault(); // Prevent default form submission
-
-        // Prepare form data
-        var formData = new FormData(this);
-
-        $.ajax({
-            url: 'upload_esig.php', // The PHP script to handle upload
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function (response) {
-                // Handle success response
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Your e-signature has been uploaded successfully.',
-                    icon: 'success',
-                    confirmButtonText: 'Okay'
-                }).then(() => {
-                    location.reload(); // Reload the page or update UI
-                });
-            },
-            error: function () {
-                // Handle error response
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'There was an error uploading your e-signature. Please try again.',
-                    icon: 'error',
-                    confirmButtonText: 'Okay'
-                });
-            }
-        });
-    });
-});
 
 
 
@@ -865,86 +864,123 @@ document.addEventListener('DOMContentLoaded', (event) => {
 </script>
 
     <script>
-$(document).ready(function () {
-    $('#uploadBtn').click(function (e) {
-        e.preventDefault();
-        var formData = new FormData($('#uploadForm')[0]);
+        $(document).ready(function() {
+            $('#uploadBtn').click(function(e) {
+                e.preventDefault();
+                var formData = new FormData($('#uploadForm')[0]);
 
-        $.ajax({
-            url: 'picupload.php',
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function (response) {
-                var data = JSON.parse(response);
-                if (data.status === 'success') {
-                    $('#profile-picture').attr('src', 'img/UserProfile/' + data.filename);
-                    $('#uploadModal').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Profile picture updated successfully.'
-                    }).then(() => {
-                        location.reload(); // ✅ reloads the page after user clicks OK
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message
-                    });
-                }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Upload failed',
-                    text: textStatus
-                });
-            }
-        });
-    });
+                // Show loading state
+                $('#uploadBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
+                $('#profile-picture').addClass('updating');
 
-    $('#changePasswordBtn').click(function (e) {
-    e.preventDefault();
-    var email = $('#email').val();
-    var userId = $('#userId').val(); // Assuming you have a hidden input for userId
-
-    $.ajax({
-        url: 'changepassword.php',
-        type: 'POST',
-        data: { email: email, userId: userId },
-        success: function (response) {
-            if (response.status === 'success') {
-                Swal.fire({
-                    title: 'OTP Sent',
-                    text: response.message,
-                    icon: 'success'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = 'verify_otp2.php?email=' + response.email + '&userId=' + userId;
+                $.ajax({
+                    url: 'picupload.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        try {
+                            var data = typeof response === 'string' ? JSON.parse(response) : response;
+                            
+                            if (data.status === 'success') {
+                                // Create new image element to preload
+                                var newImg = new Image();
+                                newImg.src = data.full_url + '?t=' + new Date().getTime();
+                                
+                                newImg.onload = function() {
+                                    // Update all profile picture instances
+                                    $('#profile-picture, .user-profile-image').attr('src', this.src);
+                                    
+                                    // Show success message
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success',
+                                        text: data.message,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        $('#uploadModal').modal('hide');
+                                    });
+                                };
+                                
+                                newImg.onerror = function() {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Image loaded but might be cached',
+                                        text: 'If you don\'t see changes, try hard refresh (Ctrl+F5)'
+                                    });
+                                };
+                                
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message
+                                });
+                            }
+                        } catch (e) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Failed to process response'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Upload failed',
+                            text: xhr.responseText || 'Unknown error occurred'
+                        });
+                    },
+                    complete: function() {
+                        // Remove loading states
+                        $('#uploadBtn').prop('disabled', false).html('Upload');
+                        $('#profile-picture').removeClass('updating');
                     }
                 });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: response.message
-                });
-            }
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Request failed',
-                text: textStatus
             });
-        }
-    });
-});
 
-});
+            $('#changePasswordBtn').click(function (e) {
+                e.preventDefault();
+                var email = $('#email').val();
+                var userId = $('#userId').val(); // Assuming you have a hidden input for userId
+
+                $.ajax({
+                    url: 'changepassword.php',
+                    type: 'POST',
+                    data: { email: email, userId: userId },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            Swal.fire({
+                                title: 'OTP Sent',
+                                text: response.message,
+                                icon: 'success'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = 'verify_otp2.php?email=' + response.email + '&userId=' + userId;
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Request failed',
+                            text: textStatus
+                        });
+                    }
+                });
+            });
+
+        });
 
 
     </script>
