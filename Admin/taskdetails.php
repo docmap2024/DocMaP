@@ -78,16 +78,25 @@ if (isset($_GET['task_id'])) {
 }
 
 // Format Timestamp
-$formatted_timestamp = date('F j, Y \a\t g:i A', strtotime($task_timestamp)); // Format as desired
+$formatted_timestamp = date('F j, Y \a\t g:i A', strtotime($task_timestamp));
+
 // Format the date to mm/dd/yyyy
-// Format the date to m/d/Y
-$date_obj = DateTime::createFromFormat('Y-m-d', $task_due);
-$formatted_date = $date_obj ? $date_obj->format('m/d/Y') : 'Invalid Date';
+// Check if task_due is not null before creating the DateTime object
+if ($task_due) {
+    $date_obj = DateTime::createFromFormat('Y-m-d', $task_due);
+    $formatted_date = $date_obj ? $date_obj->format('m/d/Y') : 'Invalid Date';
+} else {
+    $formatted_date = 'Invalid Date';
+}
 
 // Format the time to HH:mm with AM/PM
-$time_obj = DateTime::createFromFormat('H:i:s', $task_time);
-$formatted_time = $time_obj ? $time_obj->format('g:i A') : 'Invalid Time'; // 'g:i A' gives time in 12-hour format with AM/PM
-
+// Check if task_time is not null before creating the DateTime object
+if ($task_time) {
+    $time_obj = DateTime::createFromFormat('H:i:s', $task_time);
+    $formatted_time = $time_obj ? $time_obj->format('g:i A') : 'Invalid Time';
+} else {
+    $formatted_time = 'Invalid Time';
+}
 // Combine the formatted date and time
 $combined_date_time = $formatted_date . ' ' . $formatted_time;
 
