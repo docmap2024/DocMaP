@@ -105,7 +105,7 @@ $githubDownloadUrl = $responseData['content']['download_url'];
 // Update database with GitHub URL
 try {
     $stmt = $conn->prepare("UPDATE school_details SET Logo = ? WHERE school_details_ID = 1");
-    $stmt->bind_param("s", $githubDownloadUrl);
+    $stmt->bind_param("s", $unique_filename);
     
     if (!$stmt->execute()) {
         http_response_code(500);
