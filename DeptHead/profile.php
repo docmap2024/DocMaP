@@ -748,7 +748,7 @@ mysqli_close($conn);
             var formData = new FormData(this);
 
             $.ajax({
-                url: 'upload_esig.php', // The PHP script to handle upload
+                url: '../upload_esig.php', // The PHP script to handle upload
                 type: 'POST',
                 data: formData,
                 contentType: false,
