@@ -64,10 +64,10 @@ mysqli_close($conn);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
-     <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
-     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <link rel="stylesheet" href="assets/css/styles.css">
+     <link rel="icon" type="image/png" href="img/Logo/docmap-logo-1.png">
     <title>Profile</title>
     <style>
 
@@ -83,13 +83,12 @@ mysqli_close($conn);
         }
 
         .profile-picture {
-            width: 180px;
-            height: 180px;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 10px;
             position: relative;
-            
         }
 
         .button-group {
@@ -102,14 +101,12 @@ mysqli_close($conn);
             background-color: #9B2035;
             color: white;
             border: none;
-            padding: 10px 15px; /* Top/Bottom: 10px, Left/Right: 20px */
-            border-radius: 50px;
+            padding: 5px;
+            border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            text-align: center;
-           
+            border-radius: 50px;
         }
-
 
         .btn-edit {
             background-color: #9B2035;
@@ -168,7 +165,7 @@ mysqli_close($conn);
 
     .modal-illustration {
         flex: 1;
-        background: url("../assets/images/passw.png") no-repeat center center;
+        background: url("assets/images/passw.png") no-repeat center center;
         background-size: cover;
         height: 100%;
         min-height: 500px; /* Ensures a minimum height if the content is smaller */
@@ -345,6 +342,7 @@ mysqli_close($conn);
 
     </style>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <body>
     <!-- SIDEBAR -->
@@ -382,8 +380,7 @@ mysqli_close($conn);
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
                                                 <a href="#" class="btn-edit btn-custom" data-toggle="modal" data-target="#uploadModal" id="btnedit">
-                                                    <i class="material-icons" style="font-size: 20px;">person_add</i>
-
+                                                    <i class='bx bx-image-add' style="font-size:20px;"></i>
                                                 </a>
                                                 <a href="#" class="btn-custom " data-toggle="modal" data-target="#changePasswordModal">
                                                     Change Credentials
@@ -392,16 +389,11 @@ mysqli_close($conn);
                                         </div>
                                         <!-- New Button -->
                                        <div class="col-12 text-center">
-                                            <a href="#" class="btn-custom <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
+                                            <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
                                             id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
-                                                <?php if ($has_esig): ?>
-                                                    <i class='bx bx-show'style ="font-size:20px;"></i> E-Signature
-                                                <?php else: ?>
-                                                    Upload E-Signature
-                                                <?php endif; ?>
+                                                <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
                                             </a>
                                         </div>
-
 
                                     </div>
                                 </div>
@@ -519,7 +511,10 @@ mysqli_close($conn);
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title">Edit User Details</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                    </button>
+
                                 </div>
                                 <div class="modal-body">
                                     <form id="editForm">
@@ -529,7 +524,7 @@ mysqli_close($conn);
                                                 <input type="text" class="form-control" id="editFname" />
                                             </div>
                                             <div class="col-sm-4">
-                                                <label for="editMname" class="form-label">Middle Name</label>
+                                                <label for="editMname" class="form-label">Middle Initial</label>
                                                 <input type="text" class="form-control" id="editMname" />
                                             </div>
                                             <div class="col-sm-4">
@@ -571,7 +566,8 @@ mysqli_close($conn);
                                     </form>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+
                                     <button type="button" id="saveChanges" class="btn btn-primary">Save Changes</button>
                                 </div>
                             </div>
@@ -615,13 +611,6 @@ mysqli_close($conn);
                                     </button>
                                 </div>
                                 <div class="modal-body">
-                                    <?php if ($profile_picture): ?>
-                                        <div class="profile-container text-center">
-                                            <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                        </div>
-                                    <?php else: ?>
-                                        <p class="text-center">No profile picture available.</p>
-                                    <?php endif; ?>
                                     <form id="uploadForm" enctype="multipart/form-data">
                                         <div class="form-group">
                                             <label for="file">Choose file</label>
@@ -656,7 +645,7 @@ mysqli_close($conn);
                                         <!-- Form Section -->
                                         <div class="col-md-6 d-flex justify-content-center align-items-center">
                                             <div class="modal-form text-center">
-                                                <img src="../img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
+                                                <img src="img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
                                                 <h2>Change Credentials</h2>
                                                 <div class="progress-bar mb-3">
                                                     <div class="progress-container">
@@ -695,8 +684,6 @@ mysqli_close($conn);
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
-
 <script>
     $(document).ready(function () {
     $('#viewEsignature').on('click', function () {
@@ -707,7 +694,7 @@ mysqli_close($conn);
             success: function (response) {
                 if (response.esig) {
                     // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="../img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
+                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
                 } else {
                     // Display "No Image" if the esig column is null
                     $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
@@ -719,63 +706,66 @@ mysqli_close($conn);
             }
         });
     });
-        });
 
-    $(document).ready(function () {
-        // SweetAlert for Upload New E-Signature
-        $('#uploadNewESignature').on('click', function () {
-            Swal.fire({
-                title: 'Warning!',
-                html: `Make sure the image has no background.<br>
-                    If your image still has a background, 
-                    <a href="https://www.remove.bg/" target="_blank">click here</a> to remove it.`,
-                icon: 'warning',
-                showCancelButton: false,
-                confirmButtonText: 'Okay',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Open the Upload Modal
-                    $('#uploadESigModal').modal('show');
-                }
-            });
-        });
+    // Upload New E-Signature button action
+    
+});
 
-        // Handle the AJAX upload
-        $('#uploadESigForm').on('submit', function (e) {
-            e.preventDefault(); // Prevent default form submission
-
-            // Prepare form data
-            var formData = new FormData(this);
-
-            $.ajax({
-                url: 'upload_esig.php', // The PHP script to handle upload
-                type: 'POST',
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function (response) {
-                    // Handle success response
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Your e-signature has been uploaded successfully.',
-                        icon: 'success',
-                        confirmButtonText: 'Okay'
-                    }).then(() => {
-                        location.reload(); // Reload the page or update UI
-                    });
-                },
-                error: function () {
-                    // Handle error response
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'There was an error uploading your e-signature. Please try again.',
-                        icon: 'error',
-                        confirmButtonText: 'Okay'
-                    });
-                }
-            });
+$(document).ready(function () {
+    // SweetAlert for Upload New E-Signature
+    $('#uploadNewESignature').on('click', function () {
+        Swal.fire({
+            title: 'Warning!',
+            html: `Make sure the image has no background.<br>
+                   If your image still has a background, 
+                   <a href="https://www.remove.bg/" target="_blank">click here</a> to remove it.`,
+            icon: 'warning',
+            showCancelButton: false,
+            confirmButtonText: 'Okay',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Open the Upload Modal
+                $('#uploadESigModal').modal('show');
+            }
         });
     });
+
+    // Handle the AJAX upload
+    $('#uploadESigForm').on('submit', function (e) {
+        e.preventDefault(); // Prevent default form submission
+
+        // Prepare form data
+        var formData = new FormData(this);
+
+        $.ajax({
+            url: 'upload_esig.php', // The PHP script to handle upload
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                // Handle success response
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Your e-signature has been uploaded successfully.',
+                    icon: 'success',
+                    confirmButtonText: 'Okay'
+                }).then(() => {
+                    location.reload(); // Reload the page or update UI
+                });
+            },
+            error: function () {
+                // Handle error response
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'There was an error uploading your e-signature. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'Okay'
+                });
+            }
+        });
+    });
+});
 
 
 
@@ -824,7 +814,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         };
 
         // Send data to the backend using AJAX
-        fetch('../edit_user.php', {
+        fetch('edit_user.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -862,123 +852,84 @@ document.addEventListener('DOMContentLoaded', (event) => {
 </script>
 
     <script>
-        $(document).ready(function() {
-            $('#uploadBtn').click(function(e) {
-                e.preventDefault();
-                var formData = new FormData($('#uploadForm')[0]);
+$(document).ready(function () {
+    $('#uploadBtn').click(function (e) {
+        e.preventDefault();
+        var formData = new FormData($('#uploadForm')[0]);
 
-                // Show loading state
-                $('#uploadBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
-                $('#profile-picture').addClass('updating');
-
-                $.ajax({
-                    url: '../picupload.php',
-                    type: 'POST',
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function(response) {
-                        try {
-                            var data = typeof response === 'string' ? JSON.parse(response) : response;
-                            
-                            if (data.status === 'success') {
-                                // Create new image element to preload
-                                var newImg = new Image();
-                                newImg.src = data.full_url + '?t=' + new Date().getTime();
-                                
-                                newImg.onload = function() {
-                                    // Update all profile picture instances
-                                    $('#profile-picture, .user-profile-image').attr('src', this.src);
-                                    
-                                    // Show success message
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Success',
-                                        text: data.message,
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    }).then(() => {
-                                        $('#uploadModal').modal('hide');
-                                    });
-                                };
-                                
-                                newImg.onerror = function() {
-                                    Swal.fire({
-                                        icon: 'warning',
-                                        title: 'Image loaded but might be cached',
-                                        text: 'If you don\'t see changes, try hard refresh (Ctrl+F5)'
-                                    });
-                                };
-                                
-                            } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: data.message
-                                });
-                            }
-                        } catch (e) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Failed to process response'
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Upload failed',
-                            text: xhr.responseText || 'Unknown error occurred'
-                        });
-                    },
-                    complete: function() {
-                        // Remove loading states
-                        $('#uploadBtn').prop('disabled', false).html('Upload');
-                        $('#profile-picture').removeClass('updating');
-                    }
+        $.ajax({
+            url: 'picupload.php',
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                var data = JSON.parse(response);
+                if (data.status === 'success') {
+                    $('#profile-picture').attr('src', 'img/UserProfile/' + data.filename);
+                    $('#uploadModal').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Profile picture updated successfully.'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message
+                    });
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Upload failed',
+                    text: textStatus
                 });
-            });
-
-            $('#changePasswordBtn').click(function (e) {
-                e.preventDefault();
-                var email = $('#email').val();
-                var userId = $('#userId').val(); // Assuming you have a hidden input for userId
-
-                $.ajax({
-                    url: '../changepassword.php',
-                    type: 'POST',
-                    data: { email: email, userId: userId },
-                    success: function (response) {
-                        if (response.status === 'success') {
-                            Swal.fire({
-                                title: 'OTP Sent',
-                                text: response.message,
-                                icon: 'success'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = 'verify_otp2.php?email=' + response.email + '&userId=' + userId;
-                                }
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.message
-                            });
-                        }
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Request failed',
-                            text: textStatus
-                        });
-                    }
-                });
-            });
-
+            }
         });
+    });
+
+    $('#changePasswordBtn').click(function (e) {
+    e.preventDefault();
+    var email = $('#email').val();
+    var userId = $('#userId').val(); // Assuming you have a hidden input for userId
+
+    $.ajax({
+        url: 'changepassword.php',
+        type: 'POST',
+        data: { email: email, userId: userId },
+        success: function (response) {
+            if (response.status === 'success') {
+                Swal.fire({
+                    title: 'OTP Sent',
+                    text: response.message,
+                    icon: 'success'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'verify_otp2.php?email=' + response.email + '&userId=' + userId;
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.message
+                });
+            }
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Request failed',
+                text: textStatus
+            });
+        }
+    });
+});
+
+});
 
 
     </script>
