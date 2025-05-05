@@ -57,7 +57,7 @@ write_log("Received form data: UserID = $UserID, ContentIDs = " . implode(", ", 
 
 // File upload handling
 $uploadOk = 1;
-$target_dir = __DIR__ . '/Attachments/'; // Absolute path to the directory
+$target_dir = '/tmp/Attachments/'; // Absolute path to the directory
 $allFilesUploaded = true;
 
 if (!is_dir($target_dir)) {
