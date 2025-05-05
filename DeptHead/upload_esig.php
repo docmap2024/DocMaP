@@ -94,15 +94,21 @@ if (isset($_SESSION['user_id'])) {
             
             $responseData = json_decode($response, true);
             if ($httpCode == 201) {
-                write_log("E-signature uploaded to GitHub: $newFileName");
-        
-                // ✅ Update database with the random file name instead of download URL
+                $githubDownloadUrl = $responseData['content']['download_url'];
+                write_log("E-signature uploaded to GitHub: $newFileName, URL: $githubDownloadUrl");
+            
+                // Update database with just the filename (as you requested)
                 $query = "UPDATE useracc SET esig = ? WHERE UserID = ?";
                 $stmt = $conn->prepare($query);
-                $stmt->bind_param('si', $newFileName, $user_id);
-
+                $stmt->bind_param('si', $newFileName, $user_id); // Store only filename
+            
                 if ($stmt->execute()) {
-                    echo json_encode(['status' => 'success']);
+                    // Return both filename and full URL in response
+                    echo json_encode([
+                        'status' => 'success',
+                        'filename' => $newFileName,
+                        'github_url' => $githubDownloadUrl
+                    ]);
                 } else {
                     write_log("Database update failed: " . $stmt->error);
                     echo json_encode(['status' => 'error', 'message' => 'Database update failed.']);

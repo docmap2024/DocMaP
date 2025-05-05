@@ -701,7 +701,7 @@ mysqli_close($conn);
     $(document).ready(function () {
     $('#viewEsignature').on('click', function () {
         $.ajax({
-            url: '../fetch_esig.php', // Backend script to fetch the e-signature
+            url: 'fetch_esig.php', // Backend script to fetch the e-signature
             type: 'POST',
             dataType: 'json',
             success: function (response) {
@@ -748,7 +748,7 @@ mysqli_close($conn);
             var formData = new FormData(this);
 
             $.ajax({
-                url: '../upload_esig.php', // The PHP script to handle upload
+                url: 'upload_esig.php', // The PHP script to handle upload
                 type: 'POST',
                 data: formData,
                 contentType: false,
