@@ -90,8 +90,7 @@ WHERE
     q.Quarter_ID = ?
     AND d.dept_ID = ?
 ORDER BY 
-    fc.Title ASC, 
-    fc.Captions ASC;
+    fc.Title ASC;
 
 ";
 
