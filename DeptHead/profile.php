@@ -858,7 +858,7 @@ $(document).ready(function () {
         var formData = new FormData($('#uploadForm')[0]);
 
         $.ajax({
-            url: '../picupload.php',
+            url: 'picupload.php',
             type: 'POST',
             data: formData,
             contentType: false,
