@@ -1140,7 +1140,7 @@ mysqli_close($conn);
                 
                 if (data.status === 'success') {
                     // Update the image source with cache-busting parameter
-                    var newSrc = 'img/Logo/' + data.filename + '?t=' + new Date().getTime();
+                    var newSrc = '../img/Logo/' + data.filename + '?t=' + new Date().getTime();
                     $('.image-container img').attr('src', newSrc);
                     
                     $('#uploadLogoModal').modal('hide');
