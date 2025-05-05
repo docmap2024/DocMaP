@@ -643,7 +643,6 @@ mysqli_close($conn);
                                     alt="E-Signature" 
                                     class="img-fluid"
                                     onerror="this.onerror=null;this.src='default_signature.png'">
-                                <p class="text-muted mt-2">E-Signature</p>
                             `);
                         } else {
                             $('#eSignatureBox').html(`
