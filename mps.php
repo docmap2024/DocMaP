@@ -616,7 +616,7 @@ function fetchSchoolDetailsAndPrint() {
         method: 'GET',
         success: function(data) {
             // Prepare the logo and school details for the print view
-            var logo = data.Logo ? '<img src="img/Logo/DEPEDLOGO.png" style="width: 90px; height: auto; " />' : '<p>No Logo Available</p>';
+           var depedlogo = '<img src="img/Logo/DEPEDLOGO.png" style="width: 90px; height: auto;" />';
             var teacherSignature = data.Teacher_Signature ? `<img src="img/e_sig/${data.Teacher_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
             var principalSignature = data.Principal_Signature ? `<img src="img/e_sig/${data.Principal_Signature}" style="width:150px; height:auto;" />` : '<p>No Signature Available</p>';
 
