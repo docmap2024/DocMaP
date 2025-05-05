@@ -795,8 +795,8 @@ mysqli_close($conn);
 
     </script>
     <script>
-        $(document).ready(function () {
-            $('#uploadBtn').click(function (e) {
+        $(document).ready(function() {
+            $('#uploadBtn').click(function(e) {
                 e.preventDefault();
                 var formData = new FormData($('#uploadForm')[0]);
 
@@ -806,35 +806,50 @@ mysqli_close($conn);
                     data: formData,
                     contentType: false,
                     processData: false,
-                    success: function (response) {
-                        var data = JSON.parse(response);
-                        if (data.status === 'success') {
-                            // Update to use GitHub URL instead of local path
-                            var githubUrl = 'https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/' + data.filename;
-                            $('#profile-picture').attr('src', githubUrl + '?t=' + new Date().getTime());
-                            $('#uploadModal').modal('hide');
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                text: 'Profile picture updated successfully.'
-                            });
-                        } else {
+                    success: function(response) {
+                        try {
+                            var data = typeof response === 'string' ? JSON.parse(response) : response;
+                            
+                            if (data.status === 'success') {
+                                // Update the profile picture in the top bar
+                                $('#profile-picture').attr('src', data.full_url + '?t=' + new Date().getTime());
+                                
+                                // Show success message
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success',
+                                    text: data.message
+                                }).then(() => {
+                                    $('#uploadModal').modal('hide');
+                                });
+                                
+                                // Optional: Update profile picture in other places
+                                $('.user-profile-image').attr('src', data.full_url + '?t=' + new Date().getTime());
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message
+                                });
+                            }
+                        } catch (e) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: data.message
+                                text: 'Failed to process response'
                             });
                         }
                     },
-                    error: function (jqXHR, textStatus, errorThrown) {
+                    error: function(xhr) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Upload failed',
-                            text: textStatus
+                            text: xhr.responseText || 'Unknown error occurred'
                         });
                     }
                 });
             });
+        });
 
             $('#changePasswordBtn').click(function (e) {
             e.preventDefault();
