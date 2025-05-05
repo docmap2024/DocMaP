@@ -39,7 +39,7 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // Construct the full path to the profile picture
-$profile_picture_path = "img/UserProfile/" . $profile_picture;
+$profile_picture_path = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture;
 
 // Close database connection
 mysqli_close($conn);
