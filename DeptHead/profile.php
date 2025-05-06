@@ -29,7 +29,7 @@ if (mysqli_num_rows($result) > 0) {
     $address = $row['address'];
     $email = $row['email'];
     $uname = $row['Username'];
-    $rank = $row['Rank'];
+    $rank = $row['URank'];
     $password = $row['Password'];
     $mobile = $row['mobile'];
 
@@ -365,7 +365,7 @@ mysqli_close($conn);
                     <div class="row">
                         <!-- Left Column -->
                         <div class="col-md-5 mt-5">
-                            <div class="container-content">
+                            <div class="container-content text-center">
                             <?php
                             $profileImagePath = !empty($profile_picture)
                                 ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture
@@ -374,30 +374,30 @@ mysqli_close($conn);
 
                             <?php if ($profile_picture): ?>
                                 <div class="profile-container d-inline-block position-relative">
-            <img src="<?php echo $profileImagePath; ?>" 
-                 alt="Profile Picture" 
-                 class="profile-picture" 
-                 id="profile-picture"
-                 style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+                            <img src="<?php echo $profileImagePath; ?>" 
+                                alt="Profile Picture" 
+                                class="profile-picture" 
+                                id="profile-picture"
+                                style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
 
-            <!-- Edit icon on bottom-right of image -->
-            <a href="#" class="btn-edit btn-custom position-absolute" 
-               style="bottom: 15px; right: 10px;"
-               data-toggle="modal" data-target="#uploadModal" 
-               id="btnedit">
-                <i class='bx bx-pencil' style="font-size: 20px;"></i>
-            </a>
-        </div>        
+                            <!-- Edit icon on bottom-right of image -->
+                            <a href="#" class="btn-edit btn-custom position-absolute" 
+                            style="bottom: 15px; right: 10px;"
+                            data-toggle="modal" data-target="#uploadModal" 
+                            id="btnedit">
+                                <i class='bx bx-pencil' style="font-size: 20px;"></i>
+                            </a>
+                        </div>        
                             <?php else: ?>
                                 <p class="text-center">No profile picture available.</p>
                             <?php endif; ?>
 
 
                             <div class="text-center mt-3 full-name"     ><?php echo $full_name; ?></div>
-    <div class="text-center text-muted"><?php echo $rank; ?></div> 
-    <div class="container mt-3">
-        <div class="row justify-content-center">
-            <!-- Existing Buttons -->
+                        <div class="text-center text-muted"><?php echo $rank; ?></div> 
+                        <div class="container mt-3">
+                            <div class="row justify-content-center">
+                                <!-- Existing Buttons -->
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
                                                 
