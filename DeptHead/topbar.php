@@ -305,7 +305,66 @@
 /* Rest of your existing styles */
 
 </style>
+<script>
+function markAllAsRead() {
+    Swal.fire({
+        title: "Mark all as read?",
+        text: "This will mark all unread notifications as read.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#9B2035",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, mark all!",
+        cancelButtonText: "Cancel"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('../Admin/mark_all_as_read.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI: Change styles of unread notifications
+                    document.querySelectorAll('.new-notification').forEach(item => {
+                        item.classList.remove('new-notification');
+                        item.classList.add('old-notification');
+                        item.querySelector('.notif-title').style.color = 'gray';
+                    });
 
+                    // Disable the button after marking as read
+                    document.getElementById('readAllBtn').disabled = true;
+
+                    // Show success alert
+                    Swal.fire({
+                        title: "Success!",
+                        text: "All notifications have been marked as read.",
+                        icon: "success",
+                        confirmButtonColor: "#9B2035"
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Failed to mark notifications as read.",
+                        icon: "error",
+                        confirmButtonColor: "#9B2035"
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: "Error!",
+                    text: "Something went wrong.",
+                    icon: "error",
+                    confirmButtonColor: "#9B2035"
+                });
+            });
+        }
+    });
+}
+</script>
 <script>
     setInterval(() => {
     fetch('get_unread_notifications.php')
@@ -331,41 +390,39 @@
         });
 }, 5000); // refresh every 5 seconds
 
-
+// Get modal element
 var modal = document.getElementById("notifications-modal");
-    var closeBtn = document.querySelector(".close");
 
-    // Get the notification icon to open the modal
-    var notificationIcon = document.getElementById("notification-icon");
-    var notificationLink = document.getElementById("notification-link");
+// Get the notification icon to open the modal
+var notificationIcon = document.getElementById("notification-icon");
 
-    // Show modal when clicking the notification icon
-    notificationIcon.onclick = notificationLink.onclick = function() {
-        modal.style.display = "block";
-        document.body.classList.add("modal-open"); // Optional: background blur effect
-    };
+// Get the close button within the modal
+var closeBtn = document.querySelector(".close");
 
-    // Hide modal when clicking the close button (×)
-    closeBtn.onclick = function() {
+// Get the notification link
+var notificationLink = document.getElementById("notification-link");
+
+// When the user clicks the notification icon or link, open the modal and apply background blur
+notificationIcon.onclick = notificationLink.onclick = function() {
+    modal.style.display = "block";
+    document.body.classList.add("modal-open"); // Add blur effect
+}
+
+// When the user clicks the close button, close the modal and remove background blur
+closeBtn.onclick = function() {
+    modal.style.display = "none";
+    document.body.classList.remove("modal-open"); // Remove blur effect
+}
+
+// Close the modal when clicking outside of it
+window.onclick = function(event) {
+    if (event.target == modal) {
         modal.style.display = "none";
         document.body.classList.remove("modal-open"); // Remove blur effect
-    };
+    }
+}
 
-    // Hide modal when clicking outside of the modal content
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
-            document.body.classList.remove("modal-open");
-        }
-    };
 
-    // Optional: Close the modal when pressing the ESC key
-    document.addEventListener("keydown", function(e) {
-        if (e.key === "Escape" && modal.style.display === "block") {
-            modal.style.display = "none";
-            document.body.classList.remove("modal-open");
-        }
-    });
     // Add a function to handle notification clicks
     function handleNotificationClick(notifId, taskId, contentId) {
         // Update notification status via AJAX
