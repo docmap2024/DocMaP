@@ -29,6 +29,7 @@ if (mysqli_num_rows($result) > 0) {
     $address = $row['address'];
     $email = $row['email'];
     $uname = $row['Username'];
+    $rank = $row['Rank'];
     $password = $row['Password'];
     $mobile = $row['mobile'];
 
