@@ -29,7 +29,7 @@ if (!isset($_POST['task_id'], $_POST['content_id'])) {
 $task_id = $_POST['task_id'];
 $content_id = $_POST['content_id'];
 
-// Update status
+// Update previous document status
 $updateStatusQuery = "UPDATE documents SET Status = 1 WHERE UserID = ? AND TaskID = ? AND ContentID = ? AND Status != 1";
 $stmt = $conn->prepare($updateStatusQuery);
 $stmt->bind_param("iii", $user_id, $task_id, $content_id);
@@ -39,20 +39,20 @@ if (!$stmt->execute()) {
     exit();
 }
 
+// Process file uploads
 if (!empty($_FILES['files']['name'][0])) {
     foreach ($_FILES['files']['name'] as $key => $name) {
         $tmpPath = $_FILES['files']['tmp_name'][$key];
         $originalFileName = preg_replace('/[^a-zA-Z0-9\.\-_]/', '', $name);
         $uniqueFileName = sprintf('%06d_%s', random_int(100000, 999999), $originalFileName);
 
-        // Validate file size
+        // Size validation (max 5MB)
         if ($_FILES['files']['size'][$key] > 5 * 1024 * 1024) {
             $response['error'] = "File too large: $name (max 5MB)";
             echo json_encode($response);
             exit();
         }
 
-        // Read content
         $fileContent = file_get_contents($tmpPath);
         if ($fileContent === false) {
             write_log("Failed to read file: $originalFileName");
@@ -61,11 +61,12 @@ if (!empty($_FILES['files']['name'][0])) {
             exit();
         }
 
-        // GitHub
+        // === GitHub Upload ===
         $repo = "docmap2024/DocMaP";
         $branch = "main";
-        $uploadPath = "Documents/" . $uniqueFileName;
+        $uploadPath = "Documents/" . $uniqueFileName; // Ensure it's always in Documents/
         $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
+        write_log("Uploading to: $uploadUrl");
 
         $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
         if (!$githubToken) {
@@ -105,11 +106,10 @@ if (!empty($_FILES['files']['name'][0])) {
             exit();
         }
 
-        // Get download URL
         $ghData = json_decode($responseGitHub, true);
         $downloadUrl = $ghData['content']['download_url'] ?? '';
 
-        // Get GradeLevelFolderID
+        // === Get GradeLevelFolderID ===
         $gradeLevelID = null;
         $gradeQuery = "SELECT GradeLevelFolderID FROM gradelevelfolders WHERE ContentID = ? LIMIT 1";
         $stmt = $conn->prepare($gradeQuery);
@@ -125,7 +125,7 @@ if (!empty($_FILES['files']['name'][0])) {
             exit();
         }
 
-        // Get UserFolderID
+        // === Get UserFolderID ===
         $userContentID = null;
         $stmt = $conn->prepare("SELECT UserContentID FROM usercontent WHERE UserID = ? AND ContentID = ?");
         $stmt->bind_param("ii", $user_id, $content_id);
@@ -154,8 +154,9 @@ if (!empty($_FILES['files']['name'][0])) {
             exit();
         }
 
-        // Insert document
-        $stmt = $conn->prepare("INSERT INTO documents (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
+        // === Insert document ===
+        $stmt = $conn->prepare("INSERT INTO documents 
+            (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
             VALUES (?, ?, ?, ?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
         $stmt->bind_param("iiiiiss", $gradeLevelID, $userFolderID, $user_id, $content_id, $task_id, $uniqueFileName, $downloadUrl);
         if (!$stmt->execute()) {
