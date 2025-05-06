@@ -166,14 +166,14 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                                     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                     <td>
                                         <!-- View Icon -->
-                                        <a href="<?php echo htmlspecialchars($row['uri']); ?>" 
-                                            target="_blank" 
+                                        <a href="#" 
                                             class="btn btn-circle btn-view" 
                                             title="View"
-                                            onclick="return checkFileExists(this.href);">
+                                            onclick="openFilePreview('<?php echo htmlspecialchars($row['uri']); ?>', '<?php echo htmlspecialchars($row['filename']); ?>'); return false;">
                                                 <i class="fas fa-eye"></i>
                                         </a>
-                                        <!-- Delete Icon -->
+                                        
+                                        <!-- Delete Icon (unchanged) -->
                                         <a href="#" class="btn btn-circle btn-delete" title="Delete" 
                                             onclick="confirmDelete('<?php echo $row['TemplateID']; ?>', '<?php echo rawurlencode($row['filename']); ?>'); return false;">
                                             <i class="fas fa-trash-alt"></i>
@@ -244,6 +244,26 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                 </script>
                 <?php unset($_SESSION['error']); // Clear error message after displaying ?>
             <?php endif; ?>
+
+            <div class="modal fade" id="filePreviewModal" tabindex="-1" role="dialog" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="filePreviewModalLabel">File Preview</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="filePreviewContent">
+                            <!-- Content will be loaded here -->
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" id="downloadOriginal" class="btn btn-primary">Download Original</a>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </main>
     </section>
@@ -339,6 +359,95 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                     return false;
                 });
             return true; // Fallback (shouldn't reach here)
+        }
+    </script>
+
+    <script>
+        function openFilePreview(url, filename) {
+            // First check if file exists
+            fetch(url, { method: 'HEAD' })
+                .then(response => {
+                    if (!response.ok) {
+                        Swal.fire('Error', 'File not found', 'error');
+                        return;
+                    }
+                    
+                    // Get file extension
+                    const extension = filename.split('.').pop().toLowerCase();
+                    const modal = $('#filePreviewModal');
+                    const content = $('#filePreviewContent');
+                    const downloadBtn = $('#downloadOriginal');
+                    
+                    // Set download link
+                    downloadBtn.attr('href', url);
+                    
+                    // Clear previous content
+                    content.html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-3x"></i><p>Loading preview...</p></div>');
+                    
+                    // Show modal
+                    modal.modal('show');
+                    
+                    // Handle different file types
+                    switch(extension) {
+                        case 'pdf':
+                            content.html(`
+                                <embed src="${url}" type="application/pdf" width="100%" height="500px">
+                                <p class="text-center mt-2">If the PDF doesn't display, <a href="${url}" target="_blank">click here to open it</a></p>
+                            `);
+                            break;
+                            
+                        case 'jpg':
+                        case 'jpeg':
+                        case 'png':
+                        case 'gif':
+                            content.html(`<img src="${url}" class="img-fluid" alt="Preview">`);
+                            break;
+                            
+                        case 'doc':
+                        case 'docx':
+                            content.html(`
+                                <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}" width="100%" height="500px" frameborder="0"></iframe>
+                                <p class="text-center mt-2">Word document preview powered by Microsoft Office Online</p>
+                            `);
+                            break;
+                            
+                        case 'xls':
+                        case 'xlsx':
+                            content.html(`
+                                <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}" width="100%" height="500px" frameborder="0"></iframe>
+                                <p class="text-center mt-2">Excel spreadsheet preview powered by Microsoft Office Online</p>
+                            `);
+                            break;
+                            
+                        case 'ppt':
+                        case 'pptx':
+                            content.html(`
+                                <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}" width="100%" height="500px" frameborder="0"></iframe>
+                                <p class="text-center mt-2">PowerPoint preview powered by Microsoft Office Online</p>
+                            `);
+                            break;
+                            
+                        case 'txt':
+                            fetch(url)
+                                .then(response => response.text())
+                                .then(text => {
+                                    content.html(`<pre class="p-3 bg-light">${text}</pre>`);
+                                });
+                            break;
+                            
+                        default:
+                            content.html(`
+                                <div class="alert alert-info">
+                                    <h4 class="alert-heading">No Preview Available</h4>
+                                    <p>This file type (${extension}) cannot be previewed in the browser.</p>
+                                    <p>Please download the file to view it.</p>
+                                </div>
+                            `);
+                    }
+                })
+                .catch(error => {
+                    Swal.fire('Error', 'Could not access file: ' + error.message, 'error');
+                });
         }
     </script>
 </body>
