@@ -592,7 +592,7 @@ if ($selectedYear === "All") {
                                 <div style="text-align: center; flex: 1;">
                                     <span style="font-weight:bold;">PREPARED BY:</span><br/><br/>
                                     <div style="margin-bottom: -60px; margin-top: -60px;">
-                                        <img src="../img/e_sig/<?= $displayTeacherSignature ?>" alt="Preparer Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                        <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/<?= $displayTeacherSignature ?>" alt="Preparer Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
                                     </div>
                                     <span style="font-weight:bold;">${preparerName}</span>
                                     <hr style="width: ${preparerHrWidth}; margin: 0 auto; border: 1px solid black;">
@@ -603,7 +603,7 @@ if ($selectedYear === "All") {
                                 <div style="text-align: center; flex: 1;">
                                     <span style="font-weight:bold;">NOTED BY:</span><br/><br/>
                                     <div style="margin-bottom: -55px; margin-top: -65px;">
-                                        <img src="img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                        <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
                                     </div>
                                     <span style="font-weight:bold;">${principalName}</span>
                                     <hr style="width: ${principalHrWidth}; margin: 0 auto; border: 1px solid black;">
@@ -616,8 +616,8 @@ if ($selectedYear === "All") {
                             <div class="footer">
                                 <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
                                     <div class="footer-logo">
-                                        <img src="  img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
-                                        ${data.Logo ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
+                                        <img src="../img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                        <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
                                     </div>
                                     <div class="footer-details">
                                         <p style="margin-bottom: -5px;">${data.Address || ''} ${data.City_Muni || ''} ${data.School_ID ? 'School ID: ' + data.School_ID : ''}</p>
