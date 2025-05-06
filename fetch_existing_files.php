@@ -36,9 +36,10 @@ if (isset($_POST['task_id'])) {
             $doc_ids[] = $row['DocuID'];
         }
         
+        // ✅ Match this key to the one used in JavaScript
         $response = [
             'success' => true,
-            'doc_ids' => $doc_ids
+            'existing_files' => $doc_ids
         ];
     } else {
         $response['error'] = "Database error";
