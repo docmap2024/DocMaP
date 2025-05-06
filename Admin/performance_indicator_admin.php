@@ -545,14 +545,10 @@ if ($selectedYear === "All") {
 
                         // Initialize the variable at the beginning
                         let tablesToPrint = '';
-
-                        const logo = data.Logo
-                            ? `<img src="../img/Logo/${data.Logo}" alt="School Logo" style="width: 130px; height: auto;" />`
-                            : '<p>No Logo Available</p>';
                         
                         const depedLogo = `
                             <div style="text-align: center; margin-bottom: 15px;">
-                                <img src="../img/Logo/deped_logo.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
+                                <img src="./img/Logo/deped_logo.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
                             </div>
                         `;
 
@@ -619,7 +615,7 @@ if ($selectedYear === "All") {
                             <div class="footer">
                                 <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
                                     <div class="footer-logo">
-                                        <img src="./img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                        <img src="./img/Logo/DEPED_MATATAGLOGO.png" style="width: 170px; height: auto; margin-right: 10px;" />
                                         <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
                                     </div>
                                     <div class="footer-details">
