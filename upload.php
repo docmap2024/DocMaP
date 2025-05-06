@@ -33,7 +33,6 @@ function createNotification($conn, $user_id, $content_id, $task_id, $title, $con
 }
 
 function getDepartmentHeadUserID($conn, $dept_ID) {
-    // Fetch the UserID of the Department Head for the department
     $headQuery = "SELECT UserID FROM useracc WHERE dept_ID = ? AND role = 'Department Head'";
     $headStmt = $conn->prepare($headQuery);
     $headStmt->bind_param("i", $dept_ID);
@@ -42,23 +41,20 @@ function getDepartmentHeadUserID($conn, $dept_ID) {
 
     if ($headResult && $headResult->num_rows > 0) {
         $headRow = $headResult->fetch_assoc();
-        return $headRow['UserID']; // Return the Department Head's UserID
+        return $headRow['UserID'];
     }
-
-    return false; // Return false if no department head is found
+    return false;
 }
 
 function getAdminUserID($conn) {
-    // Fetch the UserID of the Admin (assuming role = 'Admin')
     $adminQuery = "SELECT UserID FROM useracc WHERE role = 'Admin' LIMIT 1";
     $adminResult = mysqli_query($conn, $adminQuery);
 
     if ($adminResult && mysqli_num_rows($adminResult) > 0) {
         $adminRow = mysqli_fetch_assoc($adminResult);
-        return $adminRow['UserID']; // Return the Admin's UserID
+        return $adminRow['UserID'];
     }
-
-    return false; // Return false if no admin is found
+    return false;
 }
 
 if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
@@ -66,8 +62,8 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
     $content_id = $_POST['content_id'];
     $user_id = $_SESSION['user_id'];
 
-    // Update previous document status
-    $updateStatusQuery = "UPDATE documents SET Status = 1 WHERE UserID = ? AND TaskID = ? AND ContentID = ? AND Status != 1";
+    // Update previous document status to submitted (Status = 1)
+    $updateStatusQuery = "UPDATE documents SET Status = 1 WHERE UserID = ? AND TaskID = ? AND ContentID = ?";
     $stmt = $conn->prepare($updateStatusQuery);
     $stmt->bind_param("iii", $user_id, $task_id, $content_id);
     if (!$stmt->execute()) {
@@ -76,11 +72,38 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
         exit();
     }
 
-    // Process file uploads
+    // Process file uploads only if new files are provided
     if (!empty($_FILES['files']['name'][0])) {
         foreach ($_FILES['files']['name'] as $key => $name) {
             $tmpPath = $_FILES['files']['tmp_name'][$key];
             $originalFileName = preg_replace('/[^a-zA-Z0-9\.\-_]/', '', $name);
+            
+            // Check if this exact file already exists in the database
+            $checkQuery = "SELECT DocuID, uri FROM documents 
+                          WHERE UserID = ? AND TaskID = ? AND ContentID = ? 
+                          AND name LIKE ?";
+            $stmt = $conn->prepare($checkQuery);
+            $searchPattern = '%' . $originalFileName;
+            $stmt->bind_param("iiis", $user_id, $task_id, $content_id, $searchPattern);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $existingFile = $result->fetch_assoc();
+            $stmt->close();
+
+            if ($existingFile) {
+                // File exists, just update the status without re-uploading
+                $updateQuery = "UPDATE documents SET Status = 1 WHERE DocuID = ?";
+                $stmt = $conn->prepare($updateQuery);
+                $stmt->bind_param("i", $existingFile['DocuID']);
+                if (!$stmt->execute()) {
+                    $response['error'] = "Error updating existing file status: " . $stmt->error;
+                    echo json_encode($response);
+                    exit();
+                }
+                continue; // Skip to next file
+            }
+
+            // Proceed with new file upload
             $uniqueFileName = sprintf('%06d_%s', random_int(100000, 999999), $originalFileName);
 
             // Size validation (max 5MB)
@@ -101,7 +124,7 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             // === GitHub Upload ===
             $repo = "docmap2024/DocMaP";
             $branch = "main";
-            $uploadPath = "Documents/" . $uniqueFileName; // Ensure it's always in Documents/
+            $uploadPath = "Documents/" . $uniqueFileName;
             $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
             write_log("Uploading to: $uploadUrl");
 
@@ -191,7 +214,7 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
                 exit();
             }
 
-            // === Insert document ===
+            // === Insert new document ===
             $stmt = $conn->prepare("INSERT INTO documents 
                 (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
@@ -201,17 +224,15 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
                 echo json_encode($response);
                 exit();
             }
-
-            $response['success'] = true;
         }
     }
 
     // Update task_user status
-    $updateTaskUser = $conn->prepare("UPDATE task_user SET Status = 'Submitted', SubmitDate = NOW() WHERE TaskID = ? AND UserID = ? AND Status != 'Submitted'");
+    $updateTaskUser = $conn->prepare("UPDATE task_user SET Status = 'Submitted', SubmitDate = NOW() WHERE TaskID = ? AND UserID = ?");
     $updateTaskUser->bind_param("ii", $task_id, $user_id);
     $updateTaskUser->execute();
 
-    // Fetch Task Title
+    // Fetch Task Title for notification
     $taskTitleQuery = "SELECT Title FROM tasks WHERE TaskID = ?";
     $taskTitleStmt = $conn->prepare($taskTitleQuery);
     $taskTitleStmt->bind_param("i", $task_id);
@@ -221,75 +242,63 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
     if ($taskTitleResult && $taskTitleResult->num_rows > 0) {
         $taskTitleRow = $taskTitleResult->fetch_assoc();
         $taskTitle = $taskTitleRow['Title'];
-    } else {
-        $response['error'] = "Error fetching Task Title.";
-        echo json_encode($response);
-        exit();
-    }
 
-    // Fetch Full Name of the user
-    $userQuery = "SELECT fname, lname FROM useracc WHERE UserID = ?";
-    $userStmt = $conn->prepare($userQuery);
-    $userStmt->bind_param("i", $user_id);
-    $userStmt->execute();
-    $userResult = $userStmt->get_result();
+        // Fetch user's full name for notification
+        $userQuery = "SELECT fname, lname FROM useracc WHERE UserID = ?";
+        $userStmt = $conn->prepare($userQuery);
+        $userStmt->bind_param("i", $user_id);
+        $userStmt->execute();
+        $userResult = $userStmt->get_result();
 
-    if ($userResult && $userResult->num_rows > 0) {
-        $userRow = $userResult->fetch_assoc();
-        $fullName = $userRow['fname'] . ' ' . $userRow['lname'];
-    } else {
-        $response['error'] = "Error fetching user's full name.";
-        echo json_encode($response);
-        exit();
-    }
+        if ($userResult && $userResult->num_rows > 0) {
+            $userRow = $userResult->fetch_assoc();
+            $fullName = $userRow['fname'] . ' ' . $userRow['lname'];
 
-    // Create notification
-    $title = "$fullName has submitted a task!";
-    $content = "A task has been submitted for \"$taskTitle\".";
-    
-    $notifID = createNotification($conn, $user_id, $content_id, $task_id, $title, $content);
+            // Create notification
+            $title = "$fullName has submitted a task!";
+            $content = "A task has been submitted for \"$taskTitle\".";
+            
+            $notifID = createNotification($conn, $user_id, $content_id, $task_id, $title, $content);
 
-    if ($notifID) {
-        // Fetch the Department ID (dept_ID) based on the content_id
-        $deptQuery = "SELECT dept_ID FROM feedcontent WHERE ContentID = ?";
-        $deptStmt = $conn->prepare($deptQuery);
-        $deptStmt->bind_param("i", $content_id);
-        $deptStmt->execute();
-        $deptResult = $deptStmt->get_result();
+            if ($notifID) {
+                // Fetch department and notify department head and admin
+                $deptQuery = "SELECT dept_ID FROM feedcontent WHERE ContentID = ?";
+                $deptStmt = $conn->prepare($deptQuery);
+                $deptStmt->bind_param("i", $content_id);
+                $deptStmt->execute();
+                $deptResult = $deptStmt->get_result();
 
-        if ($deptResult && $deptResult->num_rows > 0) {
-            $deptRow = $deptResult->fetch_assoc();
-            $dept_ID = $deptRow['dept_ID'];
+                if ($deptResult && $deptResult->num_rows > 0) {
+                    $deptRow = $deptResult->fetch_assoc();
+                    $dept_ID = $deptRow['dept_ID'];
 
-            // Fetch the Department Head's UserID
-            $department_head_user_id = getDepartmentHeadUserID($conn, $dept_ID);
+                    // Notify department head
+                    $department_head_user_id = getDepartmentHeadUserID($conn, $dept_ID);
+                    if ($department_head_user_id) {
+                        $status = 1;
+                        $timestamp = date("Y-m-d H:i:s");
+                        $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                        $notifUserStmt->bind_param("iiss", $notifID, $department_head_user_id, $status, $timestamp);
+                        $notifUserStmt->execute();
+                        $notifUserStmt->close();
+                    }
 
-            // Fetch the Admin's UserID
-            $admin_user_id = getAdminUserID($conn);
-
-            // Insert into notif_user table for Department Head
-            if ($department_head_user_id) {
-                $status = 1;
-                $timestamp = date("Y-m-d H:i:s");
-
-                $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
-                $notifUserStmt->bind_param("iiss", $notifID, $department_head_user_id, $status, $timestamp);
-                $notifUserStmt->execute();
-                $notifUserStmt->close();
-            }
-
-            // Insert into notif_user table for Admin
-            if ($admin_user_id) {
-                $status = 1;
-                $timestamp = date("Y-m-d H:i:s");
-
-                $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
-                $notifUserStmt->bind_param("iiss", $notifID, $admin_user_id, $status, $timestamp);
-                $notifUserStmt->execute();
-                $notifUserStmt->close();
+                    // Notify admin
+                    $admin_user_id = getAdminUserID($conn);
+                    if ($admin_user_id) {
+                        $status = 1;
+                        $timestamp = date("Y-m-d H:i:s");
+                        $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                        $notifUserStmt->bind_param("iiss", $notifID, $admin_user_id, $status, $timestamp);
+                        $notifUserStmt->execute();
+                        $notifUserStmt->close();
+                    }
+                }
             }
         }
     }
+
+    $response['success'] = true;
 } else {
     $response['error'] = "Task ID and Content ID are required.";
 }
