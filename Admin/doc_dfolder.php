@@ -4,7 +4,10 @@ session_start();
 include 'connection.php';
 
 // Fetch folders from the database
-$query = "SELECT DepartmentFolderID, dept_ID, Name, CreationTimestamp FROM departmentfolders";
+// Fetch folders from the database with department type
+$query = "SELECT df.DepartmentFolderID, df.dept_ID, df.Name, df.CreationTimestamp, d.dept_type 
+          FROM departmentfolders df 
+          LEFT JOIN department d ON df.dept_ID = d.dept_ID";
 $result = mysqli_query($conn, $query);
 $folders = [];
 
@@ -118,30 +121,36 @@ if ($result && mysqli_num_rows($result) > 0) {
 
     <script>
        document.addEventListener('DOMContentLoaded', function() {
-    // Add event listener for clicking folder items
-    const folderItems = document.querySelectorAll('.folder-item');
-    folderItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const folderId = this.getAttribute('data-id');
-            // Redirect to doc_gfolder.php with the DepartmentFolderID as a query parameter
-            window.location.href = `doc_gfolder.php?id=${folderId}`;
-        });
-    });
+            // Add event listener for clicking folder items
+            const folderItems = document.querySelectorAll('.folder-item');
+            folderItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const folderId = this.getAttribute('data-id');
+                    const deptType = this.getAttribute('data-dept-type');
+                    
+                    // Redirect based on department type
+                    if (deptType === 'Administrative') {
+                        window.location.href = `doc_adminfolder.php?id=${folderId}`;
+                    } else {
+                        window.location.href = `doc_gfolder.php?id=${folderId}`;
+                    }
+                });
+            });
 
-    // Search functionality
-    const searchInput = document.getElementById('search');
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase(); // Convert search term to lowercase
-        folderItems.forEach(item => {
-            const folderName = item.querySelector('.name').textContent.toLowerCase(); // Convert folder name to lowercase
-            if (folderName.includes(searchTerm)) {
-                item.parentElement.style.display = 'block'; // Show the folder's column
-            } else {
-                item.parentElement.style.display = 'none'; // Hide the folder's column
-            }
+            // Search functionality [remains the same]
+            const searchInput = document.getElementById('search');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                folderItems.forEach(item => {
+                    const folderName = item.querySelector('.name').textContent.toLowerCase();
+                    if (folderName.includes(searchTerm)) {
+                        item.parentElement.style.display = 'block';
+                    } else {
+                        item.parentElement.style.display = 'none';
+                    }
+                });
+            });
         });
-    });
-});
 
     </script>
     <script src="assets/js/script.js"></script>

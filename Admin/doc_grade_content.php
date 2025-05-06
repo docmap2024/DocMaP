@@ -190,81 +190,81 @@ while ($user = mysqli_fetch_assoc($resultUsers)) {
             text-decoration: none; /* Ensure no underline on hover */
         }
         .filter-container {
-    display: flex; /* Use flexbox to align elements */
-    align-items: center; /* Center vertically */
-    margin: 10px 0; /* Add margin for spacing */
-}
+            display: flex; /* Use flexbox to align elements */
+            align-items: center; /* Center vertically */
+            margin: 10px 0; /* Add margin for spacing */
+        }
 
-.filter-select, .search-input {
-    border: none; /* Remove borders */
-    border-radius: 4px; /* Add rounded corners */
-    padding: 10px; /* Add padding for spacing */
-    margin-left: 10px; /* Add space between elements */
-    font-size: 16px; /* Increase font size */
-    outline: none; /* Remove outline on focus */
-}
+        .filter-select, .search-input {
+            border: none; /* Remove borders */
+            border-radius: 4px; /* Add rounded corners */
+            padding: 10px; /* Add padding for spacing */
+            margin-left: 10px; /* Add space between elements */
+            font-size: 16px; /* Increase font size */
+            outline: none; /* Remove outline on focus */
+        }
 
-.filter-select {
-    background-color: #ffff; /* Light gray background for select */
-    color: #333; /* Dark text color */
-    cursor: pointer; /* Change cursor to pointer */
-}
+        .filter-select {
+            background-color: #ffff; /* Light gray background for select */
+            color: #333; /* Dark text color */
+            cursor: pointer; /* Change cursor to pointer */
+        }
 
-.search-input {
-    background-color: #fff; /* White background for input */
-    color: #333; /* Dark text color */
-    width: 200px; /* Set a fixed width for input */
-}
+        .search-input {
+            background-color: #fff; /* White background for input */
+            color: #333; /* Dark text color */
+            width: 200px; /* Set a fixed width for input */
+        }
 
-.filter-select:hover, .search-input:hover {
-    background-color: #ffff; /* Darker gray on hover */
-}
+        .filter-select:hover, .search-input:hover {
+            background-color: #ffff; /* Darker gray on hover */
+        }
 
-.filter-select:focus, .search-input:focus {
-    border: 1px solid #007bff; /* Blue border on focus */
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Light blue shadow on focus */
-}
-.user-option {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
+        .filter-select:focus, .search-input:focus {
+            border: 1px solid #007bff; /* Blue border on focus */
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Light blue shadow on focus */
+        }
+        .user-option {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
 
-.user-image {
-    width: 30px; /* Size of the image */
-    height: 30px; /* Size of the image */
-    border-radius: 50%; /* Make the image circular */
-    background-size: cover;
-    background-position: center;
-    margin-right: 10px; /* Space between the image and the name */
-}
+        .user-image {
+            width: 30px; /* Size of the image */
+            height: 30px; /* Size of the image */
+            border-radius: 50%; /* Make the image circular */
+            background-size: cover;
+            background-position: center;
+            margin-right: 10px; /* Space between the image and the name */
+        }
 
-.info-icon {
-    position: absolute; /* Absolute positioning */
-    top: 10px; /* Position from the top */
-    right: 10px; /* Position from the right */
-    margin-left: auto; /* Push icon to the right */
-    cursor: pointer; /* Change cursor to pointer */
-    display: none; /* Initially hidden */
-    color: grey; /* Color of the icon */
-    font-size: 20px; /* Adjust icon size if necessary */
-}
+        .info-icon {
+            position: absolute; /* Absolute positioning */
+            top: 10px; /* Position from the top */
+            right: 10px; /* Position from the right */
+            margin-left: auto; /* Push icon to the right */
+            cursor: pointer; /* Change cursor to pointer */
+            display: none; /* Initially hidden */
+            color: grey; /* Color of the icon */
+            font-size: 20px; /* Adjust icon size if necessary */
+        }
 
-.document-item:hover .info-icon {
-    display: inline; /* Show icon on hover */
-}
-a {
-    color: inherit; /* This will inherit the color from the parent element */
-    text-decoration: none; /* This removes the underline */
-}
+        .document-item:hover .info-icon {
+            display: inline; /* Show icon on hover */
+        }
+        a {
+            color: inherit; /* This will inherit the color from the parent element */
+            text-decoration: none; /* This removes the underline */
+        }
 
 
-.document-item {
-    position: relative; /* Set the position relative to the document item */
-    min-width: 200px; /* Adjust based on your layout */
-    flex: 0 0 auto; /* Prevent items from shrinking */
-    text-align: center;
-}
+        .document-item {
+            position: relative; /* Set the position relative to the document item */
+            min-width: 200px; /* Adjust based on your layout */
+            flex: 0 0 auto; /* Prevent items from shrinking */
+            text-align: center;
+        }
 
 
 
@@ -281,23 +281,10 @@ a {
         <main>
         <div class="Title">
             <h1 class="title">
-                <a href="doc_folder.php" style="color: inherit; text-decoration: none;" 
-                    onmouseover="this.style.color='#9B2035'" 
-                    onmouseout="this.style.color='inherit'">Documents</a>
+                <a href="doc_dfolder.php" style="text-decoration: none; color: inherit;">Documents</a>
                 <i class="fas fa-angle-right" style="margin: 0 8px; color: #9B2035;"></i> <!-- Right angle icon -->
                 <i class="fas fa-folder" style="margin-left: 8px; color: gray;"></i> <!-- Gray folder icon -->
-                <a href="doc_gfolder.php" 
-                style="color: inherit; text-decoration: none;" 
-                onmouseover="this.style.color='#9B2035'" 
-                onmouseout="this.style.color='inherit'">
-                    <?php echo htmlspecialchars($departmentName); ?>
-                </a>
-
-                <i class="fas fa-angle-right" style="margin: 0 8px; color: #9B2035;"></i> <!-- Right angle icon -->
-                <i class="fas fa-folder" style="margin-left: 8px; color: gray;"></i> <!-- Gray folder icon -->
-                <?php echo htmlspecialchars($contentName); ?> <!-- Display Content Title - Captions -->
-
-                
+                <?php echo htmlspecialchars($departmentName); ?>   
             </h1>
         </div>
 
