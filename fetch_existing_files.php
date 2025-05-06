@@ -1,43 +1,57 @@
 <?php
 session_start();
 
-// Redirect to index.php if user is not logged in
+// Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
 
-// Include database connection
 include 'connection.php';
 
-$response = array('success' => false);
+$response = ['success' => false];
 
-// Check if task_id and content_id are set
-if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
+if (isset($_POST['task_id'])) {
     $task_id = $_POST['task_id'];
-    $content_id = $_POST['content_id'];
-    $user_id = $_SESSION['user_id']; // Get user ID from session
+    $content_id = isset($_POST['content_id']) && !empty($_POST['content_id']) ? $_POST['content_id'] : null;
+    $user_id = $_SESSION['user_id'];
 
-    // Fetch existing file IDs from database
-    $fetchQuery = "SELECT DocuID FROM documents WHERE UserID = '$user_id' AND TaskID = '$task_id' AND ContentID = '$content_id'";
-    $fetchResult = mysqli_query($conn, $fetchQuery);
-
-    if ($fetchResult) {
-        $existing_files = array();
-        while ($row = mysqli_fetch_assoc($fetchResult)) {
-            $existing_files[] = $row['DocuID'];
-        }
-        $response['success'] = true;
-        $response['existing_files'] = $existing_files;
+    // Prepare query with optional content_id
+    $query = "SELECT DocuID FROM documents WHERE UserID = ? AND TaskID = ? " . 
+             ($content_id ? "AND ContentID = ?" : "AND ContentID IS NULL");
+    
+    $stmt = $conn->prepare($query);
+    
+    if ($content_id) {
+        $stmt->bind_param("iii", $user_id, $task_id, $content_id);
     } else {
-        $response['error'] = "Error fetching existing files: " . mysqli_error($conn);
+        $stmt->bind_param("ii", $user_id, $task_id);
     }
+
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $doc_ids = [];
+        
+        while ($row = $result->fetch_assoc()) {
+            $doc_ids[] = $row['DocuID'];
+        }
+        
+        $response = [
+            'success' => true,
+            'doc_ids' => $doc_ids
+        ];
+    } else {
+        $response['error'] = "Database error";
+    }
+    
+    $stmt->close();
 } else {
-    $response['error'] = 'Task ID or Content ID missing.';
+    $response['error'] = 'Task ID required';
 }
 
 mysqli_close($conn);
 
-// Return JSON response
+header('Content-Type: application/json');
 echo json_encode($response);
+exit();
 ?>
