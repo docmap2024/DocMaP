@@ -260,6 +260,7 @@ $count_stmt->close();
         flex-direction: column;
         justify-content: space-between;
         margin: 10px;
+        opacity: 0.8;
     }
 
     .notification-item:last-child {
@@ -277,12 +278,14 @@ $count_stmt->close();
         border-left: 3px solid #9B2035;
         background-color: #ffffff;
         border: 1px solid #9B2035;
+        opacity: 1;
     }
 
     .notification-item.old-notification {
-        background-color:rgb(162, 161, 161);
-        border: 1px solidrgb(162, 162, 162);
+        background-color: #e0e0e0;
+        border: 1px solid #e0e0e0;
         color: gray;
+        opacity: 0.8;
     }
 
     /* Update notification content and timestamp color for old notifications */
