@@ -1912,7 +1912,7 @@ if (isset($_POST['task_id'])) {
             const formData = new FormData(document.getElementById('announcementForm'));
 
             // Make an AJAX request to your PHP script (upload_task.php)
-            fetch('upload_announcement.php', {
+            fetch('../Admin/upload_announcement.php', {
                 method: 'POST',
                 body: formData
             })
@@ -1960,7 +1960,7 @@ if (isset($_POST['task_id'])) {
             const formData = new FormData(document.getElementById('announcementForm'));
 
             // Make an AJAX request to your PHP script (upload_task.php)
-            fetch('upload_announcement.php', {
+            fetch('../Admin/upload_announcement.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2009,7 +2009,7 @@ if (isset($_POST['task_id'])) {
             const formData = new FormData(document.getElementById('announcementForm'));
 
             // Make an AJAX request to your PHP script (upload_task.php)
-            fetch('upload_announcement.php', {
+            fetch('../Admin/upload_announcement.php', {
                 method: 'POST',
                 body: formData
             })
@@ -2162,7 +2162,7 @@ if (isset($_POST['task_id'])) {
         // JavaScript code for autoUpdateScheduledTasks function
         window.addEventListener('load', function() {
             autoUpdateScheduledTasks();
-        });*/
+        });
         
         setInterval(autoUpdateScheduledTasks, 60000);
 
