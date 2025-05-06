@@ -248,7 +248,7 @@ $count_stmt->close();
         padding: 15px;
         margin: 0;
         border-bottom: 1px solid #f0f0f0;
-        background-color: white;
+        background-color: #e0e0e0;
         position: relative;
         transition: all 0.3s ease;
         border-radius: 10px;
