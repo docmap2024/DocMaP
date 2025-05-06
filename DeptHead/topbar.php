@@ -120,20 +120,13 @@ $count_stmt->close();
                 $stmt->fetch();
                 $stmt->close(); // Close statement after fetching results
 
-                // Build path to profile image
-                $profileImagePath = "img/UserProfile/" . $profileImage;
-
-                // Check if the profile image exists
-                if (file_exists($profileImagePath)) {
-                    echo "<span class='user-name'>{$fullName}</span>";
-                    echo "<img src='{$profileImagePath}' alt='Profile Image' class='profile-image'>";
-                } else {
-                    // Default image if profile image not found
-                    echo "<span class='user-name'>{$fullName}</span>";
-                    echo "<img src='default_profile_image.jpg' alt='Profile Image' class='profile-image'>";
-                }
-            } else {
-                echo "Error preparing statement: " . $conn->error;
+                $profileImagePath = !empty($profileImage) 
+                    ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profileImage
+                    : "default_profile_image.jpg";
+                
+                echo "<span class='user-name' id='profile-username'>{$fullName}</span>";
+                echo "<img src='{$profileImagePath}' alt='Profile Image' class='profile-image' id='profile-picture'>";
+            
             }
         } else {
             echo "User not logged in.";
