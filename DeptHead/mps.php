@@ -429,7 +429,7 @@ function fetchSchoolDetailsAndPrint() {
             <span class="signature-name" style="font-weight: bold; display: block; position: relative; z-index: 1; margin-top: 40px;">
                 ${data.Principal_FullName}
             </span>
-            <img src="../img/e_sig/${data.Principal_Signature}" 
+            <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Principal_Signature}" 
                 style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
         </div>
         <hr style="max-width: 50%; margin: 0 auto;" />
@@ -441,7 +441,7 @@ function fetchSchoolDetailsAndPrint() {
 <div class="footer" style="display: flex; align-items: center; justify-content: space-between; margin-top: 50px; padding: 10px; border-top: 2.5px solid black;">
     <div class="footer-left" style="display: flex; align-items: center; margin-left: 50px; flex: 1;">
         <img src="../img/Logo/DEPED_MATATAGLOGO.png" style="width: 280px; height: auto; margin-right: 10px;" />
-        <img src="../img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
+        <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/Logo/${data.Logo}" style="width: 110px; height: auto;" />
     </div>
     <div class="footer-right" style="text-align: left; font-size: 12px; flex: 2; margin-left:30px; font-size:18px;">
         <p>${data.Address} ${data.City_Muni} School ID: ${data.School_ID}</p>

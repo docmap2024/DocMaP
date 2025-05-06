@@ -659,7 +659,7 @@ function fetchSchoolDetailsAndPrint() {
                                 ${data.Teacher_FullName}
                             </span>
                             ${data.Teacher_Signature ? `
-                                <img src="img/e_sig/${data.Teacher_Signature}" 
+                                <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Teacher_Signature}"
                                     style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
                             ` : ''}
                         </div>
@@ -674,7 +674,7 @@ function fetchSchoolDetailsAndPrint() {
                                 ${data.Principal_FullName}
                             </span>
                             ${data.Principal_Signature ? `
-                                <img src="img/e_sig/${data.Principal_Signature}" 
+                                 <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Principal_Signature}"
                                     style="width:150px; height:auto; position: absolute; top: -25px; left: 50%; transform: translate(-50%, 0); opacity: 0.9; z-index: 2;" />
                             ` : ''}
                         </div>

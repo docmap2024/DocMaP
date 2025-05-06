@@ -373,9 +373,10 @@ $conn->close();
                         <div class="col-md-5 mt-5">
                             <div class="container-content">
                                 <?php if ($profile_picture): ?>
-                                    <div class="profile-container text-center">
-                                        <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                    </div>
+                                 <div class="profile-container text-center">
+                                    <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
+                                </div>
+
                                 <?php else: ?>
                                     <p class="text-center">No profile picture available.</p>
                                 <?php endif; ?>
