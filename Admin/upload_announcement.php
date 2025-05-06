@@ -4,7 +4,8 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
-
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 include 'connection.php';
 
 // Get data from form
@@ -37,6 +38,7 @@ if ($_POST['taskAction'] === 'Schedule') {
 // File upload handling
 $allFilesUploaded = true;
 $uploadedFiles = [];
+$uploadErrors = []; // Array to track upload errors
 
 if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FILES['file']['name'][0])) {
     $fileCount = count($_FILES['file']['name']);
@@ -51,8 +53,16 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
         $randomNumber = rand(100000, 999999);
         $fileName = $randomNumber . "_" . $fileOriginalName;
 
+        // Check if file was actually uploaded
+        if (!is_uploaded_file($fileTmpName)) {
+            $uploadErrors[] = "File not properly uploaded: $fileOriginalName";
+            $allFilesUploaded = false;
+            continue;
+        }
+
         // Check file size
         if ($fileSize > 5000000) {
+            $uploadErrors[] = "File too large (max 5MB): $fileOriginalName ($fileSize bytes)";
             $allFilesUploaded = false;
             continue;
         }
@@ -60,6 +70,7 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
         // Allow certain file formats
         $allowedTypes = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'pptx');
         if (!in_array($fileType, $allowedTypes)) {
+            $uploadErrors[] = "Invalid file type ($fileType): $fileOriginalName";
             $allFilesUploaded = false;
             continue;
         }
@@ -67,17 +78,24 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
         // GitHub Repository Details
         $githubRepo = "docmap2024/DocMaP";
         $branch = "main";
-        $uploadUrl = "https://api.github.com/repos/$githubRepo/contents//Admin/Attachments/$fileName";
+        $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/Attachments/$fileName"; // Fixed path
     
         // Fetch GitHub Token from Environment Variables
         $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
         if (!$githubToken) {
+            $uploadErrors[] = "GitHub token not configured - cannot upload: $fileOriginalName";
             $allFilesUploaded = false;
             continue;
         }
     
         // Prepare File Data for GitHub
         $fileContent = file_get_contents($fileTmpName);
+        if ($fileContent === false) {
+            $uploadErrors[] = "Could not read file contents: $fileOriginalName";
+            $allFilesUploaded = false;
+            continue;
+        }
+        
         $content = base64_encode($fileContent);
         $data = json_encode([
             "message" => "Adding a new file to upload folder",
@@ -102,15 +120,16 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     
         $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
+        
         if ($response === false) {
+            $uploadErrors[] = "GitHub API call failed for $fileOriginalName: " . curl_error($ch);
             $allFilesUploaded = false;
         } else {
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $responseData = json_decode($response, true);
+            
             if ($httpCode == 201) {
                 $githubDownloadUrl = $responseData['content']['download_url'];
-    
                 $uploadedFiles[] = [
                     'fileName' => $fileName,
                     'fileMimeType' => $fileMimeType,
@@ -118,6 +137,8 @@ if (isset($_FILES['file']) && count($_FILES['file']['name']) > 0 && !empty($_FIL
                     'target_file' => $githubDownloadUrl
                 ];
             } else {
+                $errorMsg = $responseData['message'] ?? 'Unknown error';
+                $uploadErrors[] = "GitHub upload failed for $fileOriginalName (HTTP $httpCode): $errorMsg";
                 $allFilesUploaded = false;
             }
         }
