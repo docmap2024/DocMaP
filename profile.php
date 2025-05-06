@@ -713,30 +713,55 @@ $conn->close();
 
 <script>
     $(document).ready(function () {
-    $('#viewEsignature').on('click', function () {
-        $.ajax({
-            url: 'fetch_esig.php', // Backend script to fetch the e-signature
-            type: 'POST',
-            dataType: 'json',
-            success: function (response) {
-                if (response.esig) {
-                    // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
-                } else {
-                    // Display "No Image" if the esig column is null
-                    $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
-                }
-            },
-            error: function () {
-                // Handle errors
-                $('#eSignatureBox').html('<p>Error fetching data.</p>');
+            // Function to load signature
+            function loadSignature() {
+                $.ajax({
+                    url: 'fetch_esig.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.esig) {
+                            // Add cache-busting parameter
+                            const timestamp = new Date().getTime();
+                            $('#eSignatureBox').html(`
+                                <img src="${response.esig}?t=${timestamp}" 
+                                    alt="E-Signature" 
+                                    class="img-fluid"
+                                    onerror="this.onerror=null;this.src='default_signature.png'">
+                            `);
+                        } else {
+                            $('#eSignatureBox').html(`
+                                <p class="text-muted">No signature available</p>
+                                <button class="btn btn-sm btn-primary mt-2" id="uploadEsigBtn">
+                                    Upload Signature
+                                </button>
+                            `);
+                        }
+                    },
+                    error: function () {
+                        $('#eSignatureBox').html(`
+                            <p class="text-danger">Error loading signature</p>
+                            <button class="btn btn-sm btn-primary mt-2" id="uploadEsigBtn">
+                                Upload Signature
+                            </button>
+                        `);
+                    }
+                });
             }
-        });
-    });
 
-    // Upload New E-Signature button action
-    
-});
+            // Load signature on page load
+            loadSignature();
+            
+            // Reload when view button clicked
+            $('#viewEsignature').on('click', function () {
+                loadSignature();
+            });
+
+            // Handle upload button if shown
+            $(document).on('click', '#uploadEsigBtn', function() {
+                $('#uploadESigModal').modal('show');
+            });
+        });
 
     $(document).ready(function () {
         // SweetAlert for Upload New E-Signature
