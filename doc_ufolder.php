@@ -20,7 +20,7 @@ $user_id = $_SESSION['user_id'];
 $userDeptQuery = "SELECT ud.Dept_ID, d.dept_name, d.dept_type 
                  FROM user_department ud
                  JOIN department d ON ud.Dept_ID = d.Dept_ID
-                 WHERE ud.User_ID = ?";
+                 WHERE ud.UserID = ?";
 $userDeptStmt = $conn->prepare($userDeptQuery);
 $userDeptStmt->bind_param("i", $user_id);
 $userDeptStmt->execute();
