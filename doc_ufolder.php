@@ -17,7 +17,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // 1. First, fetch the user's department(s)
-$userDeptQuery = "SELECT ud.Dept_ID, d.Name, d.dept_type 
+$userDeptQuery = "SELECT ud.Dept_ID, d.dept_name, d.dept_type 
                  FROM user_department ud
                  JOIN department d ON ud.Dept_ID = d.Dept_ID
                  WHERE ud.User_ID = ?";
