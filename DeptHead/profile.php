@@ -375,30 +375,40 @@ mysqli_close($conn);
                                 <div class="profile-container text-center">
                                     
                                     <img src="<?php echo $profileImagePath; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                </div>
+                                    <a href="#" class="btn-edit btn-custom position-absolute" 
+                                                style="bottom: 15px; right: 10px;"
+                                                data-toggle="modal" data-target="#uploadModal" 
+                                                id="btnedit">
+                                                    <i class='bx bx-pencil' style="font-size: 20px;"></i>
+                                                </a>
+                                </div>          
                             <?php else: ?>
                                 <p class="text-center">No profile picture available.</p>
                             <?php endif; ?>
 
 
-                                <div class="text-center mt-3 full-name"><?php echo $full_name; ?></div>
-                                <div class="container mt-3">
-                                    <div class="row justify-content-center">
-                                        <!-- Existing Buttons -->
+                            <div class="text-center mt-3 full-name"     ><?php echo $full_name; ?></div>
+    <div class="text-center text-muted"><?php echo $rank; ?></div> 
+    <div class="container mt-3">
+        <div class="row justify-content-center">
+            <!-- Existing Buttons -->
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
-                                                <a href="#" class="btn-edit btn-custom" data-toggle="modal" data-target="#uploadModal" id="btnedit">
-                                                    <i class='bx bx-image-add' style="font-size:20px;"></i>
-                                                </a>
+                                                
                                                 <a href="#" class="btn-custom " data-toggle="modal" data-target="#changePasswordModal">
                                                     Change Credentials
                                                 </a>
                                             </div>
                                         </div>
-                                        <!-- E-Signature Button -->
                                         <div class="col-12 text-center">
-                                           <a href="#" class="btn-custom btn btn-primary" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
-                                                View E-Signature
+
+                                        
+                                        </div>
+                                        <!-- New Button -->
+                                       <div class="col-12 text-center">
+                                            <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
+                                            id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
+                                                <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
                                             </a>
                                         </div>
 
@@ -427,25 +437,12 @@ mysqli_close($conn);
                                     </div>
                                 </div>
                                 
-                                <p class="text-center mt-3 font-weight-bold">Your Awards</p>
+                 
 
                                 <!-- Award Containers -->
-                                <div class="award-container d-flex align-items-center mb-2">
-                                    <div class="award-icon-container">
-                                        <i class='bx bx-award award-icon'></i>
-                                    </div>
-                                    <span class="award-text ml-2">Exemplary Contributor</span>
-                                </div>
-                                <div class="award-container d-flex align-items-center mb-2">
-                                    <div class="award-icon-container">
-                                        <i class='bx bx-upload award-icon'></i>
-                                    </div>
-                                    <span class="award-text ml-2">Top Uploader</span>
-                                </div>
+                               
                             </div>
-                        </div>
-
-                        <!-- Right Column -->
+                        </div>                        <!-- Right Column -->
                         <div class="col-md-7 mt-5">
                             <div class="container-content position-relative">
                                 <h4 class="d-flex justify-content-between align-items-center">
