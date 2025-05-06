@@ -22,7 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_id = $_SESSION['user_id'];
 
     // Get DueDate and DueTime
-    $sqlDueDate = "SELECT DueDate, DueTime FROM Tasks WHERE TaskID = ?";
+    $sqlDueDate = "SELECT DueDate, DueTime FROM tasks WHERE TaskID = ?";
     $stmtDueDate = $conn->prepare($sqlDueDate);
     $stmtDueDate->bind_param("i", $taskID);
     $stmtDueDate->execute();
@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $newStatus = ($currentDateTime < $dueDateTime) ? 'Assigned' : 'Missing';
 
         // Prepare Documents update query (with or without contentID)
-        $sqlUpdateDocuments = "UPDATE Documents SET status = ? WHERE TaskID = ? " . 
+        $sqlUpdateDocuments = "UPDATE documents SET status = ? WHERE TaskID = ? " . 
                             ($contentID ? "AND ContentID = ?" : "AND ContentID IS NULL") . 
                             " AND UserID = ?";
         
