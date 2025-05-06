@@ -1,5 +1,12 @@
 <?php
 session_start();
+
+// Redirect to index.php if user is not logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
+
 include 'connection.php';
 
 $response = array('success' => false, 'error' => null);
@@ -11,9 +18,47 @@ function write_log($message) {
     file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
 }
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit();
+function createNotification($conn, $user_id, $content_id, $task_id, $title, $content) {
+    $sql = "INSERT INTO notifications (UserID, ContentID, TaskID, Title, Content, Status, TimeStamp) 
+            VALUES (?, ?, ?, ?, ?, 1, NOW())";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iiiss", $user_id, $content_id, $task_id, $title, $content);
+
+    if ($stmt->execute()) {
+        return $stmt->insert_id; // Return the NotifID
+    } else {
+        $response['error'] = "Error creating notification: " . $stmt->error;
+        return false;
+    }
+}
+
+function getDepartmentHeadUserID($conn, $dept_ID) {
+    // Fetch the UserID of the Department Head for the department
+    $headQuery = "SELECT UserID FROM useracc WHERE dept_ID = ? AND role = 'Department Head'";
+    $headStmt = $conn->prepare($headQuery);
+    $headStmt->bind_param("i", $dept_ID);
+    $headStmt->execute();
+    $headResult = $headStmt->get_result();
+
+    if ($headResult && $headResult->num_rows > 0) {
+        $headRow = $headResult->fetch_assoc();
+        return $headRow['UserID']; // Return the Department Head's UserID
+    }
+
+    return false; // Return false if no department head is found
+}
+
+function getAdminUserID($conn) {
+    // Fetch the UserID of the Admin (assuming role = 'Admin')
+    $adminQuery = "SELECT UserID FROM useracc WHERE role = 'Admin' LIMIT 1";
+    $adminResult = mysqli_query($conn, $adminQuery);
+
+    if ($adminResult && mysqli_num_rows($adminResult) > 0) {
+        $adminRow = mysqli_fetch_assoc($adminResult);
+        return $adminRow['UserID']; // Return the Admin's UserID
+    }
+
+    return false; // Return false if no admin is found
 }
 
 if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
@@ -21,23 +66,24 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
     $content_id = $_POST['content_id'];
     $user_id = $_SESSION['user_id'];
 
-    // Update document status to 'Submitted' if not already submitted
-    $updateStatusQuery = "UPDATE documents SET Status = 1 WHERE UserID = '$user_id' AND TaskID = '$task_id' AND ContentID = '$content_id' AND Status != 1";
-    $updateStatusResult = mysqli_query($conn, $updateStatusQuery);
-
-    if (!$updateStatusResult) {
-        $response['error'] = "Error updating document status: " . mysqli_error($conn);
+    // Update previous document status
+    $updateStatusQuery = "UPDATE documents SET Status = 1 WHERE UserID = ? AND TaskID = ? AND ContentID = ? AND Status != 1";
+    $stmt = $conn->prepare($updateStatusQuery);
+    $stmt->bind_param("iii", $user_id, $task_id, $content_id);
+    if (!$stmt->execute()) {
+        $response['error'] = "Error updating document status: " . $stmt->error;
         echo json_encode($response);
         exit();
     }
 
-    // Handle file upload
+    // Process file uploads
     if (!empty($_FILES['files']['name'][0])) {
         foreach ($_FILES['files']['name'] as $key => $name) {
             $tmpPath = $_FILES['files']['tmp_name'][$key];
             $originalFileName = preg_replace('/[^a-zA-Z0-9\.\-_]/', '', $name);
             $uniqueFileName = sprintf('%06d_%s', random_int(100000, 999999), $originalFileName);
 
+            // Size validation (max 5MB)
             if ($_FILES['files']['size'][$key] > 5 * 1024 * 1024) {
                 $response['error'] = "File too large: $name (max 5MB)";
                 echo json_encode($response);
@@ -55,9 +101,8 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             // === GitHub Upload ===
             $repo = "docmap2024/DocMaP";
             $branch = "main";
-            $uploadPath = "Documents/" . $uniqueFileName;
+            $uploadPath = "Documents/" . $uniqueFileName; // Ensure it's always in Documents/
             $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
-
             write_log("Uploading to: $uploadUrl");
 
             $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
@@ -101,65 +146,152 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             $ghData = json_decode($responseGitHub, true);
             $downloadUrl = $ghData['content']['download_url'] ?? '';
 
-            // Retrieve GradeLevelFolderID
-            $gradeLevelQuery = "SELECT GradeLevelFolderID FROM gradelevelfolders WHERE ContentID = '$content_id' LIMIT 1";
-            $gradeLevelResult = mysqli_query($conn, $gradeLevelQuery);
+            // === Get GradeLevelFolderID ===
+            $gradeLevelID = null;
+            $gradeQuery = "SELECT GradeLevelFolderID FROM gradelevelfolders WHERE ContentID = ? LIMIT 1";
+            $stmt = $conn->prepare($gradeQuery);
+            $stmt->bind_param("i", $content_id);
+            $stmt->execute();
+            $stmt->bind_result($gradeLevelID);
+            $stmt->fetch();
+            $stmt->close();
 
-            if ($gradeLevelResult && mysqli_num_rows($gradeLevelResult) > 0) {
-                $gradeLevelRow = mysqli_fetch_assoc($gradeLevelResult);
-                $gradeLevelFolderID = $gradeLevelRow['GradeLevelFolderID'];
-            } else {
-                $response['error'] = "Error retrieving GradeLevelFolderID.";
+            if (!$gradeLevelID) {
+                $response['error'] = "GradeLevelFolderID not found.";
                 echo json_encode($response);
                 exit();
             }
 
-            // Get UserContentID
-            $getUserContentQuery = "SELECT UserContentID FROM usercontent WHERE UserID = '$user_id' AND ContentID = '$content_id'";
-            $getUserContentResult = mysqli_query($conn, $getUserContentQuery);
+            // === Get UserFolderID ===
+            $userContentID = null;
+            $stmt = $conn->prepare("SELECT UserContentID FROM usercontent WHERE UserID = ? AND ContentID = ?");
+            $stmt->bind_param("ii", $user_id, $content_id);
+            $stmt->execute();
+            $stmt->bind_result($userContentID);
+            $stmt->fetch();
+            $stmt->close();
 
-            if ($getUserContentResult && mysqli_num_rows($getUserContentResult) > 0) {
-                $userContentRow = mysqli_fetch_assoc($getUserContentResult);
-                $userContentID = $userContentRow['UserContentID'];
-
-                // Get UserFolderID
-                $getUserFolderQuery = "SELECT UserFolderID FROM userfolders WHERE UserContentID = '$userContentID'";
-                $getUserFolderResult = mysqli_query($conn, $getUserFolderQuery);
-
-                if ($getUserFolderResult && mysqli_num_rows($getUserFolderResult) > 0) {
-                    $userFolderRow = mysqli_fetch_assoc($getUserFolderResult);
-                    $userFolderID = $userFolderRow['UserFolderID'];
-
-                    // Insert into documents
-                    $insertQuery = "INSERT INTO documents 
-                        (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
-                        VALUES ('$gradeLevelFolderID', '$userFolderID', '$user_id', '$content_id', '$task_id', '$uniqueFileName', '$downloadUrl', 'application/octet-stream', 0, 1, NOW())";
-                    $insertResult = mysqli_query($conn, $insertQuery);
-
-                    if (!$insertResult) {
-                        $response['error'] = "Database insert failed: " . mysqli_error($conn);
-                        echo json_encode($response);
-                        exit();
-                    }
-
-                    $response['success'] = true;
-
-                } else {
-                    $response['error'] = "Error retrieving UserFolderID.";
-                    echo json_encode($response);
-                    exit();
-                }
-            } else {
-                $response['error'] = "Error retrieving UserContentID.";
+            if (!$userContentID) {
+                $response['error'] = "UserContentID not found.";
                 echo json_encode($response);
                 exit();
             }
+
+            $userFolderID = null;
+            $stmt = $conn->prepare("SELECT UserFolderID FROM userfolders WHERE UserContentID = ?");
+            $stmt->bind_param("i", $userContentID);
+            $stmt->execute();
+            $stmt->bind_result($userFolderID);
+            $stmt->fetch();
+            $stmt->close();
+
+            if (!$userFolderID) {
+                $response['error'] = "UserFolderID not found.";
+                echo json_encode($response);
+                exit();
+            }
+
+            // === Insert document ===
+            $stmt = $conn->prepare("INSERT INTO documents 
+                (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
+            $stmt->bind_param("iiiiiss", $gradeLevelID, $userFolderID, $user_id, $content_id, $task_id, $uniqueFileName, $downloadUrl);
+            if (!$stmt->execute()) {
+                $response['error'] = "Database insert failed: " . $stmt->error;
+                echo json_encode($response);
+                exit();
+            }
+
+            $response['success'] = true;
         }
     }
 
     // Update task_user status
-    $updateTaskUserQuery = "UPDATE task_user SET Status = 'Submitted', SubmitDate = NOW() WHERE TaskID = '$task_id' AND UserID = '$user_id' AND Status != 'Submitted'";
-    $updateTaskUserResult = mysqli_query($conn, $updateTaskUserQuery);
+    $updateTaskUser = $conn->prepare("UPDATE task_user SET Status = 'Submitted', SubmitDate = NOW() WHERE TaskID = ? AND UserID = ? AND Status != 'Submitted'");
+    $updateTaskUser->bind_param("ii", $task_id, $user_id);
+    $updateTaskUser->execute();
+
+    // Fetch Task Title
+    $taskTitleQuery = "SELECT Title FROM tasks WHERE TaskID = ?";
+    $taskTitleStmt = $conn->prepare($taskTitleQuery);
+    $taskTitleStmt->bind_param("i", $task_id);
+    $taskTitleStmt->execute();
+    $taskTitleResult = $taskTitleStmt->get_result();
+
+    if ($taskTitleResult && $taskTitleResult->num_rows > 0) {
+        $taskTitleRow = $taskTitleResult->fetch_assoc();
+        $taskTitle = $taskTitleRow['Title'];
+    } else {
+        $response['error'] = "Error fetching Task Title.";
+        echo json_encode($response);
+        exit();
+    }
+
+    // Fetch Full Name of the user
+    $userQuery = "SELECT fname, lname FROM useracc WHERE UserID = ?";
+    $userStmt = $conn->prepare($userQuery);
+    $userStmt->bind_param("i", $user_id);
+    $userStmt->execute();
+    $userResult = $userStmt->get_result();
+
+    if ($userResult && $userResult->num_rows > 0) {
+        $userRow = $userResult->fetch_assoc();
+        $fullName = $userRow['fname'] . ' ' . $userRow['lname'];
+    } else {
+        $response['error'] = "Error fetching user's full name.";
+        echo json_encode($response);
+        exit();
+    }
+
+    // Create notification
+    $title = "$fullName has submitted a task!";
+    $content = "A task has been submitted for \"$taskTitle\".";
+    
+    $notifID = createNotification($conn, $user_id, $content_id, $task_id, $title, $content);
+
+    if ($notifID) {
+        // Fetch the Department ID (dept_ID) based on the content_id
+        $deptQuery = "SELECT dept_ID FROM feedcontent WHERE ContentID = ?";
+        $deptStmt = $conn->prepare($deptQuery);
+        $deptStmt->bind_param("i", $content_id);
+        $deptStmt->execute();
+        $deptResult = $deptStmt->get_result();
+
+        if ($deptResult && $deptResult->num_rows > 0) {
+            $deptRow = $deptResult->fetch_assoc();
+            $dept_ID = $deptRow['dept_ID'];
+
+            // Fetch the Department Head's UserID
+            $department_head_user_id = getDepartmentHeadUserID($conn, $dept_ID);
+
+            // Fetch the Admin's UserID
+            $admin_user_id = getAdminUserID($conn);
+
+            // Insert into notif_user table for Department Head
+            if ($department_head_user_id) {
+                $status = 1;
+                $timestamp = date("Y-m-d H:i:s");
+
+                $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                $notifUserStmt->bind_param("iiss", $notifID, $department_head_user_id, $status, $timestamp);
+                $notifUserStmt->execute();
+                $notifUserStmt->close();
+            }
+
+            // Insert into notif_user table for Admin
+            if ($admin_user_id) {
+                $status = 1;
+                $timestamp = date("Y-m-d H:i:s");
+
+                $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                $notifUserStmt->bind_param("iiss", $notifID, $admin_user_id, $status, $timestamp);
+                $notifUserStmt->execute();
+                $notifUserStmt->close();
+            }
+        }
+    }
+} else {
+    $response['error'] = "Task ID and Content ID are required.";
 }
 
 echo json_encode($response);
