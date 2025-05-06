@@ -373,16 +373,21 @@ mysqli_close($conn);
                             ?>
 
                             <?php if ($profile_picture): ?>
-                                <div class="profile-container text-center">
-                                    
-                                    <img src="<?php echo $profileImagePath; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                    <a href="#" class="btn-edit btn-custom position-absolute" 
-                                                style="bottom: 15px; right: 10px;"
-                                                data-toggle="modal" data-target="#uploadModal" 
-                                                id="btnedit">
-                                                    <i class='bx bx-pencil' style="font-size: 20px;"></i>
-                                                </a>
-                                </div>          
+                                <div class="profile-container d-inline-block position-relative">
+            <img src="<?php echo $profileImagePath; ?>" 
+                 alt="Profile Picture" 
+                 class="profile-picture" 
+                 id="profile-picture"
+                 style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+
+            <!-- Edit icon on bottom-right of image -->
+            <a href="#" class="btn-edit btn-custom position-absolute" 
+               style="bottom: 15px; right: 10px;"
+               data-toggle="modal" data-target="#uploadModal" 
+               id="btnedit">
+                <i class='bx bx-pencil' style="font-size: 20px;"></i>
+            </a>
+        </div>        
                             <?php else: ?>
                                 <p class="text-center">No profile picture available.</p>
                             <?php endif; ?>
