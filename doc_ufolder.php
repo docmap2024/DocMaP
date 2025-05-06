@@ -16,7 +16,30 @@ if (!isset($_SESSION['user_id'])) {
 // Retrieve user_id from session
 $user_id = $_SESSION['user_id'];
 
-// Fetch folders based on user_id from session
+// 1. First, fetch the user's department(s)
+$userDeptQuery = "SELECT ud.Dept_ID, d.dept_name, d.dept_type 
+                 FROM user_department ud
+                 JOIN department d ON ud.Dept_ID = d.Dept_ID
+                 WHERE ud.User_ID = ?";
+$userDeptStmt = $conn->prepare($userDeptQuery);
+$userDeptStmt->bind_param("i", $user_id);
+$userDeptStmt->execute();
+$userDeptResult = $userDeptStmt->get_result();
+
+$userDepartments = [];
+$hasAdminDepartment = false;
+
+if ($userDeptResult && $userDeptResult->num_rows > 0) {
+    while ($deptRow = $userDeptResult->fetch_assoc()) {
+        $userDepartments[] = $deptRow;
+        if ($deptRow['dept_type'] === 'Administrative') {
+            $hasAdminDepartment = true;
+        }
+    }
+}
+
+// 2. Fetch user's personal folders (your existing query)
+$folders = [];
 $query = "SELECT uf.UserFolderID, uf.UserContentID, uf.Timestamp 
           FROM userfolders uf
           INNER JOIN usercontent uc ON uf.UserContentID = uc.UserContentID
@@ -26,31 +49,26 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $contentId = $row['UserContentID']; // UserContentID to retrieve ContentID
+// [Your existing folder processing code remains the same]
 
-        // Get ContentID and Title, Captions from feedcontent
-        $contentQuery = "SELECT fc.Title, fc.Captions 
-                         FROM feedcontent fc
-                         INNER JOIN usercontent uc ON uc.ContentID = fc.ContentID
-                         WHERE uc.UserContentID = ?";
-        $contentStmt = $conn->prepare($contentQuery);
-        $contentStmt->bind_param("i", $contentId);
-        $contentStmt->execute();
-        $contentResult = $contentStmt->get_result();
-
-        if ($contentResult && $contentResult->num_rows > 0) {
-            $contentRow = $contentResult->fetch_assoc();
-            $row['DisplayName'] = $contentRow['Title'] . ' - ' . $contentRow['Captions']; // Combine Title and Caption
-        } else {
-            $row['DisplayName'] = 'No title found';
+// 3. If user has administrative department, fetch those folders too
+if ($hasAdminDepartment) {
+    $adminQuery = "SELECT df.DepartmentFolderID as UserFolderID, df.Name as DisplayName
+                   FROM departmentfolders df
+                   JOIN department d ON df.dept_ID = d.Dept_ID
+                   WHERE d.dept_type = 'Administrative'";
+    $adminResult = mysqli_query($conn, $adminQuery);
+    
+    if ($adminResult && mysqli_num_rows($adminResult) > 0) {
+        while ($adminRow = mysqli_fetch_assoc($adminResult)) {
+            // Add administrative folders to the folders array
+            $folders[] = [
+                'UserFolderID' => 'admin_' . $adminRow['UserFolderID'], // Prefix to identify admin folders
+                'DisplayName' => $adminRow['DisplayName'],
+                'isAdminFolder' => true
+            ];
         }
-
-        $folders[] = $row; // Add folder to list
     }
-} else {
-    $folders = []; // No folders to display
 }
 ?>
 
@@ -128,25 +146,24 @@ if ($result && $result->num_rows > 0) {
         <div class="header">
             <h1 class="title">
                 <a href="doc_dfolder.php" style="text-decoration: none; color: inherit;"> My Documents</a>
-                
-                
-            
             </h1>
         </div>
-
-
             <div class="container">
                 <div class="search-filter">
                     <input type="text" placeholder="Search by name or title" id="search">
                 </div>
-
                 <div class="row"> 
                     <?php if (!empty($folders)): ?>
                         <?php foreach ($folders as $folder): ?>
-                            <div class="col-md-4"> <!-- 4 items per row -->
-                                <div class="folder-item" data-id="<?php echo $folder['UserFolderID']; ?>"> <!-- Use UserFolderID here -->
+                            <div class="col-md-4">
+                                <div class="folder-item" 
+                                    data-id="<?php echo $folder['UserFolderID']; ?>"
+                                    data-type="<?php echo isset($folder['isAdminFolder']) ? 'admin' : 'user'; ?>">
                                     <i class="fas fa-folder icon"></i>
                                     <h6 class="name"><?php echo $folder['DisplayName']; ?></h6>
+                                    <?php if (isset($folder['isAdminFolder']) && $folder['isAdminFolder']): ?>
+                                        <span class="badge badge-secondary">Admin</span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -154,19 +171,24 @@ if ($result && $result->num_rows > 0) {
                         <div class="no-folders-message">No folders found.</div>
                     <?php endif; ?>
                 </div>
-
             </div>
         </main>
     </section>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Add event listener for clicking folder items
             const folderItems = document.querySelectorAll('.folder-item');
             folderItems.forEach(item => {
                 item.addEventListener('click', function() {
                     const folderId = this.getAttribute('data-id');
-                    window.location.href = `doc_ugrade_content.php?id=${folderId}`; // Change to the appropriate next page
+                    const folderType = this.getAttribute('data-type');
+                    
+                    // Handle admin folders differently
+                    if (folderType === 'admin') {
+                        window.location.href = `doc_adminfolder.php?id=${folderId.replace('admin_', '')}`;
+                    } else {
+                        window.location.href = `doc_ugrade_content.php?id=${folderId}`;
+                    }
                 });
             });
 

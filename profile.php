@@ -370,59 +370,66 @@ $conn->close();
                 <div class="container">
                     <div class="row">
                          <!-- Left Column -->
-                         <div class="col-md-5 mt-5">
-                            <div class="container-content">
+                          <div class="col-md-5 mt-5">
+                            <div class="container-content text-center">
                             <?php
                             $profileImagePath = !empty($profile_picture)
                                 ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture
                                 : "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/profile.jpg";
                             ?>
 
-                           <?php if ($profile_picture): ?>
-                                <div class="profile-container text-center">
-                                    
-                                    <img src="<?php echo $profileImagePath; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                    <a href="#" class="btn-edit btn-custom position-absolute" 
-                                                style="bottom: 15px; right: 10px;"
-                                                data-toggle="modal" data-target="#uploadModal" 
-                                                id="btnedit">
-                                                    <i class='bx bx-pencil' style="font-size: 20px;"></i>
-                                                </a>
-                                </div>          
+                            <?php if ($profile_picture): ?>
+                                <div class="profile-container d-inline-block position-relative">
+                            <img src="<?php echo $profileImagePath; ?>" 
+                                alt="Profile Picture" 
+                                class="profile-picture" 
+                                id="profile-picture"
+                                style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+
+                            <!-- Edit icon on bottom-right of image -->
+                            <a href="#" class="btn-edit btn-custom position-absolute" 
+                            style="bottom: 15px; right: 10px;"
+                            data-toggle="modal" data-target="#uploadModal" 
+                            id="btnedit">
+                                <i class='bx bx-pencil' style="font-size: 20px;"></i>
+                            </a>
+                        </div>        
                             <?php else: ?>
                                 <p class="text-center">No profile picture available.</p>
                             <?php endif; ?>
 
 
-
-
-                                <div class="text-center mt-3 full-name"><?php echo $full_name; ?></div>
+                            <div class="text-center mt-3 full-name"     ><?php echo $full_name; ?></div>
+<<<<<<< HEAD
+                                <div class="text-center text-muted"><?php echo $rank; ?></div> 
                                 <div class="container mt-3">
                                     <div class="row justify-content-center">
                                         <!-- Existing Buttons -->
+=======
+                        <div class="text-center text-muted"><?php echo $rank; ?></div> 
+                        <div class="container mt-3">
+                            <div class="row justify-content-center">
+                                <!-- Existing Buttons -->
+>>>>>>> a312fa346249755f76af006f6290b0be9850a67c
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
-                                                <a href="#" class="btn-edit btn-custom" data-toggle="modal" data-target="#uploadModal" id="btnedit">
-                                                    <i class="material-icons" style="font-size: 20px;">person_add</i>
-
-                                                </a>
+                                                
                                                 <a href="#" class="btn-custom " data-toggle="modal" data-target="#changePasswordModal">
                                                     Change Credentials
                                                 </a>
                                             </div>
                                         </div>
+                                        <div class="col-12 text-center">
+
+                                        
+                                        </div>
                                         <!-- New Button -->
                                        <div class="col-12 text-center">
-                                            <a href="#" class="btn-custom <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
+                                            <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" 
                                             id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
-                                                <?php if ($has_esig): ?>
-                                                    <i class='bx bx-show'style ="font-size:20px;"></i> E-Signature
-                                                <?php else: ?>
-                                                    Upload E-Signature
-                                                <?php endif; ?>
+                                                <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
                                             </a>
                                         </div>
-
 
                                     </div>
                                 </div>
