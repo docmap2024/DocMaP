@@ -1056,7 +1056,7 @@ mysqli_close($conn);
                         // Create a clickable link to open the file in a new window/tab
                         var fileLink = document.createElement('a');
                         fileLink.textContent = displayFileName; // Display the filename without the prefix
-                        fileLink.href = 'Documents/' + file.name; // Replace with actual path to view the file
+                        fileLink.href = 'https://raw.githubusercontent.com/docmap2024/DocMaP/main/Documents/' + file.name; // Replace with actual path to view the file
                         fileLink.style.color = 'black'; 
                        
 
