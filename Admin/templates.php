@@ -29,7 +29,7 @@ function getFileIcon($filename) {
     }
 }
 
-$query = "SELECT t.TemplateID, t.name, t.filename, t.created_at, 
+$query = "SELECT t.TemplateID, t.name, t.filename, t.created_at, t.uri,
           CONCAT(u.fname, ' ', u.mname, '.', ' ', u.lname) AS uploaded_by 
           FROM templates t
           JOIN useracc u ON t.UserID = u.UserID";
@@ -166,8 +166,8 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                                     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                     <td>
                                         <!-- View Icon -->
-                                        <a href="<?php echo $row['uri']; ?>" target="_blank" class="btn btn-circle btn-view" title="View">
-                                            <i class="fas fa-eye"></i> <!-- View Icon (Font Awesome) -->
+                                        <a href="<?php echo htmlspecialchars($row['uri']); ?>" target="_blank" class="btn btn-circle btn-view" title="View">
+                                            <i class="fas fa-eye"></i>
                                         </a>
                                         <!-- Delete Icon -->
                                         <a href="#" class="btn btn-circle btn-delete" title="Delete" 
