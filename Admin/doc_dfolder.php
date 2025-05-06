@@ -103,10 +103,12 @@ if ($result && mysqli_num_rows($result) > 0) {
                 <div class="row"> 
                     <?php if (!empty($folders)): ?>
                         <?php foreach ($folders as $folder): ?>
-                            <div class="col-md-4 col-sm-6"> <!-- Use Bootstrap col classes for responsive layout -->
-                                <div class="folder-item" data-id="<?php echo $folder['DepartmentFolderID']; ?>">
+                            <div class="col-md-4 col-sm-6">
+                                <div class="folder-item" 
+                                    data-id="<?php echo $folder['DepartmentFolderID']; ?>"
+                                    data-dept-type="<?php echo htmlspecialchars($folder['dept_type'] ?? ''); ?>">
                                     <i class="fas fa-folder icon"></i>
-                                    <h6 class = "name"><?php echo htmlspecialchars($folder['Name']); ?></h6>
+                                    <h6 class="name"><?php echo htmlspecialchars($folder['Name']); ?></h6>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -128,14 +130,22 @@ if ($result && mysqli_num_rows($result) > 0) {
                     const folderId = this.getAttribute('data-id');
                     const deptType = this.getAttribute('data-dept-type');
                     
+                    console.log('Clicked folder:', {
+                        id: folderId,
+                        deptType: deptType
+                    });
+                    
                     // Redirect based on department type
                     if (deptType === 'Administrative') {
+                        console.log('Redirecting to admin folder');
                         window.location.href = `doc_adminfolder.php?id=${folderId}`;
                     } else {
+                        console.log('Redirecting to general folder');
                         window.location.href = `doc_gfolder.php?id=${folderId}`;
                     }
                 });
             });
+
 
             // Search functionality [remains the same]
             const searchInput = document.getElementById('search');
