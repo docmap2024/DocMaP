@@ -280,8 +280,8 @@ $count_stmt->close();
     }
 
     .notification-item.old-notification {
-        background-color: #f0f0f0;
-        border: 1px solid #e0e0e0;
+        background-color:rgb(162, 161, 161);
+        border: 1px solidrgb(162, 162, 162);
         color: gray;
     }
 
@@ -377,7 +377,7 @@ $count_stmt->close();
     // Mark all as read functionality
     document.querySelector('.mark-all-read').addEventListener('click', function() {
         // AJAX call to mark all notifications as read
-        fetch('../Admin/mark_notifications_read.php', {
+        fetch('mark_notifications_read.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
