@@ -49,11 +49,35 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
-// [Your existing folder processing code remains the same]
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $contentId = $row['UserContentID'];
+        
+        // Get ContentID and Title, Captions from feedcontent
+        $contentQuery = "SELECT fc.Title, fc.Captions 
+                         FROM feedcontent fc
+                         INNER JOIN usercontent uc ON uc.ContentID = fc.ContentID
+                         WHERE uc.UserContentID = ?";
+        $contentStmt = $conn->prepare($contentQuery);
+        $contentStmt->bind_param("i", $contentId);
+        $contentStmt->execute();
+        $contentResult = $contentStmt->get_result();
+
+        if ($contentResult && $contentResult->num_rows > 0) {
+            $contentRow = $contentResult->fetch_assoc();
+            $row['DisplayName'] = $contentRow['Title'] . ' - ' . $contentRow['Captions'];
+        } else {
+            $row['DisplayName'] = 'No title found';
+        }
+        
+        $row['Type'] = 'user'; // Mark as user folder
+        $folders[] = $row;
+    }
+}
 
 // 3. If user has administrative department, fetch those folders too
 if ($hasAdminDepartment) {
-    $adminQuery = "SELECT df.DepartmentFolderID as UserFolderID, df.Name as DisplayName
+    $adminQuery = "SELECT df.DepartmentFolderID, df.Name as DisplayName
                    FROM departmentfolders df
                    JOIN department d ON df.dept_ID = d.Dept_ID
                    WHERE d.dept_type = 'Administrative'";
@@ -63,9 +87,9 @@ if ($hasAdminDepartment) {
         while ($adminRow = mysqli_fetch_assoc($adminResult)) {
             // Add administrative folders to the folders array
             $folders[] = [
-                'UserFolderID' => 'admin_' . $adminRow['UserFolderID'], // Prefix to identify admin folders
+                'DepartmentFolderID' => $adminRow['DepartmentFolderID'],
                 'DisplayName' => $adminRow['DisplayName'],
-                'isAdminFolder' => true
+                'Type' => 'admin' // Mark as admin folder
             ];
         }
     }
@@ -77,7 +101,7 @@ if ($hasAdminDepartment) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
@@ -123,7 +147,7 @@ if ($hasAdminDepartment) {
             margin-right: 20px; /* Space between icon and text */
             color: #9B2035;
         }
-        .name{
+        .name {
             font-size: 22px;
         }
     </style>
@@ -143,29 +167,34 @@ if ($hasAdminDepartment) {
 
         <!-- MAIN -->
         <main>
-        <div class="header">
-            <h1 class="title">
-                <a href="doc_dfolder.php" style="text-decoration: none; color: inherit;"> My Documents</a>
-            </h1>
-        </div>
+            <div class="header">
+                <h1 class="title">
+                    <a href="doc_dfolder.php" style="text-decoration: none; color: inherit;"> My Documents</a>
+                </h1>
+            </div>
+
             <div class="container">
                 <div class="search-filter">
                     <input type="text" placeholder="Search by name or title" id="search">
                 </div>
+
                 <div class="row"> 
                     <?php if (!empty($folders)): ?>
                         <?php foreach ($folders as $folder): ?>
-                            <div class="col-md-4">
-                                <div class="folder-item" 
-                                    data-id="<?php echo $folder['UserFolderID']; ?>"
-                                    data-type="<?php echo isset($folder['isAdminFolder']) ? 'admin' : 'user'; ?>">
-                                    <i class="fas fa-folder icon"></i>
-                                    <h6 class="name"><?php echo $folder['DisplayName']; ?></h6>
-                                    <?php if (isset($folder['isAdminFolder']) && $folder['isAdminFolder']): ?>
-                                        <span class="badge badge-secondary">Admin</span>
-                                    <?php endif; ?>
+                            <?php 
+                            // Only show folder if:
+                            // 1. It's a user folder (always show), OR
+                            // 2. It's an admin folder AND user has admin department
+                            if ($folder['Type'] === 'user' || $hasAdminDepartment): ?>
+                                <div class="col-md-4">
+                                    <div class="folder-item" 
+                                        data-id="<?php echo $folder['Type'] === 'user' ? $folder['UserFolderID'] : $folder['DepartmentFolderID']; ?>" 
+                                        data-type="<?php echo $folder['Type']; ?>">
+                                        <i class="fas fa-folder icon"></i>
+                                        <h6 class="name"><?php echo $folder['DisplayName']; ?></h6>
+                                    </div>
                                 </div>
-                            </div>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <div class="no-folders-message">No folders found.</div>
@@ -177,17 +206,16 @@ if ($hasAdminDepartment) {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for clicking folder items
             const folderItems = document.querySelectorAll('.folder-item');
             folderItems.forEach(item => {
                 item.addEventListener('click', function() {
                     const folderId = this.getAttribute('data-id');
                     const folderType = this.getAttribute('data-type');
-                    
-                    // Handle admin folders differently
-                    if (folderType === 'admin') {
-                        window.location.href = `doc_adminfolder.php?id=${folderId.replace('admin_', '')}`;
+                    if (folderType === 'user') {
+                        window.location.href = `doc_ugrade_content.php?id=${folderId}`; // User folder link
                     } else {
-                        window.location.href = `doc_ugrade_content.php?id=${folderId}`;
+                        window.location.href = `doc_adminfolder.php?id=${folderId}`; // Department folder link
                     }
                 });
             });
@@ -200,7 +228,7 @@ if ($hasAdminDepartment) {
                 let visibleCount = 0; // To track the number of visible items
 
                 folderItems.forEach(item => {
-                    const folderName = item.querySelector('h3').textContent.toLowerCase();
+                    const folderName = item.querySelector('h6').textContent.toLowerCase();
                     if (folderName.includes(searchTerm)) {
                         item.style.display = 'flex'; // Maintain flex for visible items
                         visibleCount++; // Increment count of visible items
