@@ -8,31 +8,6 @@ if (!isset($_SESSION['user_id'])) {
 // Include your database connection file here
 include 'connection.php';
 
-// Log file path - now in /tmp directory
-$log_file = '/tmp/logfile.log';  // Changed to use /tmp
-
-// Function to log messages with /tmp support
-function logMessage($message) {
-    global $log_file;
-    
-    // Ensure directory exists and is writable
-    if (!file_exists('/tmp')) {
-        mkdir('/tmp', 0777, true);
-    }
-    
-    $log_entry = date('Y-m-d H:i:s') . " - " . $message . PHP_EOL;
-    
-    // Write to /tmp log file
-    if (file_put_contents($log_file, $log_entry, FILE_APPEND) === false) {
-        // Fallback to system error log if writing to /tmp fails
-        error_log("Failed to write to log file: " . $log_file);
-        error_log($log_entry);  // Write to default system log
-    }
-}
-
-ini_set('log_errors', 1);
-ini_set('error_log', $log_file);
-
 // Initialize variables
 $task_title = "";
 $task_description = "";
@@ -160,17 +135,8 @@ if (isset($_GET['task_id'])) {
     $taskID = $_GET['task_id'];
     $contentID = isset($_GET['content_id']) ? $_GET['content_id'] : null; // ContentID can be null
 
-    // Log all received parameters
-    logMessage("Received parameters: " . json_encode($_GET));
-
-    // Check for empty taskID and log specifically
-    if (empty($taskID)) {
-        logMessage("TaskID is missing or empty.");
-    }
-
+    // Check for empty taskID
     if (!empty($taskID)) {
-        logMessage("Fetching counts for TaskID: $taskID and ContentID: " . ($contentID ?? 'NULL'));
-
         // Base condition for the WHERE clause
         $baseCondition = "TaskID = '$taskID'";
         if ($contentID !== null) {
@@ -219,26 +185,16 @@ if (isset($_GET['task_id'])) {
             if ($stmtHandedIn->execute()) {
                 $resultHandedIn = $stmtHandedIn->get_result();
                 $handedInCount = $resultHandedIn->fetch_assoc()['handedInCount'];
-                logMessage("Handed In Count: $handedInCount");
-            } else {
-                logMessage("Error executing handed in query: " . $stmtHandedIn->error);
             }
             $stmtHandedIn->close();
-        } else {
-            logMessage("Error preparing handed in query: " . $conn->error);
         }
 
         if ($stmtAssigned = $conn->prepare($queryAssigned)) {
             if ($stmtAssigned->execute()) {
                 $resultAssigned = $stmtAssigned->get_result();
                 $assignedCount = $resultAssigned->fetch_assoc()['assignedCount'];
-                logMessage("Assigned Count: $assignedCount");
-            } else {
-                logMessage("Error executing assigned query: " . $stmtAssigned->error);
             }
             $stmtAssigned->close();
-        } else {
-            logMessage("Error preparing assigned query: " . $conn->error);
         }
 
         // Execute query to get missing count
@@ -246,13 +202,8 @@ if (isset($_GET['task_id'])) {
             if ($stmtMissing->execute()) {
                 $resultMissing = $stmtMissing->get_result();
                 $missingCount = $resultMissing->fetch_assoc()['missingCount'];
-                logMessage("Missing Count: $missingCount");
-            } else {
-                logMessage("Error executing missing query: " . $stmtMissing->error);
             }
             $stmtMissing->close();
-        } else {
-            logMessage("Error preparing missing query: " . $conn->error);
         }
 
         // Execute query to get approved count
@@ -260,13 +211,8 @@ if (isset($_GET['task_id'])) {
             if ($stmtApproved->execute()) {
                 $resultApproved = $stmtApproved->get_result();
                 $approvedCount = $resultApproved->fetch_assoc()['approvedCount'];
-                logMessage("Approved Count: $approvedCount");
-            } else {
-                logMessage("Error executing approved query: " . $stmtApproved->error);
             }
             $stmtApproved->close();
-        } else {
-            logMessage("Error preparing approved query: " . $conn->error);
         }
 
         // Execute query to get rejected count
@@ -274,25 +220,17 @@ if (isset($_GET['task_id'])) {
             if ($stmtRejected->execute()) {
                 $resultRejected = $stmtRejected->get_result();
                 $rejectedCount = $resultRejected->fetch_assoc()['rejectedCount'];
-                logMessage("Rejected Count: $rejectedCount");
-            } else {
-                logMessage("Error executing rejected query: " . $stmtRejected->error);
             }
             $stmtRejected->close();
-        } else {
-            logMessage("Error preparing rejected query: " . $conn->error);
         }
     }
 } else {
-    // Log specifically which parameter is missing
-    logMessage("TaskID parameter is missing.");
-
     // Set fallback values
-    $assignedCount = 0; // Or a fallback value
-    $handedInCount = 0; // Or a fallback value
-    $missingCount = 0; // Or a fallback value
-    $approvedCount = 0; // Or a fallback value
-    $rejectedCount = 0; // Or a fallback value
+    $assignedCount = 0;
+    $handedInCount = 0;
+    $missingCount = 0;
+    $approvedCount = 0;
+    $rejectedCount = 0;
 }
 
 // Close database connection
@@ -660,7 +598,9 @@ mysqli_close($conn);
                             <div class="taskUserContainer">
                                 <p class="taskUser"><?php echo htmlspecialchars($task_user_fname . ' ' . $task_user_lname); ?></p>
                                 <p class="taskDueDate">Posted: <?php echo htmlspecialchars($formatted_timestamp); ?></p>
-                                <p class="taskDueDate">Due: <?php echo htmlspecialchars($combined_date_time); ?></p>
+                                <?php if ($task_type === 'Task'): ?>
+                                    <p class="taskDueDate">Due: <?php echo htmlspecialchars($combined_date_time); ?></p>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                         <br>
