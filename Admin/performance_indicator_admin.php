@@ -592,12 +592,10 @@ if ($selectedYear === "All") {
                                 <div style="text-align: center; flex: 1;">
                                     <span style="font-weight:bold;">PREPARED BY:</span><br/><br/>
                                     <div style="margin-bottom: -60px; margin-top: -60px;">
-                                    <?php if (!empty($displayTeacherSignature)): ?>
-                                        <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/<?= htmlspecialchars($displayTeacherSignature) ?>" 
+                                        <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/<?php echo $displayTeacherSignature; ?>" 
                                             alt="Preparer Signature" 
-                                            style="height: 150px; width: 150px; margin-bottom: 5px;"
+                                            style="height: 150px; width: 150px; margin-bottom: 5px;" 
                                             onerror="this.style.display='none'">
-                                    <?php endif; ?>
                                     </div>
                                     <span style="font-weight:bold;">${preparerName}</span>
                                     <hr style="width: ${preparerHrWidth}; margin: 0 auto; border: 1px solid black;">
