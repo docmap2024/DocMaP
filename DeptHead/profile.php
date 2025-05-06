@@ -368,7 +368,7 @@ mysqli_close($conn);
                             <?php
                             $profileImagePath = !empty($profile_picture)
                                 ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture
-                                : "default_profile_image.jpg";
+                                : "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/profile.jpg";
                             ?>
 
                             <?php if ($profile_picture): ?>
