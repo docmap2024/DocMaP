@@ -482,8 +482,8 @@ function sendMessage() {
                             <div class="footer">
                                 <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
                                     <div class="footer-logo">
-                                        <img src="  ./img/Logo/DEPED_MATATAGLOGO.png" style="width: 170px; height: auto; margin-right: 10px;" />
-                                        `${data.Logo ? `<img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;">` : ''}` 
+                                        <img src="./img/Logo/DEPED_MATATAGLOGO.png" style="width: 170px; height: auto; margin-right: 10px;" />
+                                        ${data.Logo ? `<img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;">` : ''}
                                     </div>
                                     <div class="footer-details">
                                         <p style="margin-bottom: -5px;">${data.Address || ''} ${data.City_Muni || ''} ${data.School_ID ? 'School ID: ' + data.School_ID : ''}</p>
@@ -493,6 +493,7 @@ function sendMessage() {
                                 </div>
                             </div>
                         `;
+
 
                         printContent += footerContent;
 
