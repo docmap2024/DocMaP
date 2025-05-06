@@ -65,7 +65,7 @@ if (!empty($_FILES['files']['name'][0])) {
         $repo = "docmap2024/DocMaP";
         $branch = "main";
         $uploadPath = "Documents/" . $uniqueFileName;
-        $uploadUrl = "https://api.github.com/repos/$repo/contents/img/$uploadPath";
+        $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
 
         $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
         if (!$githubToken) {
