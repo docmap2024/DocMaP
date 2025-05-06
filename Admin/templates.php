@@ -29,7 +29,7 @@ function getFileIcon($filename) {
     }
 }
 
-$query = "SELECT t.TemplateID, t.name, t.filename, t.created_at, t.uri,
+$query = "SELECT t.TemplateID, t.name, t.filename, t.uri, t.created_at,
           CONCAT(u.fname, ' ', u.mname, '.', ' ', u.lname) AS uploaded_by 
           FROM templates t
           JOIN useracc u ON t.UserID = u.UserID";
@@ -166,8 +166,12 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                                     <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                     <td>
                                         <!-- View Icon -->
-                                        <a href="<?php echo htmlspecialchars($row['uri']); ?>" target="_blank" class="btn btn-circle btn-view" title="View">
-                                            <i class="fas fa-eye"></i>
+                                        <a href="<?php echo htmlspecialchars($row['uri']); ?>" 
+                                            target="_blank" 
+                                            class="btn btn-circle btn-view" 
+                                            title="View"
+                                            onclick="return checkFileExists(this.href);">
+                                                <i class="fas fa-eye"></i>
                                         </a>
                                         <!-- Delete Icon -->
                                         <a href="#" class="btn btn-circle btn-delete" title="Delete" 
@@ -248,48 +252,48 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-    $(document).ready(function() {
-        $('#uploadTemplateForm').on('submit', function(e) {
-            e.preventDefault(); // Prevent form submission
+        $(document).ready(function() {
+            $('#uploadTemplateForm').on('submit', function(e) {
+                e.preventDefault(); // Prevent form submission
 
-            var formData = new FormData(this);
+                var formData = new FormData(this);
 
-            $.ajax({
-                url: 'upload_template.php',
-                type: 'POST',
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function(response) {
-                    var result = JSON.parse(response);
-                    if (result.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Uploaded!',
-                            text: result.message,
-                        }).then(() => {
-                            $('#uploadModal').modal('hide'); // Hide modal
-                            location.reload(); // Reload page
-                        });
-                    } else {
+                $.ajax({
+                    url: 'upload_template.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        var result = JSON.parse(response);
+                        if (result.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Uploaded!',
+                                text: result.message,
+                            }).then(() => {
+                                $('#uploadModal').modal('hide'); // Hide modal
+                                location.reload(); // Reload page
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: result.message,
+                            });
+                        }
+                    },
+                    error: function() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Oops...',
-                            text: result.message,
+                            text: 'Something went wrong with the AJAX request.',
                         });
                     }
-                },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: 'Something went wrong with the AJAX request.',
-                    });
-                }
+                });
             });
         });
-    });
-</script>
+    </script>
     <script>
         function confirmDelete(templateId, filename) {
             Swal.fire({
@@ -317,6 +321,25 @@ $rowCount = mysqli_num_rows($result); // Get the number of rows returned
                 });
             });
         });
+    </script>
+    <script>
+        // Check if file exists before opening
+        function checkFileExists(url) {
+            fetch(url, { method: 'HEAD' })
+                .then(response => {
+                    if (!response.ok) {
+                        Swal.fire('Error', 'File not found on GitHub', 'error');
+                        return false;
+                    }
+                    window.open(url, '_blank'); // Open in new tab if exists
+                    return false; // Prevent default link behavior
+                })
+                .catch(() => {
+                    Swal.fire('Error', 'Could not access file', 'error');
+                    return false;
+                });
+            return true; // Fallback (shouldn't reach here)
+        }
     </script>
 </body>
 </html>
