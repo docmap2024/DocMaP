@@ -18,8 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['template_file'])) {
     // GitHub Repository Details
     $githubRepo = "docmap2024/DocMaP";
     $branch = "main";
-    $githubFileName = "Templates/" . $newFileName;
-    $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/Admin/$githubFileName";
+    $githubFileName = "Admin/Templates/" . $newFileName;
+    $uploadUrl = "https://api.github.com/repos/$githubRepo/contents/$githubFileName";
     
     // Fetch GitHub Token from Environment Variables
     $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
