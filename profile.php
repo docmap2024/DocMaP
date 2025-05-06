@@ -31,6 +31,7 @@ if ($result && $result->num_rows > 0) {
     $uname = $row['Username'];
     $password = $row['Password'];
     $mobile = $row['mobile'];
+     $rank = $row['URank'];
 
     // Age calculation
     $birthDate = new DateTime($bday);
