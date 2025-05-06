@@ -389,10 +389,10 @@ mysqli_close($conn);
 
 
                             <div class="text-center mt-3 full-name"     ><?php echo $full_name; ?></div>
-    <div class="text-center text-muted"><?php echo $rank; ?></div> 
-    <div class="container mt-3">
-        <div class="row justify-content-center">
-            <!-- Existing Buttons -->
+                                <div class="text-center text-muted"><?php echo $rank; ?></div> 
+                                <div class="container mt-3">
+                                    <div class="row justify-content-center">
+                                        <!-- Existing Buttons -->
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
                                                 

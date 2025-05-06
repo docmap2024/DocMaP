@@ -378,14 +378,21 @@ $conn->close();
                                 : "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/profile.jpg";
                             ?>
 
-                            <?php if ($profile_picture): ?>
+                           <?php if ($profile_picture): ?>
                                 <div class="profile-container text-center">
                                     
                                     <img src="<?php echo $profileImagePath; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
-                                </div>
+                                    <a href="#" class="btn-edit btn-custom position-absolute" 
+                                                style="bottom: 15px; right: 10px;"
+                                                data-toggle="modal" data-target="#uploadModal" 
+                                                id="btnedit">
+                                                    <i class='bx bx-pencil' style="font-size: 20px;"></i>
+                                                </a>
+                                </div>          
                             <?php else: ?>
                                 <p class="text-center">No profile picture available.</p>
                             <?php endif; ?>
+
 
 
 
