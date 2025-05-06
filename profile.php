@@ -441,22 +441,6 @@ $conn->close();
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <p class="text-center mt-3 font-weight-bold">Your Awards</p>
-
-                                <!-- Award Containers -->
-                                <div class="award-container d-flex align-items-center mb-2">
-                                    <div class="award-icon-container">
-                                        <i class='bx bx-award award-icon'></i>
-                                    </div>
-                                    <span class="award-text ml-2">Exemplary Contributor</span>
-                                </div>
-                                <div class="award-container d-flex align-items-center mb-2">
-                                    <div class="award-icon-container">
-                                        <i class='bx bx-upload award-icon'></i>
-                                    </div>
-                                    <span class="award-text ml-2">Top Uploader</span>
-                                </div>
                             </div>
                         </div>
 
