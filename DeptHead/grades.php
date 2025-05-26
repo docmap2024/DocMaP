@@ -417,7 +417,6 @@ button:hover {
         </main>
     
         <!-- Create Grade Modal -->
-        <!-- Create Grade Modal -->
         <div id="createModal" class="modal">
             <div class="modal-content">
                 <span class="close" id="createModalClose">&times;</span>
