@@ -40,7 +40,7 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // Construct the full path to the profile picture
-$profile_picture_path = 'img/UserProfile/' . $profile_picture;
+$profile_picture_path = '../img/UserProfile/' . $profile_picture;
 
 // Query to check if the user's e-signature column (esig) is NULL or not
 $esig_query = "SELECT esig FROM useracc WHERE UserID = $user_id";
@@ -166,7 +166,7 @@ mysqli_close($conn);
 
     .modal-illustration {
         flex: 1;
-        background: url("assets/images/passw.png") no-repeat center center;
+        background: url("../assets/images/passw.png") no-repeat center center;
         background-size: cover;
         height: 100%;
         min-height: 500px; /* Ensures a minimum height if the content is smaller */
@@ -365,32 +365,39 @@ mysqli_close($conn);
                     <div class="row">
                         <!-- Left Column -->
                         <div class="col-md-5 mt-5">
-                        <div class="container-content text-center">
-    <?php if ($profile_picture): ?>
-        <div class="profile-container d-inline-block position-relative">
-            <img src="<?php echo $profile_picture_path; ?>" 
-                 alt="Profile Picture" 
-                 class="profile-picture" 
-                 id="profile-picture"
-                 style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+                            <div class="container-content text-center">
+                            <?php
+                            $profileImagePath = !empty($profile_picture)
+                                ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture
+                                : "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/profile.jpg";
+                            ?>
 
-            <!-- Edit icon on bottom-right of image -->
-            <a href="#" class="btn-edit btn-custom position-absolute" 
-               style="bottom: 15px; right: 10px;"
-               data-toggle="modal" data-target="#uploadModal" 
-               id="btnedit">
-                <i class='bx bx-pencil' style="font-size: 20px;"></i>
-            </a>
-        </div>
-    <?php else: ?>
-        <p>No profile picture available.</p>
-    <?php endif; ?>
+                            <?php if ($profile_picture): ?>
+                                <div class="profile-container d-inline-block position-relative">
+                            <img src="<?php echo $profileImagePath; ?>" 
+                                alt="Profile Picture" 
+                                class="profile-picture" 
+                                id="profile-picture"
+                                style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
 
-    <div class="text-center mt-3 full-name"     ><?php echo $full_name; ?></div>
-    <div class="text-center text-muted"><?php echo $rank; ?></div> 
-    <div class="container mt-3">
-        <div class="row justify-content-center">
-            <!-- Existing Buttons -->
+                            <!-- Edit icon on bottom-right of image -->
+                            <a href="#" class="btn-edit btn-custom position-absolute" 
+                            style="bottom: 15px; right: 10px;"
+                            data-toggle="modal" data-target="#uploadModal" 
+                            id="btnedit">
+                                <i class='bx bx-pencil' style="font-size: 20px;"></i>
+                            </a>
+                        </div>        
+                            <?php else: ?>
+                                <p class="text-center">No profile picture available.</p>
+                            <?php endif; ?>
+
+
+                            <div class="text-center mt-3 full-name"     ><?php echo $full_name; ?></div>
+                        <div class="text-center text-muted"><?php echo $rank; ?></div> 
+                        <div class="container mt-3">
+                            <div class="row justify-content-center">
+                                <!-- Existing Buttons -->
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
                                                 
@@ -441,9 +448,7 @@ mysqli_close($conn);
                                 <!-- Award Containers -->
                                
                             </div>
-                        </div>
-
-                        <!-- Right Column -->
+                        </div>                        <!-- Right Column -->
                         <div class="col-md-7 mt-5">
                             <div class="container-content position-relative">
                                 <h4 class="d-flex justify-content-between align-items-center">
@@ -650,7 +655,7 @@ mysqli_close($conn);
                                         <!-- Form Section -->
                                         <div class="col-md-6 d-flex justify-content-center align-items-center">
                                             <div class="modal-form text-center">
-                                                <img src="img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
+                                                <img src="../img/Logo/docmap.png" alt="Logo" class="img-fluid mb-3">
                                                 <h2>Change Credentials</h2>
                                                 <div class="progress-bar mb-3">
                                                     <div class="progress-container">
@@ -691,30 +696,55 @@ mysqli_close($conn);
 
 <script>
     $(document).ready(function () {
-    $('#viewEsignature').on('click', function () {
-        $.ajax({
-            url: 'fetch_esig.php', // Backend script to fetch the e-signature
-            type: 'POST',
-            dataType: 'json',
-            success: function (response) {
-                if (response.esig) {
-                    // Display the fetched e-signature image
-                    $('#eSignatureBox').html(`<img src="img/e_sig/${response.esig}" alt="E-Signature" class="img-fluid">`);
-                } else {
-                    // Display "No Image" if the esig column is null
-                    $('#eSignatureBox').html('<p style="color: gray;">No E-Signature uploaded yet. Click the upload button to add your own e-signature.</p>');
-                }
-            },
-            error: function () {
-                // Handle errors
-                $('#eSignatureBox').html('<p>Error fetching data.</p>');
+            // Function to load signature
+            function loadSignature() {
+                $.ajax({
+                    url: 'fetch_esig.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.esig) {
+                            // Add cache-busting parameter
+                            const timestamp = new Date().getTime();
+                            $('#eSignatureBox').html(`
+                                <img src="${response.esig}?t=${timestamp}" 
+                                    alt="E-Signature" 
+                                    class="img-fluid"
+                                    onerror="this.onerror=null;this.src='default_signature.png'">
+                            `);
+                        } else {
+                            $('#eSignatureBox').html(`
+                                <p class="text-muted">No signature available</p>
+                                <button class="btn btn-sm btn-primary mt-2" id="uploadEsigBtn">
+                                    Upload Signature
+                                </button>
+                            `);
+                        }
+                    },
+                    error: function () {
+                        $('#eSignatureBox').html(`
+                            <p class="text-danger">Error loading signature</p>
+                            <button class="btn btn-sm btn-primary mt-2" id="uploadEsigBtn">
+                                Upload Signature
+                            </button>
+                        `);
+                    }
+                });
             }
-        });
-    });
 
-    // Upload New E-Signature button action
-    
-});
+            // Load signature on page load
+            loadSignature();
+            
+            // Reload when view button clicked
+            $('#viewEsignature').on('click', function () {
+                loadSignature();
+            });
+
+            // Handle upload button if shown
+            $(document).on('click', '#uploadEsigBtn', function() {
+                $('#uploadESigModal').modal('show');
+            });
+        });
 
 $(document).ready(function () {
     // SweetAlert for Upload New E-Signature
@@ -743,7 +773,7 @@ $(document).ready(function () {
         var formData = new FormData(this);
 
         $.ajax({
-            url: 'upload_esig.php', // The PHP script to handle upload
+            url: '../Admin/upload_esig.php', // The PHP script to handle upload
             type: 'POST',
             data: formData,
             contentType: false,
@@ -819,7 +849,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         };
 
         // Send data to the backend using AJAX
-        fetch('edit_user.php', {
+        fetch('../edit_user.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
@@ -902,7 +932,7 @@ $(document).ready(function () {
     var userId = $('#userId').val(); // Assuming you have a hidden input for userId
 
     $.ajax({
-        url: 'changepassword.php',
+        url: '../changepassword.php',
         type: 'POST',
         data: { email: email, userId: userId },
         success: function (response) {
