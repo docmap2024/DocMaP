@@ -309,7 +309,6 @@ if (isset($_GET['ContentID'])) {
                                 <select id="taskTypeFilter" onchange="filterTasks()">
                                     <option value="">All Types</option>
                                     <option value="Task">Task</option>
-                                    <option value="Reminder">Reminder</option>
                                     <option value="Announcement">Announcement</option>
                                 </select>
                                 <input type="text" id="searchBar" placeholder="Search tasks..." class="searchBar" oninput="filterTasks()">
@@ -343,7 +342,7 @@ if (isset($_GET['ContentID'])) {
                                         echo "</a>";
                                     }
                                 } else {
-                                    echo "<div class='no-tasks-message'>This is where you will see your tasks, announcements, and reminders for this classroom.</div>";
+                                    echo "<div class='no-tasks-message'>This is where you will see your tasks and announcements for this classroom.</div>";
                                 }
                                 ?>
                             </div>
