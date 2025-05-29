@@ -21,7 +21,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 }
 
 // Check if required fields are present in the decoded JSON
-if (!isset($data['fname'], $data['mname'], $data['lname'], $data['email'], $data['mobile'], $data['bday'], $data['sex'], $data['address'])) {
+if (!isset($data['fname'], $data['mname'], $data['lname'], $data['email'], $data['rank'], $data['mobile'], $data['bday'], $data['sex'], $data['address'])) {
     echo json_encode(array('status' => 'error', 'message' => 'Missing required fields.'));
     exit();
 }
@@ -31,13 +31,14 @@ $fname = mysqli_real_escape_string($conn, $data['fname']);
 $mname = mysqli_real_escape_string($conn, $data['mname']);
 $lname = mysqli_real_escape_string($conn, $data['lname']);
 $email = mysqli_real_escape_string($conn, $data['email']);
+$rank = mysqli_real_escape_string($conn, $data['rank']);
 $mobile = mysqli_real_escape_string($conn, $data['mobile']);
 $bday = mysqli_real_escape_string($conn, $data['bday']);
 $sex = mysqli_real_escape_string($conn, $data['sex']);
 $address = mysqli_real_escape_string($conn, $data['address']);
 
 // Update user details in the database
-$sql = "UPDATE useracc SET fname='$fname', mname='$mname', lname='$lname', email='$email', mobile='$mobile', bday='$bday', sex='$sex', address='$address' WHERE UserID = $user_id";
+$sql = "UPDATE useracc SET fname='$fname', mname='$mname', lname='$lname', email='$email', URank='$rank', mobile='$mobile', bday='$bday', sex='$sex', address='$address' WHERE UserID = $user_id";
 
 if (mysqli_query($conn, $sql)) {
     echo json_encode(array('status' => 'success', 'message' => 'User details updated successfully.'));

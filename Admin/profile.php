@@ -655,9 +655,18 @@ mysqli_close($conn);
                                         </div>
                                         <div class="row mb-3">
                                             
-                                            <div class="col-sm-12">
+                                            <div class="col-sm-8">
                                                 <label for="editEmail" class="form-label">Email</label>
                                                 <input type="email" class="form-control" id="editEmail" />
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <label for="editRank" class="form-label">Position</label>
+                                                <select class="form-control" id="editRank">
+                                                    <option value="Principal I">Principal I</option>
+                                                    <option value="Principal II">Principal II</option>
+                                                    <option value="Principal III">Principal III</option>
+                                                    <option value="Principal IV">Principal IV</option>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="row mb-3">
@@ -920,6 +929,7 @@ mysqli_close($conn);
                     const mname = "<?php echo isset($umname) ? htmlspecialchars($umname, ENT_QUOTES, 'UTF-8') : ''; ?>";
                     const lname = "<?php echo isset($ulname) ? htmlspecialchars($ulname, ENT_QUOTES, 'UTF-8') : ''; ?>";
                     const email = "<?php echo isset($email) ? htmlspecialchars($email, ENT_QUOTES, 'UTF-8') : ''; ?>";
+                    const rank = "<?php echo isset($rank) ? htmlspecialchars($rank, ENT_QUOTES, 'UTF-8') : ''; ?>";
                     const mobile = "<?php echo isset($mobile) ? htmlspecialchars($mobile, ENT_QUOTES, 'UTF-8') : ''; ?>";
                     const bday = "<?php echo isset($bday) ? htmlspecialchars($bday, ENT_QUOTES, 'UTF-8') : ''; ?>";
                     const sex = "<?php echo isset($sex) ? htmlspecialchars($sex, ENT_QUOTES, 'UTF-8') : ''; ?>";
@@ -929,6 +939,7 @@ mysqli_close($conn);
                     document.getElementById('editMname').value = mname;
                     document.getElementById('editLname').value = lname;
                     document.getElementById('editEmail').value = email;
+                    document.getElementById('editRank').value = rank;
                     document.getElementById('editMobile').value = mobile;
                     document.getElementById('editBday').value = bday;
                     document.getElementById('editSex').value = sex;
@@ -952,6 +963,7 @@ mysqli_close($conn);
                     mname: document.getElementById('editMname').value,
                     lname: document.getElementById('editLname').value,
                     email: document.getElementById('editEmail').value,
+                    rank: document.getElementById('editRank').value,
                     mobile: document.getElementById('editMobile').value,
                     bday: document.getElementById('editBday').value,
                     sex: document.getElementById('editSex').value,
