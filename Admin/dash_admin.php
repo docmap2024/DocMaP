@@ -337,7 +337,7 @@ $conn->close();
 
         .icon1 {
             color: #9b2035;
-            font-size: 40px;
+            font-size: 33px;
             position: absolute;
             top: 15px;
             right: 15px;
@@ -672,7 +672,7 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                     <!-- Top Row: Content -->
                                                     <div class="row">
                                                         <div class="col-6">
-                                                            <p style="font-weight: bold;margin-top:-20px; font-size: 20px;">Users</p>
+                                                            <p style="font-weight: bold;margin-top:-20px;">Users</p>
                                                             <h1 style="font-weight:bold; margin-top: -5px; margin-bottom: 25px;"><?php echo $totalUsers; ?></h1>
                                                         </div>
                                                         <div class="col-6 text-end">
@@ -708,11 +708,11 @@ if (isset($_SESSION['login_success']) && $_SESSION['login_success'] === true) {
                                                 <div class="card-body">
                                                     <!-- Top Row: Content -->
                                                     <div class="row">
-                                                        <div class="col-10">
-                                                            <p style="font-weight: bold; margin-top:-20px; font-size: 20px;">Departments</p>
+                                                        <div class="col-9">
+                                                            <p style="font-weight: bold; margin-top:-20px; font-size: 15px;">Departments</p>
                                                             <h1 style="font-weight:bold; margin-top: -5px; margin-bottom: 25px;"><?php echo $totalDepartment; ?></h1>
                                                         </div>
-                                                        <div class="col-2 text-end">
+                                                        <div class="col-3 text-end">
                                                             <i class="fa-solid fa-building icon1"></i>
                                                         </div>
                                                     </div>
