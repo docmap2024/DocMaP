@@ -1566,12 +1566,11 @@ mysqli_close($conn);
                     console.log(data); // Check the response in the console
                     console.log("../img/Logo/" + data.Logo);
 
-                    // Prepare the logo and school details for the print view
-                    var logo = data.Logo ? '<img src="../img/Logo/' + data.Logo + '" style="width: 130px; height: auto; margin-right:20px;" />' : '<p>No Logo Available</p>';
+                    
                     // Centered DepEd Logo
                     var depedLogo = `
                             <div style="text-align: center; margin-bottom: 15px;">
-                                <img src="../img/Logo/deped_logo.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
+                                <img src="../img/Logo/DEPEDLOGO.png" alt="DepEd Logo" style="width: 90px; height: auto;" />
                             </div>
                         `;
 
@@ -1607,7 +1606,7 @@ mysqli_close($conn);
                             <div style="text-align: center; flex: 1;">
                                 <span>Approved by:</span><br/><br/>
                                 <div style="margin-bottom: -55px; margin-top: -65px;">
-                                    <img src="img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                                    <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/e_sig/${data.Principal_Signature}" alt="Principal Signature" style="height: 150px; width: 150px; margin-bottom: 5px;" onerror="this.style.display='none'">
                                 </div>
                                 <span style="font-weight:bold;">${principalName}</span><br/>
                                 <hr style="width: ${principalHrWidth}; margin: 0 auto; border: 1px solid black;">
@@ -1621,7 +1620,7 @@ mysqli_close($conn);
                         <div class="footer">
                             <div style="display: flex; align-items: center; max-width: 100%; padding: 0 20px;">
                                 <div class="footer-logo">
-                                    <img src="  img/Logo/DEPED_MATATAGLOGO.PNG" style="width: 170px; height: auto; margin-right: 10px;" />
+                                    <img src="  ../img/Logo/DEPED_MATATAGLOGO.png" style="width: 170px; height: auto; margin-right: 10px;" />
                                     ${data.Logo ? `<img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/Logo/${data.Logo}" alt="School Logo" style="width: 80px; height: auto;" />` : ''}
                                 </div>
                                 <div class="footer-details">
