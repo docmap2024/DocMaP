@@ -13,20 +13,21 @@
         $deptName = $dept['dept_name'];
 
         // Fetch submitted and assigned task counts for each department
+        // Modified to include tasks with NULL ContentID by using LEFT JOIN and checking both conditions
         $submittedQuery = "SELECT COUNT(task_user.UserID) AS totalSubmit 
                    FROM task_user 
                    INNER JOIN tasks ON task_user.TaskID = tasks.TaskID
-                   INNER JOIN feedcontent ON task_user.ContentID = feedcontent.ContentID 
+                   LEFT JOIN feedcontent ON task_user.ContentID = feedcontent.ContentID 
                    WHERE task_user.Status = 'Submitted' 
                    AND tasks.Type = 'Task' 
-                   AND feedcontent.dept_ID = $deptID";
+                   AND (feedcontent.dept_ID = $deptID OR task_user.ContentID IS NULL)";
 
         $assignedQuery = "SELECT COUNT(task_user.UserID) AS totalAssigned 
                     FROM task_user 
                     INNER JOIN tasks ON task_user.TaskID = tasks.TaskID
-                    INNER JOIN feedcontent ON task_user.ContentID = feedcontent.ContentID 
+                    LEFT JOIN feedcontent ON task_user.ContentID = feedcontent.ContentID 
                     WHERE tasks.Type = 'Task' 
-                    AND feedcontent.dept_ID = $deptID";
+                    AND (feedcontent.dept_ID = $deptID OR task_user.ContentID IS NULL)";
 
         // Query to fetch user names and profile for the department
         $userQuery = "SELECT CONCAT(fname, ' ', mname, ' ', lname) AS fullname, profile 
