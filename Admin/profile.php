@@ -571,7 +571,7 @@ mysqli_close($conn);
                             <div class="container-content position-relative">
                                 <h4 class="d-flex justify-content-between align-items-center">
                                     User Information
-                                <button class="btn-custom" id="editButton" class="btn btn-primary" data-toggle="modal" data-target="#editModal">Edit User</button>
+                                <button class="btn-custom" id="editButton" class="btn btn-primary" data-toggle="modal" data-target="#editModal">Edit</button>
                                 </h4>
                                 <form>
                                     <div class="row">
