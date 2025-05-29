@@ -84,7 +84,8 @@ mysqli_close($conn);
             padding: 50px;
             border-radius: 8px;
             background-color: #fff; 
-            margin-bottom: 20px;  
+            width: 100%;
+            box-sizing: border-box;  
         }
 
         .profile-picture {
@@ -108,12 +109,13 @@ mysqli_close($conn);
             color: white;
             border: none;
             padding: 8px 12px;
-            border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
             border-radius: 50px;
             transition: all 0.3s ease-in-out;
             white-space: nowrap;
+            display: inline-block; /* Makes width adjust to content */
+            text-align: center;
         }
 
         /* Change color on hover */
@@ -168,11 +170,13 @@ mysqli_close($conn);
             text-align: left; /* Ensure text alignment for labels */
         }
         
-        .input-container label {
+       .input-container label {
             display: block;
             font-weight: bold;
             margin-bottom: 5px;
             text-align: left; /* Align label text to the left */
+            font-size: 16px; /* Label size */
+            transition: font-size 0.3s ease;
         }
         
         .input-container input {
@@ -180,6 +184,8 @@ mysqli_close($conn);
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
+            font-size: 16px; /* Default size */
+            transition: font-size 0.3s ease; /* Smooth transition when resizing */
         }
         .modal-dialog {
             display: flex;
@@ -334,15 +340,58 @@ mysqli_close($conn);
             animation: breathing 2.5s ease-in-out infinite;
         }
 
+        /* Responsive adjustments when sidebar is present */
+        @media (max-width: 992px) {
+            .container {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            /* Adjust profile section layout */
+            .container-content {
+                padding: 20px;
+            }
+            
+            .profile-picture {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .button-group {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .btn-custom {
+                padding: 8px 15px; /* Slightly reduce padding on smaller screens */
+                font-size: 14px; /* Optional: reduce font size */
+                min-width: auto; /* Adjust minimum width for mobile */
+            }
+
+            .input-container input {
+                font-size: 15px;
+                padding: 9px;
+            }
+            
+            .input-container label {
+                font-size: 13px;
+            }
+        }
+
         /* Stack columns on small screens */
         @media (max-width: 768px) {
             .col-md-5, .col-md-7 {
                 width: 100%;
             }
             
+            .container-content {
+                padding: 15px;
+            }
+
             .profile-picture {
-                width: 120px;
-                height: 120px;
+                width: 150px;
+                height: 150px;
             }
             
             .full-name {
@@ -351,16 +400,23 @@ mysqli_close($conn);
             
             .button-group {
                 flex-direction: column;
+                align-items: center; /* Center buttons in column layout */
                 gap: 8px;
             }
             
             .btn-custom {
-                margin-bottom: 8px;
+                padding: 8px 15px; /* Slightly reduce padding on smaller screens */
+                font-size: 14px; /* Optional: reduce font size */
+                min-width: auto; /* Adjust minimum width for mobile */
             }
 
             .input-container input {
                 padding: 8px;
                 font-size: 14px;
+            }
+
+            .input-container label {
+                font-size: 12px;
             }
             
             .modal-content {
@@ -381,6 +437,11 @@ mysqli_close($conn);
 
         /* Adjust modal for small screens */
         @media (max-width: 576px) {
+
+            .container-content {
+                padding: 10px;
+            }
+
             .modal-dialog.custom-modal {
                 margin: 0.5rem auto;
             }
@@ -397,6 +458,31 @@ mysqli_close($conn);
             .modal-form {
                 padding: 15px;
             }
+            .btn-custom {
+                padding: 8px 12px; /* Further reduce padding on very small screens */
+                min-width: auto; /* Remove minimum width if you want pure content-based sizing */
+            }
+
+            .profile-picture {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .btn-edit {
+                width: 25px;
+                height: 25px;
+                right: calc(50% - 40px + 5px); /* Adjusted for smaller image */
+            }
+            
+            .input-container input {
+                font-size: 13px;
+                padding: 7px;
+            }
+            
+            .input-container label {
+                font-size: 11px;
+            }
+            
         }
     </style>
 </head>
@@ -449,7 +535,7 @@ mysqli_close($conn);
                                         </div>
                                         <!-- E-Signature Button -->
                                         <div class="col-12 text-center">
-                                            <a href="#" class="btn-custom  btn btn-primary <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
+                                            <a href="#" class="btn-custom btn btn-primary <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
                                                 <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
                                             </a>
                                         </div>
@@ -485,7 +571,7 @@ mysqli_close($conn);
                             <div class="container-content position-relative">
                                 <h4 class="d-flex justify-content-between align-items-center">
                                     User Information
-                                <button id="editButton" class="btn btn-primary" data-toggle="modal" data-target="#editModal">Edit User</button>
+                                <button class="btn-custom" id="editButton" class="btn btn-primary" data-toggle="modal" data-target="#editModal">Edit User</button>
                                 </h4>
                                 <form>
                                     <div class="row">
