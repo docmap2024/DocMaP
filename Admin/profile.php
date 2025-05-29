@@ -29,6 +29,7 @@ if (mysqli_num_rows($result) > 0) {
     $address = $row['address'];
     $email = $row['email'];
     $uname = $row['Username'];
+    $rank = $row['URank'];
     $password = $row['Password'];
     $mobile = $row['mobile'];
 
@@ -39,8 +40,21 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // Construct the full path to the profile picture
-$profile_picture_path = "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture;
+$profile_picture_path = !empty($profile_picture)
+                    ? "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/" . $profile_picture
+                    : "https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/profile.jpg";
 
+
+// Query to check if the user's e-signature column (esig) is NULL or not
+$esig_query = "SELECT esig FROM useracc WHERE UserID = $user_id";
+$esig_result = mysqli_query($conn, $esig_query);
+
+// Check e-signature status
+$has_esig = false;
+if ($esig_result && mysqli_num_rows($esig_result) > 0) {
+    $esig_row = mysqli_fetch_assoc($esig_result);
+    $has_esig = !empty($esig_row['esig']); // If esig is not empty or NULL, user has a signature
+}
 
 // Close database connection
 mysqli_close($conn);
@@ -90,6 +104,15 @@ mysqli_close($conn);
             font-size: 16px;
             cursor: pointer;
             border-radius: 50px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Change color on hover */
+        .btn-custom:hover {
+            background-color: #7A192A; /* Darker red */
+            transform: scale(1.05); /* Slight pop effect */
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            color:#fff;
         }
 
         .btn-edit {
@@ -260,42 +283,23 @@ mysqli_close($conn);
         .modal-form button:hover {
             background-color: #861c2e;
         }
-        .award-container {
-            display: flex;
-            align-items: center;
-            border-radius: 10px;
-            padding: 10px 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin: 10px 0;
-            width: 100%;
-            position: relative;
-            background-color: #f0f0f0;
-        }
-        .award-icon-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #9b2035;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-right: 15px;
-        }
-        .award-icon {
-            font-size: 24px;
-            color: #fff;
-        }
-        .award-text {
-            font-size: 16px;
-            font-weight:bold;
-        }
+        
         .modal-backdrop {
             z-index: 1040 !important;
         }
 
         .modal {
             z-index: 1050 !important;
+        }
+
+        @keyframes breathing {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .breathing-alert {
+            animation: breathing 2.5s ease-in-out infinite;
         }
     </style>
 </head>
@@ -324,20 +328,23 @@ mysqli_close($conn);
                                 <?php if ($profile_picture): ?>
                                     <div class="profile-container text-center">
                                         <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
+                                    
+                                        <!-- Edit icon on bottom-right of image -->
+                                        <a href="#" class="btn-edit btn-custom position-absolute" style="bottom: 15px; right: 10px;" data-toggle="modal" data-target="#uploadModal" id="btnedit">
+                                            <i class='bx bx-pencil' style="font-size: 20px;"></i>
+                                        </a>
                                     </div>
                                 <?php else: ?>
                                     <p class="text-center">No profile picture available.</p>
                                 <?php endif; ?>
-
+                                        
                                 <div class="text-center mt-3 full-name"><?php echo $full_name; ?></div>
+                                <div class="text-center text-muted"><?php echo $rank; ?></div>
                                 <div class="container mt-3">
                                     <div class="row justify-content-center">
                                         <!-- Existing Buttons -->
                                         <div class="col-12 text-center mb-3">
                                             <div class="button-group">
-                                                <a href="#" class="btn-edit btn btn-primary" data-toggle="modal" data-target="#uploadModal" id="btnedit">
-                                                    <i class='bx bx-image-add' style="font-size:20px;"></i>
-                                                </a>
                                                 <a href="#" class="btn-custom btn btn-primary" data-toggle="modal" data-target="#changePasswordModal">
                                                     Change Credentials
                                                 </a>
@@ -345,8 +352,8 @@ mysqli_close($conn);
                                         </div>
                                         <!-- E-Signature Button -->
                                         <div class="col-12 text-center">
-                                           <a href="#" class="btn-custom btn btn-primary" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
-                                                View E-Signature
+                                           <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
+                                                <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
                                             </a>
                                         </div>
                                     </div>
@@ -372,22 +379,6 @@ mysqli_close($conn);
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-
-                                <p class="text-center mt-3 font-weight-bold">Your Awards</p>
-
-                                <!-- Award Containers -->
-                                <div class="award-container d-flex align-items-center mb-2">
-                                    <div class="award-icon-container">
-                                        <i class='bx bx-award award-icon'></i>
-                                    </div>
-                                    <span class="award-text ml-2">Exemplary Contributor</span>
-                                </div>
-                                <div class="award-container d-flex align-items-center mb-2">
-                                    <div class="award-icon-container">
-                                        <i class='bx bx-upload award-icon'></i>
-                                    </div>
-                                    <span class="award-text ml-2">Top Uploader</span>
                                 </div>
                             </div>
                         </div>
