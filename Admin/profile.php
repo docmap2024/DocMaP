@@ -327,7 +327,7 @@ mysqli_close($conn);
                             <div class="container-content">
                                 <?php if ($profile_picture): ?>
                                     <div class="profile-container text-center">
-                                        <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
+                                        <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
                                     
                                         <!-- Edit icon on bottom-right of image -->
                                         <a href="#" class="btn-edit btn-custom position-absolute" style="bottom: 15px; right: 10px;" data-toggle="modal" data-target="#uploadModal" id="btnedit">
