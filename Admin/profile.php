@@ -71,13 +71,20 @@ mysqli_close($conn);
     <title>Profile</title>
     <link rel="icon" type="image/png" href="../img/Logo/docmap-logo-1.png">
     <style>
-
+        .profile-container {
+            position: relative;
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            margin: 0 auto; /* Center the container itself */
+            width: fit-content; /* Make container only as wide as its content */
+        }
 
         .container-content {
             box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
             padding: 50px;
             border-radius: 8px;
-            background-color: #fff;   
+            background-color: #fff; 
+            margin-bottom: 20px;  
         }
 
         .profile-picture {
@@ -87,6 +94,7 @@ mysqli_close($conn);
             object-fit: cover;
             margin-bottom: 10px;
             position: relative;
+            display: block; /* Remove any default inline spacing */
         }
 
         .button-group {
@@ -99,12 +107,13 @@ mysqli_close($conn);
             background-color: #9B2035;
             color: white;
             border: none;
-            padding: 5px;
+            padding: 8px 12px;
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
             border-radius: 50px;
             transition: all 0.3s ease-in-out;
+            white-space: nowrap;
         }
 
         /* Change color on hover */
@@ -113,15 +122,38 @@ mysqli_close($conn);
             transform: scale(1.05); /* Slight pop effect */
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
             color:#fff;
+
         }
 
         .btn-edit {
+            position: absolute;
+            bottom: 10px;
+            right: calc(50% - 75px + 10px); /* Center calculation: (container width/2) - (image width/2) + offset */
             background-color: #9B2035;
             border-radius: 50%;
-            padding: 5px;
             width: 35px;
             height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
+            border: 2px solid white; /* Makes it stand out against the image */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-decoration: none !important; /* Remove underline */
+            transition: all 0.3s ease-in-out;
+        }
+
+        .btn-edit:hover {
+            background-color: #7A192A;
+            transform: scale(1.05);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            text-decoration: none !important; /* Ensure no underline on hover */
+            color: white;
+        }
+
+        /* Remove any inherited link styles */
+        .btn-edit, .btn-edit:hover, .btn-edit:focus, .btn-edit:active {
+            text-decoration: none !important;
         }
 
         .full-name {
@@ -301,6 +333,71 @@ mysqli_close($conn);
         .breathing-alert {
             animation: breathing 2.5s ease-in-out infinite;
         }
+
+        /* Stack columns on small screens */
+        @media (max-width: 768px) {
+            .col-md-5, .col-md-7 {
+                width: 100%;
+            }
+            
+            .profile-picture {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .full-name {
+                font-size: 18px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .btn-custom {
+                margin-bottom: 8px;
+            }
+
+            .input-container input {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 0 auto;
+            }
+            
+            .modal-form h2 {
+                font-size: 22px;
+            }
+            
+            .progress-step {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+        }
+
+        /* Adjust modal for small screens */
+        @media (max-width: 576px) {
+            .modal-dialog.custom-modal {
+                margin: 0.5rem auto;
+            }
+            
+            .modal-body.d-flex {
+                flex-direction: column;
+            }
+            
+            .modal-illustration {
+                min-height: 200px;
+                width: 100%;
+            }
+            
+            .modal-form {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 
@@ -326,11 +423,11 @@ mysqli_close($conn);
                         <div class="col-md-5 mt-5">
                             <div class="container-content">
                                 <?php if ($profile_picture): ?>
-                                    <div class="profile-container text-center">
-                                        <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+                                    <div class="profile-container">
+                                        <img src="<?php echo $profile_picture_path; ?>" alt="Profile Picture" class="profile-picture" id="profile-picture">
                                     
                                         <!-- Edit icon on bottom-right of image -->
-                                        <a href="#" class="btn-edit btn-custom position-absolute" style="bottom: 15px; right: 10px;" data-toggle="modal" data-target="#uploadModal" id="btnedit">
+                                        <a href="#" class="btn-edit" data-toggle="modal" data-target="#uploadModal" id="btnedit">
                                             <i class='bx bx-pencil' style="font-size: 20px;"></i>
                                         </a>
                                     </div>
@@ -352,7 +449,7 @@ mysqli_close($conn);
                                         </div>
                                         <!-- E-Signature Button -->
                                         <div class="col-12 text-center">
-                                           <a href="#" class="btn-custom  <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
+                                            <a href="#" class="btn-custom  btn btn-primary <?php echo !$has_esig ? 'breathing-alert' : ''; ?>" id="viewEsignature" data-toggle="modal" data-target="#eSignatureModal">
                                                 <?php echo $has_esig ? "View E-Signature" : "Upload E-Signature"; ?>
                                             </a>
                                         </div>
