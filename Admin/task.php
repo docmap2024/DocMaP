@@ -130,7 +130,7 @@ if (isset($_POST['task_id'])) {
 }
 
 // Fetch title
-$query = "SELECT DISTINCT Title FROM tasks WHERE Type='Task' ORDER BY Timestamp DESC";
+$query = "SELECT DISTINCT Title, TimeStamp FROM tasks WHERE Type='Task' ORDER BY Timestamp DESC";
 $result = $conn->query($query);
 
 // Fetch instructions based on the selected title
