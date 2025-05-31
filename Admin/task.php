@@ -130,7 +130,7 @@ if (isset($_POST['task_id'])) {
 }
 
 // Fetch title
-$query = "SELECT DISTINCT Title FROM tasks WHERE Type='Task'";
+$query = "SELECT DISTINCT Title FROM tasks WHERE Type='Task' ORDER BY Timestamp DESC";
 $result = $conn->query($query);
 
 // Fetch instructions based on the selected title
@@ -1937,40 +1937,151 @@ if (isset($_GET['title'])) {
     <script>
         // Initialize CKEditor
         ClassicEditor
-            .create(document.querySelector('#editor'), {
-                placeholder: 'Enter details here...' // Set placeholder text
-            })
-            .then(editor => {
-                window.editor = editor; // Make the editor instance globally available
-
-                // Sync editor data to the hidden textarea
-                editor.model.document.on('change:data', () => {
-                    document.querySelector('#instructions').value = editor.getData();
-                });
-
-                // Apply a fixed width to the editor's outermost container
-                editor.ui.view.editable.element.closest('.ck-editor').style.maxWidth = '560px';
-            })
-            .catch(error => {
-                console.error('Error initializing CKEditor:', error);
+        .create(document.querySelector('#editor'), {
+            placeholder: 'Enter details here...',
+            toolbar: {
+                items: [
+                    'undo', 'redo', '|',
+                    'heading', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', '|',
+                    'bulletedList', 'numberedList', '|',
+                    'link', 'blockQuote', 'insertTable', 'imageUpload', 'mediaEmbed', '|',
+                    'alignment'
+                ],
+                shouldNotGroupWhenFull: true
+            },
+            alignment: {
+                options: ['left', 'center', 'right', 'justify']
+            },
+            image: {
+                toolbar: [
+                    'imageTextAlternative',
+                    'toggleImageCaption',
+                    'imageStyle:inline',
+                    'imageStyle:block',
+                    'imageStyle:side',
+                    'linkImage'
+                ],
+                upload: {
+                    types: ['jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'],
+                    defaultUploadMethod: 'base64'
+                }
+            },
+            mediaEmbed: {
+                previewsInData: true,
+                removeProviders: [
+                    'facebook',
+                    'instagram',
+                    'twitter',
+                    'googleMaps'
+                ]
+            },
+            ui: {
+                viewportOffset: {
+                    top: 60,
+                    bottom: 60
+                }
+            },
+            extraPlugins: [
+            'ImageUpload', 
+            'MediaEmbed'
+            ]
+        })
+        .then(editor => {
+            window.editor = editor;
+            
+            // Register the upload adapter
+            editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+                return new MyUploadAdapter(loader);
+            };
+            
+            // Make editor fully responsive
+            editor.ui.view.editable.element.style.minWidth = '0';
+            editor.ui.view.editable.element.style.maxWidth = '100%';
+            
+            // Handle content sync
+            editor.model.document.on('change:data', () => {
+                document.querySelector('#instructions').value = editor.getData();
             });
+            
+            // Handle window resize
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    editor.editing.view.change(writer => {
+                        writer.setStyle('width', '100%', editor.editing.view.document.getRoot());
+                    });
+                }
+            });
+            
+            resizeObserver.observe(editor.ui.view.editable.element);
+        })
+        .catch(error => {
+            console.error('Error initializing CKEditor:', error);
+        });
 
-        // Function to set the selected title and fetch taskContent
+        // Upload adapter implementation
+        class MyUploadAdapter {
+            constructor(loader) {
+                this.loader = loader;
+            }
+
+            upload() {
+                return this.loader.file
+                    .then(file => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            resolve({ 
+                                default: reader.result,
+                                // Additional response data if needed
+                                urls: {
+                                    default: reader.result
+                                }
+                            });
+                        };
+                        reader.onerror = () => reject(reader.error);
+                        reader.readAsDataURL(file);
+                    }));
+            }
+
+            abort() {
+                // Implement if needed
+            }
+        }
+
+        // Function to toggle title dropdown
+        function titletoggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.classList.toggle('show');
+        }
+
+        // Function to close title dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const titleDropdown = document.getElementById('titleDropdown');
+            const titleToggle = document.querySelector('.title-dropdown-toggle');
+            
+            // Check if click is outside both the dropdown and the toggle button
+            if (titleDropdown && titleToggle && 
+                !titleDropdown.contains(event.target) && 
+                !titleToggle.contains(event.target)) {
+                titleDropdown.classList.remove('show');
+            }
+        });
+
+        // Modify your setTitle function to prevent event bubbling
         function setTitle(title) {
             document.getElementById('title').value = title;
             titletoggleDropdown('titleDropdown');
+            event.stopPropagation(); // Prevent the click from bubbling up
 
-            // Fetch instructions for the selected title
+            // Rest of your existing setTitle function...
             fetch(`?title=${encodeURIComponent(title)}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Fetched data:", data); // Debugging
+                    console.log("Fetched data:", data);
                     if (data && data.taskContent) {
-                        console.log("Updating instructions field with:", data.taskContent); // Debugging
-
-                        // Update the CKEditor content
+                        console.log("Updating instructions field with:", data.taskContent);
                         if (typeof editor !== 'undefined') {
-                            editor.setData(data.taskContent) // Set the content in CKEditor
+                            editor.setData(data.taskContent)
                                 .then(() => {
                                     console.log("CKEditor content updated successfully");
                                 })
@@ -1981,7 +2092,7 @@ if (isset($_GET['title'])) {
                             console.error("CKEditor instance is not available");
                         }
                     } else {
-                        console.log("No taskContent found in the response"); // Debugging
+                        console.log("No taskContent found in the response");
                     }
                 })
                 .catch(error => console.error('Error fetching instructions:', error));
