@@ -235,35 +235,35 @@ if (isset($_GET['title'])) {
             resize: vertical; /* Allows vertical resizing only */
         }
 
-        .modal {
+        .modal, .update-modal, .scheduleModal, .updatescheduleModal {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 1050;
             left: 0;
             top: 0;
-            width: 118vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
+            width: 100%;
+            height: 100%;
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.4);
-            padding-top: 60px;
+            padding: 20px 0;
+            box-sizing: border-box;
         }
 
 
-        .modal-content {
+        .modal-content, .update-modal-content {
             background-color: #fefefe;
-            margin: auto;
+            margin: 0 auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 100vw; /* 80% of viewport width */
-            max-width: 1200px; /* Optional: maximum width */
-            height: 85vh; /* 80% of viewport height */
-            max-height: 800px; /* Optional: maximum height */
+            width: 90%;
+            max-width: 1200px;
+            height: auto;
+            max-height: 200vh;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            overflow-y: auto; /* Scroll if content exceeds the height */
+            overflow-y: auto;
             position: relative;
-            top: 50%; /* Center the modal vertically */
-            transform: translateY(-50%); /* Center the modal vertically */
+            box-sizing: border-box;
         }
 
         .modal-header {
@@ -309,6 +309,7 @@ if (isset($_GET['title'])) {
             margin-top: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             background-color: #fff;
+            table-layout: fixed;
         }
 
         table th, table td {
@@ -401,37 +402,6 @@ if (isset($_GET['title'])) {
             resize: vertical; /* Allows vertical resizing only */
             height: 160px; /* Adjust the height as needed */
         }
-
-        .update-modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 118vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
-            padding-top: 60px;
-        }
-
-        .update-modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 70vw; /* 100% of viewport width */
-            max-width: 1200px; /* Optional: maximum width */
-            height: 65vh; /* 70% of viewport height */
-            max-height: 800px; /* Optional: maximum height */
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            overflow-y: auto; /* Scroll if content exceeds the height */
-            position: relative;
-            top: 50%; /* Center the modal vertically */
-            transform: translateY(-50%); /* Center the modal vertically */
-        }
-
 
         .update-modal-container{
             margin-top: -40px;
@@ -542,7 +512,6 @@ if (isset($_GET['title'])) {
             border-bottom: 1px solid #ddd;
             background-color: #fff;
             max-width: 200px; /* Adjust width as needed */
-            white-space: nowrap; /* Prevent text wrapping */
             overflow: hidden; /* Hide overflow text */
             text-overflow: ellipsis; /* Add ellipsis */
         }
@@ -550,8 +519,12 @@ if (isset($_GET['title'])) {
         table td p {
             margin: 0; /* Remove default margins */
             line-height: 1.4; /* Improve readability */
+            white-space: normal; /* Allow text to wrap */
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* Limit to 3 lines */
+            -webkit-box-orient: vertical;
         }
-
 
         .search-container {
             display: flex;
@@ -592,6 +565,7 @@ if (isset($_GET['title'])) {
             cursor: pointer;
             transition: background-color 0.3s, border-color 0.3s;
             width: 100%;
+            text-align: left;
         }
 
         .dropdown-toggle:focus {
@@ -603,18 +577,17 @@ if (isset($_GET['title'])) {
             display: none;
             position: absolute;
             background-color: white; /* Set background to white */
-            max-width: 230px;
+            min-width: 230px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             z-index: 1;
             margin-top: 5px;
             border-radius: 4px;
-            /* Remove the gradient */
-            /* background: linear-gradient(to bottom, #f0f0f0, #e0e0e0); */
+            padding: 8px 0;
         }
 
         .dropdown-menu.show {
             display: block;
-            max-height: 380px; /* Adjust this value as needed */
+            max-height: 289px; /* Adjust this value as needed */
             overflow-y: auto;
             scroll-behavior: smooth;
             background-color: white; /* Set background to white */
@@ -640,56 +613,57 @@ if (isset($_GET['title'])) {
         }
 
         .custom-checkbox {
-        outline: none !important;
-        box-shadow: none !important;
-        background: transparent;
-        border: none;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent;
+            border: none;
+            position: relative;
         }
 
         .custom-checkbox:focus {
-        outline: none !important;
-        box-shadow: none !important;
-        background: transparent;
+            outline: none !important;
+            box-shadow: none !important;
+            background: transparent;
         }
 
         .checkbox-all-container input[type="checkbox"], 
         .checkbox-container input[type="checkbox"] {
-        margin-left: -65px;
-        margin-right: -77px; /* Adds space between checkbox and label */
-        cursor: pointer;
-        border: 1px solid #ccc;
-        border-radius: 3px;
+            margin-left: -65px;
+            margin-right: -77px; /* Adds space between checkbox and label */
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 3px;
         }
 
         .checkbox-container label,
         .checkbox-all-container label {
-        cursor: pointer;
-        /* Remove inline-block and use flexbox for better control */
-        /* display: inline-block; */
-        margin-left: 5px;
-        transition: color 0.2s ease;
-        /* Center the label text */
-        text-align: left;
-        /* Add width to the label for better justification */
-        width: 100%;
+            cursor: pointer;
+            /* Remove inline-block and use flexbox for better control */
+            /* display: inline-block; */
+            margin-left: 5px;
+            transition: color 0.2s ease;
+            /* Center the label text */
+            text-align: left;
+            /* Add width to the label for better justification */
+            width: 100%;
         }
 
         .checkbox-container label:hover,
         .checkbox-all-container label:hover,
         .checkbox-container input:hover,
         .checkbox-all-container input:hover {
-        color: #9b2035;
+            color: #9b2035;
         }
 
         .checkbox-container input:checked + label,
         .checkbox-all-container input:checked + label {
-        color: #9b2035;
+            color: #9b2035;
         }
 
         .checkbox-container input:checked,
         .checkbox-all-container input:checked {
-        background-color: #9b2035;
-        border-color:#9b2035;
+            background-color: #9b2035;
+            border-color:#9b2035;
         }
         /* Style for the dropdown button with arrow */
         .submitdropdown-toggle {
@@ -754,33 +728,20 @@ if (isset($_GET['title'])) {
 
 
         /*------------------------Schedule Modal-----------------------------------*/
-        .scheduleModal, .updatescheduleModal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
-        }
-
         .small-modal {
-            position: absolute; /* Position it absolutely within the modal */
             background-color: #fefefe;
+            margin: 0 auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 80%; /* Default width for other modals */
-            max-width: 300px; /* Set a maximum width */
-            max-height: 350px; /* Set a maximum height */
-            overflow-y: auto; /* Allow scrolling if content is too tall */
-            border-radius: 5px; /* Slightly rounded corners */
-            
-            /* Centering the modal */
-            top: 50%; /* Move it to the middle of the screen vertically */
-            left: 60%; /* Move it to the middle of the screen horizontally */
-            transform: translate(-50%, -50%); /* Offset it back by half its width and height */
+            width: 90%;
+            max-width: 400px;
+            height: auto;
+            max-height: 90vh;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            position: relative;
+            box-sizing: border-box;
         }
 
         /* Style for the button container */
@@ -894,6 +855,7 @@ if (isset($_GET['title'])) {
             align-items: center;
             position: relative;
             margin-bottom: 20px;
+            width: 100%;
         }
 
         .title-dropdown-container input {
@@ -902,25 +864,29 @@ if (isset($_GET['title'])) {
         }
 
         .title-dropdown-toggle {
-            background: none;
-            border: none;
-            cursor: pointer;
             position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 30px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-left: none;
+            cursor: pointer;
         }
 
         .title-dropdown-menu {
-            display: none;
             position: absolute;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            z-index: 1;
-            max-height: 200px; /* Adjust this height if needed */
-            overflow-y: auto; /* Enable vertical scrolling */
+            top: 100%;
+            left: 0;
             width: 100%;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .title-dropdown-menu.show {
@@ -928,26 +894,35 @@ if (isset($_GET['title'])) {
         }
 
         .title-dropdown-item {
-            padding: 8px 16px;
+            display: block;
             width: 100%;
+            padding: 8px 12px;
             text-align: left;
             background: none;
             border: none;
-            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            white-space: normal;
+            word-wrap: break-word;
         }
 
         .title-dropdown-item:hover {
             background-color: #f1f1f1;
         }
         .editor-container {
-            width: 500px; /* Set custom width */
-            margin: 0 auto; /* Center align */
-            
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
-        /* CKEditor content area */
+
+        .ck-editor {
+            width: 100% !important;
+            max-width: 100%;
+        }
+
         .ck-editor__editable {
-            min-height: 250px; /* Set desired height */
-            overflow-y: auto; 
+            min-height: 250px;
+            max-height: 300px;
+            overflow-y: auto;
         }
         /* Hidden textarea */
         #instructions {
@@ -1007,125 +982,6 @@ if (isset($_GET['title'])) {
             line-height: 1;
         }
 
-
-        /*------------------Approval Task------------------*/
-        button {
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-
-        .success {
-            background-color: #dff0d8;
-            border-color: #d6e9c6;
-            color: #3c763d;
-        }
-
-        .error {
-            background-color: #f2dede;
-            border-color: #ebccd1;
-            color: #a94442;
-        }
-
-        .action-buttons {
-            margin-bottom: 20px;
-            text-align: right;
-        }
-
-        button {
-            padding: 5px 10px;
-            margin-left: 5px;
-            cursor: pointer;
-        }
-
-       /* Style for Approve and Reject buttons */
-        #approveSelected {
-            background-color: #28a745; /* Green */
-             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 25px; /* Adjust for desired roundness */
-            cursor: pointer;
-            transition: background-color 0.3s; /* Add a smooth transition effect */
-            font-size:18px;
-            font-weight:bold;
-
-        }          
-
-        #rejectSelected {
-            background-color: #dc3545; /* Red */
-             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 25px; /* Adjust for desired roundness */
-            cursor: pointer;
-            transition: background-color 0.3s; /* Add a smooth transition effect */
-           font-size:18px;
-            font-weight:bold;
-
-        }
-
-        /* Style when hovering over the buttons */
-        #approveSelected:hover {
-            background-color: #218838; /* Darker green */
-        }
-
-        #rejectSelected:hover {
-            background-color: #c82333; /* Darker red */
-        }
-
-        /* Style for the tab container */
-        .tabs {
-            display: flex;
-            justify-content: flex-start;
-            margin-bottom: 20px;
-        }
-
-        /* Style for individual tab buttons */
-        .tab-button {
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #555;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s, color 0.3s;
-            margin-right: 10px;
-            background-color:transparent;
-        }
-
-        .tab-button:hover {
-            background-color: #ddd;
-        }
-
-        .tab-button.active {
-            color: #9b2035;
-            border-bottom: 2px solid #9b2035; /* Highlight active tab */
-        }
-
-        .hidden {
-            display: none;
-        }
-         .tag {
-        display: inline-block;
-        background-color:  #f0ad4e; /* Light gray background */
-        color: #333; /* Dark text */
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 16px;
-        font-weight: bold;
-        text-align: center;
-        color:#fff;
-        }
-        .info-message {
-            margin-top: 5px; /* Space between title and message */
-        }
-
-        .info-message p {
-            font-size: 16px; /* Font size for the message */
-            color: #555; /* Color for the message text */
-            margin: 0; /* Remove default margin */
-        }
-
         .dropdown-okay-button {
             margin-top: 10px;
             padding: 5px 10px;
@@ -1135,7 +991,7 @@ if (isset($_GET['title'])) {
             border-radius: 4px;
             cursor: pointer;
             display: block;
-            width: 100%;
+            width: 98%;
             text-align: center;
         }
 
@@ -1151,6 +1007,7 @@ if (isset($_GET['title'])) {
             font-weight: bold;
             margin-bottom: 10px;
             color: #333;
+            margin-left: 12px;
         }
 
         /* Style for department groups */
@@ -1165,6 +1022,7 @@ if (isset($_GET['title'])) {
             margin-bottom: 10px;
             border-bottom: 1px solid #ddd;
             padding-bottom: 5px;
+            margin-left: 12px;
         }
 
         /* Task View Modal - Specific Styles */
@@ -1324,6 +1182,211 @@ if (isset($_GET['title'])) {
             margin-right: 5px;
         }
 
+        /* Responsive */
+        @media (max-width: 1200px) {
+            /* Main container adjustments */
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 20px 40px;
+            }
+
+            /* Table improvements */
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            table th, table td {
+                padding: 16px;
+                white-space: normal;
+            }
+
+            /* Modal adjustments */
+            .modal-content, .update-modal-content {
+                max-width: 1400px;
+                padding: 30px;
+            }
+
+            /* Form layout improvements */
+            .form-container, .update-form-container {
+                gap: 40px;
+            }
+
+            /* Header adjustments */
+            .header {
+                padding: 0 40px;
+            }
+
+            /* Button sizing */
+            .buttonTask {
+                padding: 12px 24px;
+                font-size: 1.1rem;
+            }
+
+            /* Editor container */
+            .editor-container {
+                width: 700px;
+            }
+
+            /* Task view modal */
+            #taskViewModal .task-modal-content {
+                max-width: 1000px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            table th, table td {
+                padding: 8px;
+                font-size: 14px;
+                white-space: normal; /* Allow text to wrap */
+            }
+            
+            /* Make action buttons smaller */
+            .buttonEdit, .buttonDelete {
+                width: 30px;
+                height: 30px;
+                padding: 5px;
+                font-size: 12px;
+            }
+
+            .modal-content, .update-modal-content {
+                width: 90%;
+                padding: 15px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .form-container, .update-form-container {
+                flex-direction: column;
+            }
+            
+            .form-left, .form-right, 
+            .update-form-left, .update-form-right {
+                min-width: 100%;
+            }
+            
+            .editor-container {
+                width: 100%;
+            }
+            
+            .ck-editor__editable {
+                min-height: 150px;
+                max-height: 250px;
+            }
+            
+            .ck-toolbar {
+                flex-wrap: wrap;
+                height: auto;
+            }
+            
+            .ck-toolbar__items {
+                flex-wrap: wrap;
+            }
+            
+            /* Adjust dropdowns for mobile */
+            .dropdown-menu {
+                width: 30vw;
+                left: 5vw;
+            }
+
+            /* Stack header elements */
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .buttonTask {
+                margin-top: 10px;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            /* Stack form elements vertically */
+            .form-group {
+                margin-bottom: 1rem;
+            }
+            
+            input[type="text"],
+            input[type="date"],
+            textarea,
+            select {
+                padding: 0.5rem;
+                font-size: 14px;
+            }
+            
+            /* Adjust button sizes */
+            .buttonTask {
+                padding: 8px 15px;
+                font-size: 16px;
+            }
+            
+            /* Make file attachments full width */
+            .file-item {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+            
+            /* Adjust modal header */
+            .modal-header h2 {
+                font-size: 1.1rem;
+            }
+
+            /* Adjust dropdowns for mobile */
+            .dropdown-menu {
+                width: 30vw;
+                left: 5vw;
+            }
+
+            .submitdropdown-menu {
+                width: 30vw;
+                left: 50vw;
+            }
+
+            /* Date and Time Inputs */
+            input[type="date"],
+            input[type="time"] {
+                width: 100% !important;
+                padding: 0.75rem; /* Slightly larger for touch */
+                font-size: 16px; /* Larger font for readability */
+                -webkit-appearance: none; /* Remove default iOS styling */
+                appearance: none;
+                background-color: #fff; /* Ensure visibility */
+            }
+
+            /* Editor Container */
+            .editor-container {
+                width: 100% !important; /* Full width */
+                margin: 0;
+                padding: 0 5px;
+            }
+
+            .ck-editor {
+                width: 100% !important;
+            }
+
+            .ck-editor__editable {
+                min-height: 200px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            /* Modal Content */
+            .modal-content, 
+            .update-modal-content {
+                width: 90% !important; /* More screen coverage */
+                padding: 15px;
+                margin: 10px auto;
+            }
+        }
 
     </style>
 </head>
