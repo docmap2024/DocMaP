@@ -1386,6 +1386,47 @@ if (isset($_GET['title'])) {
                 padding: 15px;
                 margin: 10px auto;
             }
+
+            .modal-content,
+            .update-modal-content {
+                display: grid;
+                grid-template-areas:
+                    "header-buttons"
+                    "header-text";
+                grid-template-rows: auto auto;
+                padding: 10px;
+            }
+
+            .modal-header {
+                grid-area: header-buttons;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                padding: 5px;
+                position: relative;
+                margin-bottom: 0;
+            }
+
+            .header-task,
+            .update-header-task {
+                grid-area: header-text;
+                font-size: 1.5rem;
+                margin: 0;
+                padding: 0 10px;
+                word-break: break-word;
+                white-space: normal;
+                text-align: left;
+                width: 100%;
+                /* Dynamic max-width based on viewport minus button width */
+                max-width: calc(100vw - 190px); /* Adjust 120px based on your button widths */
+                position: relative;
+            }
+
+            /* Close button adjustments */
+            .close {
+                font-size: 24px;
+                margin-left: 8px;
+            }
         }
 
     </style>
