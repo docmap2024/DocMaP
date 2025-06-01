@@ -38,10 +38,10 @@ if (isset($_GET['ContentID'])) {
     $dept_ID = $_GET['dept_ID'];
 
     // Query to fetch teacher details based on dept_ID
-    $sql = "SELECT ua.UserID, ua.Status, ua.profile, 
+    $sql = "SELECT ud.UserID, ua.profile, 
                    CONCAT(ua.fname, ' ', ua.mname, '. ', ua.lname) AS FULLNAME
-            FROM useracc ua
-            JOIN user_department ud ON ua.UserID = ud.UserID
+            FROM user_department ud
+            JOIN useracc ua ON ud.UserID = ua.UserID
             WHERE ud.dept_ID = '$dept_ID'"; // Only fetch teachers
 
     $result = mysqli_query($conn, $sql);

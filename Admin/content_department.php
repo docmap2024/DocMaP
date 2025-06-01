@@ -400,8 +400,8 @@ if (isset($_GET['dept_ID'])) {
                                 html += `
                                     <li style="margin-top: 20px; font-weight: bold; display: flex; align-items: center; justify-content: space-between;">
                                         <div style="display: flex; align-items: center;">
-                                            <img src="../img/UserProfile/${teacher.profile}" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
-                                            ${teacher.fname} ${teacher.lname}
+                                            <img src="https://raw.githubusercontent.com/docmap2024/DocMaP/main/img/UserProfile/${teacher.profile}" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
+                                            ${teacher.FULLNAME} 
                                         </div>
                                         <div class="dropdown">
                                             <button class="three-dots" onclick="toggleDropdown2(this)" data-userid="${teacher.UserID}">
