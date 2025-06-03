@@ -267,7 +267,7 @@ mysqli_close($conn);
                             case 'Announcement': $iconClass = 'notifications-outline'; break;
                         }
                         ?>
-                        <a href='update_status_task.php?task_id=<?php echo htmlspecialchars($taskID); ?>&content_id=<?php echo htmlspecialchars($content_id); ?>' class='taskLink'>
+                        <a href='update_status_task.php?task_id=<?php echo htmlspecialchars($taskID); ?><?php echo isset($content_id) ? '&content_id='.htmlspecialchars($content_id) : ''; ?>' class='taskLink'>
                             <div class='taskContainer'>
                                 <h3 class='tasktitle'><?php echo htmlspecialchars($taskTitle); ?></h3>
                                 <p>Posted: <?php echo htmlspecialchars($taskTimestamp); ?></p>
