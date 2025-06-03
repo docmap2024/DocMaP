@@ -24,9 +24,11 @@ if (isset($_GET['task_id'])) {
 
     // Query to fetch task details and user information based on TaskID
     $sql_task_details = "
-        SELECT t.*, u.fname, u.lname 
+        SELECT t.*, u.fname, u.lname, d.dept_type 
         FROM tasks t
         JOIN useracc u ON t.UserID = u.UserID 
+        JOIN task_department td ON t.TaskID = td.TaskID
+        JOIN department d ON td.dept_ID = d.dept_ID
         WHERE t.TaskID = '$task_id'
     ";
 
@@ -890,20 +892,34 @@ mysqli_close($conn);
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
-                                                                <?php foreach ($documents as $doc): ?>
-                                                                    <?php
-                                                                        // Remove the leading numbers followed by an underscore
-                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                <?php foreach ($users as $user): ?>
+                                                                    <?php 
+                                                                    // Determine which document to display based on department type
+                                                                    $documentsToShow = ($dept_type == 'Administrative') ? 
+                                                                        (!empty($user['admin_file_name']) ? 
+                                                                            [['file_name' => $user['admin_file_name'], 'uri' => $user['admin_file_path']]] : 
+                                                                            [] 
+                                                                        ): 
+                                                                        (!empty($user['file_name']) ? 
+                                                                            [['file_name' => $user['file_name'], 'uri' => $user['file_path']]] : 
+                                                                            []);
                                                                     ?>
-                                                                    <?php if (!empty($doc['file_name'])): ?>
-                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
-                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($displayName); ?>
-                                                                            </span>
-                                                                            <span class="document-icon-container" style="margin-left: 15px;">
-                                                                                <i class="bx bxs-file document-icon"></i>
-                                                                            </span>
-                                                                        </div>
+                                                                    
+                                                                    <?php if (!empty($documentsToShow)): ?>
+                                                                        <?php foreach ($documentsToShow as $doc): ?>
+                                                                            <?php
+                                                                            // Remove the leading numbers followed by an underscore
+                                                                            $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                            ?>
+                                                                            <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                                <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                    <?php echo htmlspecialchars($displayName); ?>
+                                                                                </span>
+                                                                                <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                    <i class="bx bxs-file document-icon"></i>
+                                                                                </span>
+                                                                            </div>
+                                                                        <?php endforeach; ?>
                                                                     <?php else: ?>
                                                                         <div class="col-md-12" style="margin-bottom: 15px;">
                                                                             <span style="color: #888;">No documents submitted</span>
@@ -950,20 +966,34 @@ mysqli_close($conn);
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
-                                                                <?php foreach ($documents as $doc): ?>
-                                                                    <?php
-                                                                        // Remove the leading numbers followed by an underscore
-                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                <?php foreach ($users as $user): ?>
+                                                                    <?php 
+                                                                    // Determine which document to display based on department type
+                                                                    $documentsToShow = ($dept_type == 'Administrative') ? 
+                                                                        (!empty($user['admin_file_name']) ? 
+                                                                            [['file_name' => $user['admin_file_name'], 'uri' => $user['admin_file_path']]] : 
+                                                                            [] 
+                                                                        ): 
+                                                                        (!empty($user['file_name']) ? 
+                                                                            [['file_name' => $user['file_name'], 'uri' => $user['file_path']]] : 
+                                                                            []);
                                                                     ?>
-                                                                    <?php if (!empty($doc['file_name'])): ?>
-                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
-                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($displayName); ?>
-                                                                            </span>
-                                                                            <span class="document-icon-container" style="margin-left: 15px;">
-                                                                                <i class="bx bxs-file document-icon"></i>
-                                                                            </span>
-                                                                        </div>
+                                                                    
+                                                                    <?php if (!empty($documentsToShow)): ?>
+                                                                        <?php foreach ($documentsToShow as $doc): ?>
+                                                                            <?php
+                                                                            // Remove the leading numbers followed by an underscore
+                                                                            $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                            ?>
+                                                                            <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                                <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                    <?php echo htmlspecialchars($displayName); ?>
+                                                                                </span>
+                                                                                <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                    <i class="bx bxs-file document-icon"></i>
+                                                                                </span>
+                                                                            </div>
+                                                                        <?php endforeach; ?>
                                                                     <?php else: ?>
                                                                         <div class="col-md-12" style="margin-bottom: 15px;">
                                                                             <span style="color: #888;">No documents submitted</span>
@@ -1184,20 +1214,34 @@ mysqli_close($conn);
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
-                                                                <?php foreach ($documents as $doc): ?>
-                                                                    <?php if (!empty($doc['file_name'])): ?>
-                                                                        <?php 
-                                                                            // Clean up document display name
+                                                                <?php foreach ($users as $user): ?>
+                                                                    <?php 
+                                                                    // Determine which document to display based on department type
+                                                                    $documentsToShow = ($dept_type == 'Administrative') ? 
+                                                                        (!empty($user['admin_file_name']) ? 
+                                                                            [['file_name' => $user['admin_file_name'], 'uri' => $user['admin_file_path']]] : 
+                                                                            [] 
+                                                                        ): 
+                                                                        (!empty($user['file_name']) ? 
+                                                                            [['file_name' => $user['file_name'], 'uri' => $user['file_path']]] : 
+                                                                            []);
+                                                                    ?>
+                                                                    
+                                                                    <?php if (!empty($documentsToShow)): ?>
+                                                                        <?php foreach ($documentsToShow as $doc): ?>
+                                                                            <?php
+                                                                            // Remove the leading numbers followed by an underscore
                                                                             $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
-                                                                        ?>
-                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
-                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($displayName); ?>
-                                                                            </span>
-                                                                            <span class="document-icon-container" style="margin-left: 15px;">
-                                                                                <i class="bx bxs-file document-icon"></i>
-                                                                            </span>
-                                                                        </div>
+                                                                            ?>
+                                                                            <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                                <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                    <?php echo htmlspecialchars($displayName); ?>
+                                                                                </span>
+                                                                                <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                    <i class="bx bxs-file document-icon"></i>
+                                                                                </span>
+                                                                            </div>
+                                                                        <?php endforeach; ?>
                                                                     <?php else: ?>
                                                                         <div class="col-md-12" style="margin-bottom: 15px;">
                                                                             <span style="color: #888;">No documents submitted</span>
@@ -1378,20 +1422,34 @@ mysqli_close($conn);
                                                             <!-- Files Display Section -->
                                                             <h6>Files:</h6>
                                                             <div class="row" style="margin-left: 10px; margin-right: 10px;">
-                                                                <?php foreach ($documents as $doc): ?>
+                                                                <?php foreach ($users as $user): ?>
                                                                     <?php 
-                                                                        // Clean up document display name
-                                                                        $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                    // Determine which document to display based on department type
+                                                                    $documentsToShow = ($dept_type == 'Administrative') ? 
+                                                                        (!empty($user['admin_file_name']) ? 
+                                                                            [['file_name' => $user['admin_file_name'], 'uri' => $user['admin_file_path']]] : 
+                                                                            [] 
+                                                                        ): 
+                                                                        (!empty($user['file_name']) ? 
+                                                                            [['file_name' => $user['file_name'], 'uri' => $user['file_path']]] : 
+                                                                            []);
                                                                     ?>
-                                                                    <?php if (!empty($doc['file_name'])): ?>
-                                                                        <div class="col-md-12 document-container" style="margin-bottom: 15px;">
-                                                                            <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
-                                                                                <?php echo htmlspecialchars($displayName); ?>
-                                                                            </span>
-                                                                            <span class="document-icon-container" style="margin-left: 15px;">
-                                                                                <i class="bx bxs-file document-icon"></i>
-                                                                            </span>
-                                                                        </div>
+                                                                    
+                                                                    <?php if (!empty($documentsToShow)): ?>
+                                                                        <?php foreach ($documentsToShow as $doc): ?>
+                                                                            <?php
+                                                                            // Remove the leading numbers followed by an underscore
+                                                                            $displayName = preg_replace('/^\d+_/', '', $doc['file_name']);
+                                                                            ?>
+                                                                            <div class="col-md-12 document-container" style="margin-bottom: 15px;">
+                                                                                <span class="document-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: inline-block;">
+                                                                                    <?php echo htmlspecialchars($displayName); ?>
+                                                                                </span>
+                                                                                <span class="document-icon-container" style="margin-left: 15px;">
+                                                                                    <i class="bx bxs-file document-icon"></i>
+                                                                                </span>
+                                                                            </div>
+                                                                        <?php endforeach; ?>
                                                                     <?php else: ?>
                                                                         <div class="col-md-12" style="margin-bottom: 15px;">
                                                                             <span style="color: #888;">No documents submitted</span>
