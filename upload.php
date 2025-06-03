@@ -180,57 +180,55 @@ if (isset($_POST['task_id'])) {
 
             // === Insert new document ===
             if ($content_id !== null) {
-                // For tasks with content_id, get the folder IDs
+                // For tasks with content_id - get all required folder IDs
                 $gradeLevelID = null;
+                $userContentID = null;
+                $userFolderID = null;
+                
+                // Get GradeLevelFolderID
                 $gradeQuery = "SELECT GradeLevelFolderID FROM gradelevelfolders WHERE ContentID = ? LIMIT 1";
                 $stmt = $conn->prepare($gradeQuery);
                 $stmt->bind_param("i", $content_id);
                 $stmt->execute();
                 $stmt->bind_result($gradeLevelID);
-                $stmt->fetch();
-                $stmt->close();
-
-                if (!$gradeLevelID) {
-                    $response['error'] = "GradeLevelFolderID not found.";
+                if (!$stmt->fetch()) {
+                    $response['error'] = "GradeLevelFolderID not found for content ID: $content_id";
                     echo json_encode($response);
                     exit();
                 }
+                $stmt->close();
 
-                $userContentID = null;
+                // Get UserContentID
                 $stmt = $conn->prepare("SELECT UserContentID FROM usercontent WHERE UserID = ? AND ContentID = ?");
                 $stmt->bind_param("ii", $user_id, $content_id);
                 $stmt->execute();
                 $stmt->bind_result($userContentID);
-                $stmt->fetch();
-                $stmt->close();
-
-                if (!$userContentID) {
-                    $response['error'] = "UserContentID not found.";
+                if (!$stmt->fetch()) {
+                    $response['error'] = "UserContentID not found for user $user_id and content $content_id";
                     echo json_encode($response);
                     exit();
                 }
+                $stmt->close();
 
-                $userFolderID = null;
+                // Get UserFolderID
                 $stmt = $conn->prepare("SELECT UserFolderID FROM userfolders WHERE UserContentID = ?");
                 $stmt->bind_param("i", $userContentID);
                 $stmt->execute();
                 $stmt->bind_result($userFolderID);
-                $stmt->fetch();
-                $stmt->close();
-
-                if (!$userFolderID) {
-                    $response['error'] = "UserFolderID not found.";
+                if (!$stmt->fetch()) {
+                    $response['error'] = "UserFolderID not found for UserContentID: $userContentID";
                     echo json_encode($response);
                     exit();
                 }
+                $stmt->close();
 
-                // Insert with all folder IDs
+                // Insert document with all folder references
                 $stmt = $conn->prepare("INSERT INTO documents 
                     (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
                 $stmt->bind_param("iiiiiss", $gradeLevelID, $userFolderID, $user_id, $content_id, $task_id, $uniqueFileName, $downloadUrl);
             } else {
-                // For administrative tasks (no content_id), insert without folder IDs
+                // For administrative tasks (no content_id) - simplified insert
                 $stmt = $conn->prepare("INSERT INTO documents 
                     (UserID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
                     VALUES (?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
