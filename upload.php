@@ -11,12 +11,6 @@ include 'connection.php';
 
 $response = array('success' => false, 'error' => null);
 
-// Log helper
-function write_log($message) {
-    $logfile = '/tmp/logfile.log';
-    $timestamp = date("Y-m-d H:i:s");
-    file_put_contents($logfile, "[$timestamp] $message\n", FILE_APPEND);
-}
 
 function createNotification($conn, $user_id, $content_id, $task_id, $title, $content) {
     $sql = "INSERT INTO notifications (UserID, ContentID, TaskID, Title, Content, Status, TimeStamp) 
@@ -299,8 +293,199 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
     }
 
     $response['success'] = true;
+} elseif (isset($_POST['task_dept_id']) && isset($_POST['department_folder_id'])) {
+    // ==================== ADMINISTRATIVE DOCUMENT PROCESSING ====================
+    $task_dept_id = $_POST['task_dept_id'];
+    $department_folder_id = $_POST['department_folder_id'];
+    $user_id = $_SESSION['user_id'];
+
+    // Process file uploads
+    if (!empty($_FILES['files']['name'][0])) {
+        foreach ($_FILES['files']['name'] as $key => $name) {
+            $tmpPath = $_FILES['files']['tmp_name'][$key];
+            $originalFileName = preg_replace('/[^a-zA-Z0-9\.\-_]/', '', $name);
+            
+            // Check if this exact file already exists in the database
+            $checkQuery = "SELECT Admin_Docu_ID, uri FROM administrative_document 
+                          WHERE UserID = ? AND TaskDept_ID = ? AND DepartmentFolderID = ? 
+                          AND name LIKE ?";
+            $stmt = $conn->prepare($checkQuery);
+            $searchPattern = '%' . $originalFileName;
+            $stmt->bind_param("iiis", $user_id, $task_dept_id, $department_folder_id, $searchPattern);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $existingFile = $result->fetch_assoc();
+            $stmt->close();
+
+            if ($existingFile) {
+                // File exists, just update the status without re-uploading
+                $updateQuery = "UPDATE administrative_document SET Status = 1 WHERE Admin_Docu_ID = ?";
+                $stmt = $conn->prepare($updateQuery);
+                $stmt->bind_param("i", $existingFile['Admin_Docu_ID']);
+                if (!$stmt->execute()) {
+                    $response['error'] = "Error updating existing file status: " . $stmt->error;
+                    echo json_encode($response);
+                    exit();
+                }
+                continue; // Skip to next file
+            }
+
+            // Proceed with new file upload
+            $uniqueFileName = sprintf('%06d_%s', random_int(100000, 999999), $originalFileName);
+
+            // Size validation (max 5MB)
+            if ($_FILES['files']['size'][$key] > 5 * 1024 * 1024) {
+                $response['error'] = "File too large: $name (max 5MB)";
+                echo json_encode($response);
+                exit();
+            }
+
+            $fileContent = file_get_contents($tmpPath);
+            if ($fileContent === false) {
+                write_log("Failed to read file: $originalFileName");
+                $response['error'] = "Failed to read uploaded file.";
+                echo json_encode($response);
+                exit();
+            }
+
+            // === GitHub Upload ===
+            $repo = "docmap2024/DocMaP";
+            $branch = "main";
+            $uploadPath = "Documents/". $uniqueFileName;
+            $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
+            write_log("Uploading to: $uploadUrl");
+
+            $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
+            if (!$githubToken) {
+                write_log("Missing GitHub token");
+                $response['error'] = "Server configuration error.";
+                echo json_encode($response);
+                exit();
+            }
+
+            $payload = json_encode([
+                "message" => "Upload administrative document: $uniqueFileName",
+                "content" => base64_encode($fileContent),
+                "branch" => $branch
+            ]);
+
+            $headers = [
+                "Authorization: token $githubToken",
+                "Content-Type: application/json",
+                "User-Agent: DocMaP"
+            ];
+
+            $ch = curl_init($uploadUrl);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+            $responseGitHub = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($responseGitHub === false || $httpCode != 201) {
+                write_log("GitHub error: $curlError - $responseGitHub");
+                $response['error'] = "GitHub upload failed.";
+                echo json_encode($response);
+                exit();
+            }
+
+            $ghData = json_decode($responseGitHub, true);
+            $downloadUrl = $ghData['content']['download_url'] ?? '';
+            $fileSize = $_FILES['files']['size'][$key];
+            $mimeType = mime_content_type($tmpPath);
+
+            // === Insert new administrative document ===
+            $stmt = $conn->prepare("INSERT INTO administrative_document 
+                (UserID, TaskDept_ID, DepartmentFolderID, name, mimeType, size, uri, Status, TimeStamp) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())");
+            $stmt->bind_param("iiissis", $user_id, $task_dept_id, $department_folder_id, 
+                             $uniqueFileName, $mimeType, $fileSize, $downloadUrl);
+            if (!$stmt->execute()) {
+                $response['error'] = "Database insert failed: " . $stmt->error;
+                echo json_encode($response);
+                exit();
+            }
+        }
+    }
+
+    // Update task_user status
+    $updateTaskUser = $conn->prepare("UPDATE task_user SET Status = 'Submitted', SubmitDate = NOW() WHERE TaskID = ? AND UserID = ?");
+    $updateTaskUser->bind_param("ii", $task_id, $user_id);
+    $updateTaskUser->execute();
+
+    // Fetch Task Department Title for notification
+    $taskTitleQuery = "SELECT Title FROM task_department WHERE TaskDept_ID = ?";
+    $taskTitleStmt = $conn->prepare($taskTitleQuery);
+    $taskTitleStmt->bind_param("i", $task_dept_id);
+    $taskTitleStmt->execute();
+    $taskTitleResult = $taskTitleStmt->get_result();
+
+    if ($taskTitleResult && $taskTitleResult->num_rows > 0) {
+        $taskTitleRow = $taskTitleResult->fetch_assoc();
+        $taskTitle = $taskTitleRow['Title'];
+
+        // Fetch user's full name for notification
+        $userQuery = "SELECT fname, lname FROM useracc WHERE UserID = ?";
+        $userStmt = $conn->prepare($userQuery);
+        $userStmt->bind_param("i", $user_id);
+        $userStmt->execute();
+        $userResult = $userStmt->get_result();
+
+        if ($userResult && $userResult->num_rows > 0) {
+            $userRow = $userResult->fetch_assoc();
+            $fullName = $userRow['fname'] . ' ' . $userRow['lname'];
+
+            // Create notification (using null for ContentID since this is an admin doc)
+            $title = "$fullName has submitted an administrative task!";
+            $content = "An administrative task has been submitted for \"$taskTitle\".";
+            
+            $notifID = createNotification($conn, $user_id, null, $task_dept_id, $title, $content);
+
+            if ($notifID) {
+                // Fetch department from task_department
+                $deptQuery = "SELECT dept_ID FROM task_department WHERE TaskDept_ID = ?";
+                $deptStmt = $conn->prepare($deptQuery);
+                $deptStmt->bind_param("i", $task_dept_id);
+                $deptStmt->execute();
+                $deptResult = $deptStmt->get_result();
+
+                if ($deptResult && $deptResult->num_rows > 0) {
+                    $deptRow = $deptResult->fetch_assoc();
+                    $dept_ID = $deptRow['dept_ID'];
+
+                    // Notify department head
+                    $department_head_user_id = getDepartmentHeadUserID($conn, $dept_ID);
+                    if ($department_head_user_id) {
+                        $status = 1;
+                        $timestamp = date("Y-m-d H:i:s");
+                        $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                        $notifUserStmt->bind_param("iiss", $notifID, $department_head_user_id, $status, $timestamp);
+                        $notifUserStmt->execute();
+                        $notifUserStmt->close();
+                    }
+
+                    // Notify admin
+                    $admin_user_id = getAdminUserID($conn);
+                    if ($admin_user_id) {
+                        $status = 1;
+                        $timestamp = date("Y-m-d H:i:s");
+                        $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                        $notifUserStmt->bind_param("iiss", $notifID, $admin_user_id, $status, $timestamp);
+                        $notifUserStmt->execute();
+                        $notifUserStmt->close();
+                    }
+                }
+            }
+        }
+    }
+
+    $response['success'] = true;
 } else {
-    $response['error'] = "Task ID and Content ID are required.";
+    $response['error'] = "Either Task ID and Content ID OR Task Department ID and Department Folder ID are required.";
 }
 
 echo json_encode($response);
