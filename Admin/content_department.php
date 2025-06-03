@@ -320,7 +320,13 @@ if (isset($_GET['dept_ID'])) {
                                     while ($row_task = mysqli_fetch_assoc($result_tasks)) {
                                         $taskID = $row_task['TaskID'];
                                         $taskType = $row_task['Type'];
-                                        echo "<a href='taskdetails.php?task_id=" . htmlspecialchars($taskID) . "&dept_ID=" . htmlspecialchars($dept_ID) . "' class='taskLink'>";
+                                        
+                                        // Determine which page to link to based on department type
+                                        $taskDetailsPage = ($dept_type == 'Administrative') 
+                                            ? 'taskdetailsAdmin.php' 
+                                            : 'taskdetails.php';
+                                        
+                                        echo "<a href='" . htmlspecialchars($taskDetailsPage) . "?task_id=" . htmlspecialchars($taskID) . "&dept_ID=" . htmlspecialchars($dept_ID) . "' class='taskLink'>";
                                         echo "<div class='taskContainer' data-type='" . htmlspecialchars($taskType) . "'>";
                                         echo "<h3 class='tasktitle'>" . htmlspecialchars($row_task['Title']) . "</h3>";
                                         echo "<p class='timestamp'>" . htmlspecialchars($row_task['TimeStamp']) . "</p>";
