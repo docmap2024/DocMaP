@@ -60,52 +60,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmtTaskUser->bind_param("sii", $newStatus, $taskID, $user_id);
         }
 
-        // NEW: Prepare Administrative Documents update query (only when contentID is null)
-        $adminUpdated = true; // Default to true in case we don't need to update
-        if ($contentID === null) {
-            // First get TaskDept_ID from task_department table
-            $sqlGetTaskDept = "SELECT TaskDept_ID FROM task_department WHERE TaskID = ?";
-            $stmtGetTaskDept = $conn->prepare($sqlGetTaskDept);
-            $stmtGetTaskDept->bind_param("i", $taskID);
-            $stmtGetTaskDept->execute();
-            $resultTaskDept = $stmtGetTaskDept->get_result();
-            
-            if ($resultTaskDept->num_rows > 0) {
-                $taskDeptIDs = [];
-                while ($row = $resultTaskDept->fetch_assoc()) {
-                    $taskDeptIDs[] = $row['TaskDept_ID'];
-                }
-                
-                // Create placeholders for IN clause
-                $placeholders = implode(',', array_fill(0, count($taskDeptIDs), '?'));
-                $types = str_repeat('i', count($taskDeptIDs));
-                
-                $sqlUpdateAdmin = "UPDATE administrative_document SET Status = ? 
-                                  WHERE TaskDept_ID IN ($placeholders) AND UserID = ?";
-                
-                $stmtAdmin = $conn->prepare($sqlUpdateAdmin);
-
-                // Create the type string: 's' for status, then types for taskDeptIDs, then 'i' for user_id
-                $types = 's' . $types . 'i';        
-                
-                // Bind parameters - status first, then taskDeptIDs, then user_id
-                $bindParams = array_merge([$status], $taskDeptIDs, [$user_id]);
-                $stmtAdmin->bind_param($types, ...$bindParams);
-                
-                $adminUpdated = $stmtAdmin->execute();
-                if (!$adminUpdated) {
-                    $adminError = $stmtAdmin->error;
-                }
-                $stmtAdmin->close();
-            }
-            $stmtGetTaskDept->close();
-        }
-
-        // Execute updates for documents and task_user
+        // Execute updates
         $documentsUpdated = $stmtDocuments->execute();
         $taskUserUpdated = $stmtTaskUser->execute();
 
-        if ($documentsUpdated && $taskUserUpdated && $adminUpdated) {
+        if ($documentsUpdated && $taskUserUpdated) {
             $response = [
                 'success' => true,
                 'message' => 'Status updated successfully!'
@@ -114,7 +73,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors = [];
             if (!$documentsUpdated) $errors[] = 'Documents: ' . $stmtDocuments->error;
             if (!$taskUserUpdated) $errors[] = 'Task User: ' . $stmtTaskUser->error;
-            if (!$adminUpdated) $errors[] = 'Administrative Documents: ' . ($adminError ?? 'Unknown error');
             
             $response = [
                 'success' => false,
