@@ -106,13 +106,23 @@ if (isset($_GET['task_id'])) {
             d.uri AS file_path,
             d.mimeType,
             d.ContentID,
-            d.TaskID
+            d.TaskID,
+            ad.name AS admin_file_name,
+            ad.uri AS admin_file_path,
+            ad.mimeType AS admin_mimeType,
+            ad.Admin_Docu_ID,
+            ad.Status AS admin_status,
+            ad.TimeStamp AS admin_timestamp
         FROM 
             task_user tu
         JOIN 
             useracc u ON tu.UserID = u.UserID
         LEFT JOIN 
             documents d ON tu.TaskID = d.TaskID AND u.UserID = d.UserID
+        LEFT JOIN 
+            task_department td ON tu.TaskID = td.TaskID
+        LEFT JOIN 
+            administrative_document ad ON td.TaskDept_ID = ad.TaskDept_ID AND u.UserID = ad.UserID
         WHERE 
             tu.TaskID = ? 
     ";
