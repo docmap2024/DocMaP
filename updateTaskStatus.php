@@ -87,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 // Bind parameters - status first, then taskDeptIDs, then user_id
                 $bindParams = array_merge([$status], $taskDeptIDs, [$user_id]);
-                $stmtAdmin->bind_param($types . "i", ...$bindParams);
+                $stmtAdmin->bind_param($types . "iii", ...$bindParams);
                 
                 $adminUpdated = $stmtAdmin->execute();
                 if (!$adminUpdated) {
