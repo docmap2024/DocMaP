@@ -52,12 +52,13 @@ function getAdminUserID($conn) {
 }
 
 if (isset($_POST['task_id'])) {
-    if (isset($_POST['content_id'])) {
-        // ==================== REGULAR DOCUMENT PROCESSING ====================
-        $task_id = $_POST['task_id'];
-        $content_id = $_POST['content_id'];
-        $user_id = $_SESSION['user_id'];
+    $task_id = $_POST['task_id'];
+    $user_id = $_SESSION['user_id'];
 
+    if (isset($_POST['content_id']) && !empty($_POST['content_id'])) {
+        // ==================== REGULAR DOCUMENT PROCESSING ====================
+        $content_id = $_POST['content_id'];
+        
         // Update previous document status to submitted (Status = 1)
         $updateStatusQuery = "UPDATE documents SET Status = 1 WHERE UserID = ? AND TaskID = ? AND ContentID = ?";
         $stmt = $conn->prepare($updateStatusQuery);
