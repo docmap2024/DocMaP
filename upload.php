@@ -109,7 +109,6 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
 
             $fileContent = file_get_contents($tmpPath);
             if ($fileContent === false) {
-                write_log("Failed to read file: $originalFileName");
                 $response['error'] = "Failed to read uploaded file.";
                 echo json_encode($response);
                 exit();
@@ -120,11 +119,9 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             $branch = "main";
             $uploadPath = "Documents/" . $uniqueFileName;
             $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
-            write_log("Uploading to: $uploadUrl");
 
             $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
             if (!$githubToken) {
-                write_log("Missing GitHub token");
                 $response['error'] = "Server configuration error.";
                 echo json_encode($response);
                 exit();
@@ -154,7 +151,6 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             curl_close($ch);
 
             if ($responseGitHub === false || $httpCode != 201) {
-                write_log("GitHub error: $curlError - $responseGitHub");
                 $response['error'] = "GitHub upload failed.";
                 echo json_encode($response);
                 exit();
@@ -293,11 +289,31 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
     }
 
     $response['success'] = true;
-} elseif (isset($_POST['task_dept_id']) && isset($_POST['department_folder_id'])) {
+} elseif (isset($_POST['task_id'])) {
     // ==================== ADMINISTRATIVE DOCUMENT PROCESSING ====================
-    $task_dept_id = $_POST['task_dept_id'];
-    $department_folder_id = $_POST['department_folder_id'];
+    $task_id = $_POST['task_id'];
     $user_id = $_SESSION['user_id'];
+
+    // First, fetch the TaskDept_ID and DepartmentFolderID based on the task_id
+    $taskDeptQuery = "SELECT td.TaskDept_ID, td.dept_ID, df.DepartmentFolderID 
+                     FROM task_department td
+                     JOIN departmentfolders df ON td.dept_ID = df.dept_ID
+                     WHERE td.TaskID = ?";
+    $stmt = $conn->prepare($taskDeptQuery);
+    $stmt->bind_param("i", $task_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        $response['error'] = "No administrative task found with the provided Task ID";
+        echo json_encode($response);
+        exit();
+    }
+    
+    $taskData = $result->fetch_assoc();
+    $task_dept_id = $taskData['TaskDept_ID'];
+    $department_folder_id = $taskData['DepartmentFolderID'];
+    $dept_ID = $taskData['dept_ID'];
 
     // Process file uploads
     if (!empty($_FILES['files']['name'][0])) {
@@ -342,7 +358,6 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
 
             $fileContent = file_get_contents($tmpPath);
             if ($fileContent === false) {
-                write_log("Failed to read file: $originalFileName");
                 $response['error'] = "Failed to read uploaded file.";
                 echo json_encode($response);
                 exit();
@@ -351,13 +366,11 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             // === GitHub Upload ===
             $repo = "docmap2024/DocMaP";
             $branch = "main";
-            $uploadPath = "Documents/". $uniqueFileName;
+            $uploadPath = "Documents/" . $uniqueFileName;
             $uploadUrl = "https://api.github.com/repos/$repo/contents/$uploadPath";
-            write_log("Uploading to: $uploadUrl");
 
             $githubToken = $_ENV['GITHUB_TOKEN'] ?? null;
             if (!$githubToken) {
-                write_log("Missing GitHub token");
                 $response['error'] = "Server configuration error.";
                 echo json_encode($response);
                 exit();
@@ -387,7 +400,6 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             curl_close($ch);
 
             if ($responseGitHub === false || $httpCode != 201) {
-                write_log("GitHub error: $curlError - $responseGitHub");
                 $response['error'] = "GitHub upload failed.";
                 echo json_encode($response);
                 exit();
@@ -418,7 +430,10 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
     $updateTaskUser->execute();
 
     // Fetch Task Department Title for notification
-    $taskTitleQuery = "SELECT Title FROM task_department WHERE TaskDept_ID = ?";
+    $taskTitleQuery = "SELECT t.Title 
+                    FROM tasks t
+                    JOIN task_department td ON t.TaskID = td.TaskID
+                    WHERE td.TaskDept_ID = ?";
     $taskTitleStmt = $conn->prepare($taskTitleQuery);
     $taskTitleStmt->bind_param("i", $task_dept_id);
     $taskTitleStmt->execute();
@@ -443,41 +458,29 @@ if (isset($_POST['task_id']) && isset($_POST['content_id'])) {
             $title = "$fullName has submitted an administrative task!";
             $content = "An administrative task has been submitted for \"$taskTitle\".";
             
-            $notifID = createNotification($conn, $user_id, null, $task_dept_id, $title, $content);
+            $notifID = createNotification($conn, $user_id, null, $task_id, $title, $content);
 
             if ($notifID) {
-                // Fetch department from task_department
-                $deptQuery = "SELECT dept_ID FROM task_department WHERE TaskDept_ID = ?";
-                $deptStmt = $conn->prepare($deptQuery);
-                $deptStmt->bind_param("i", $task_dept_id);
-                $deptStmt->execute();
-                $deptResult = $deptStmt->get_result();
+                // Notify department head (we already have dept_ID from earlier query)
+                $department_head_user_id = getDepartmentHeadUserID($conn, $dept_ID);
+                if ($department_head_user_id) {
+                    $status = 1;
+                    $timestamp = date("Y-m-d H:i:s");
+                    $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                    $notifUserStmt->bind_param("iiss", $notifID, $department_head_user_id, $status, $timestamp);
+                    $notifUserStmt->execute();
+                    $notifUserStmt->close();
+                }
 
-                if ($deptResult && $deptResult->num_rows > 0) {
-                    $deptRow = $deptResult->fetch_assoc();
-                    $dept_ID = $deptRow['dept_ID'];
-
-                    // Notify department head
-                    $department_head_user_id = getDepartmentHeadUserID($conn, $dept_ID);
-                    if ($department_head_user_id) {
-                        $status = 1;
-                        $timestamp = date("Y-m-d H:i:s");
-                        $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
-                        $notifUserStmt->bind_param("iiss", $notifID, $department_head_user_id, $status, $timestamp);
-                        $notifUserStmt->execute();
-                        $notifUserStmt->close();
-                    }
-
-                    // Notify admin
-                    $admin_user_id = getAdminUserID($conn);
-                    if ($admin_user_id) {
-                        $status = 1;
-                        $timestamp = date("Y-m-d H:i:s");
-                        $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
-                        $notifUserStmt->bind_param("iiss", $notifID, $admin_user_id, $status, $timestamp);
-                        $notifUserStmt->execute();
-                        $notifUserStmt->close();
-                    }
+                // Notify admin
+                $admin_user_id = getAdminUserID($conn);
+                if ($admin_user_id) {
+                    $status = 1;
+                    $timestamp = date("Y-m-d H:i:s");
+                    $notifUserStmt = $conn->prepare("INSERT INTO notif_user (NotifID, UserID, Status, TimeStamp) VALUES (?, ?, ?, ?)");
+                    $notifUserStmt->bind_param("iiss", $notifID, $admin_user_id, $status, $timestamp);
+                    $notifUserStmt->execute();
+                    $notifUserStmt->close();
                 }
             }
         }
