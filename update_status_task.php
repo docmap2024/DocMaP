@@ -61,9 +61,15 @@ if (isset($_GET['task_id'])) {
     updateTaskStatus($_GET['task_id']);
 }
 
-// Redirect to task details page
-if (isset($_GET['content_id'])) {
-    header("Location: taskdetails.php?task_id=" . htmlspecialchars($_GET['task_id']) . "&content_id=" . htmlspecialchars($_GET['content_id']));
+// Redirect to appropriate page
+if (isset($_GET['task_id'])) {
+    $redirect_url = "taskdetails.php?task_id=" . htmlspecialchars($_GET['task_id']);
+    
+    if (isset($_GET['content_id'])) {
+        $redirect_url .= "&content_id=" . htmlspecialchars($_GET['content_id']);
+    }
+    
+    header("Location: " . $redirect_url);
     exit();
 }
 
