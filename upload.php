@@ -178,9 +178,10 @@ if (isset($_POST['task_id'])) {
             $ghData = json_decode($responseGitHub, true);
             $downloadUrl = $ghData['content']['download_url'] ?? '';
 
-            // === Get GradeLevelFolderID ===
-            $gradeLevelID = null;
+            // === Insert new document ===
             if ($content_id !== null) {
+                // For tasks with content_id, get the folder IDs
+                $gradeLevelID = null;
                 $gradeQuery = "SELECT GradeLevelFolderID FROM gradelevelfolders WHERE ContentID = ? LIMIT 1";
                 $stmt = $conn->prepare($gradeQuery);
                 $stmt->bind_param("i", $content_id);
@@ -194,11 +195,8 @@ if (isset($_POST['task_id'])) {
                     echo json_encode($response);
                     exit();
                 }
-            }
 
-            // === Get UserFolderID ===
-            $userContentID = null;
-            if ($content_id !== null) {
+                $userContentID = null;
                 $stmt = $conn->prepare("SELECT UserContentID FROM usercontent WHERE UserID = ? AND ContentID = ?");
                 $stmt->bind_param("ii", $user_id, $content_id);
                 $stmt->execute();
@@ -211,10 +209,8 @@ if (isset($_POST['task_id'])) {
                     echo json_encode($response);
                     exit();
                 }
-            }
 
-            $userFolderID = null;
-            if ($content_id !== null) {
+                $userFolderID = null;
                 $stmt = $conn->prepare("SELECT UserFolderID FROM userfolders WHERE UserContentID = ?");
                 $stmt->bind_param("i", $userContentID);
                 $stmt->execute();
@@ -227,15 +223,14 @@ if (isset($_POST['task_id'])) {
                     echo json_encode($response);
                     exit();
                 }
-            }
 
-            // === Insert new document ===
-            if ($content_id !== null) {
+                // Insert with all folder IDs
                 $stmt = $conn->prepare("INSERT INTO documents 
                     (GradeLevelFolderID, UserFolderID, UserID, ContentID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
                 $stmt->bind_param("iiiiiss", $gradeLevelID, $userFolderID, $user_id, $content_id, $task_id, $uniqueFileName, $downloadUrl);
             } else {
+                // For administrative tasks (no content_id), insert without folder IDs
                 $stmt = $conn->prepare("INSERT INTO documents 
                     (UserID, TaskID, name, uri, mimeType, size, Status, TimeStamp) 
                     VALUES (?, ?, ?, ?, 'application/octet-stream', 0, 1, NOW())");
