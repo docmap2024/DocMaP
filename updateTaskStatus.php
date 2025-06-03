@@ -84,10 +84,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                   WHERE TaskDept_ID IN ($placeholders) AND UserID = ?";
                 
                 $stmtAdmin = $conn->prepare($sqlUpdateAdmin);
+
+                // Create the type string: 's' for status, then types for taskDeptIDs, then 'i' for user_id
+                $types = 's' . $types . 'i';        
                 
                 // Bind parameters - status first, then taskDeptIDs, then user_id
                 $bindParams = array_merge([$status], $taskDeptIDs, [$user_id]);
-                $stmtAdmin->bind_param($types . "iii", ...$bindParams);
+                $stmtAdmin->bind_param($types, ...$bindParams);
                 
                 $adminUpdated = $stmtAdmin->execute();
                 if (!$adminUpdated) {
