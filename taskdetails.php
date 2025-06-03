@@ -53,10 +53,37 @@ if (isset($_GET['task_id'])) {
     $sql_task_status = "SELECT status FROM documents WHERE TaskID = '$task_id' AND UserID = '$user_id'";
     $result_task_status = mysqli_query($conn, $sql_task_status);
 
-    // Check if task status is found
+    // Check if task status is found in documents table
     if (mysqli_num_rows($result_task_status) > 0) {
         $row_task_status = mysqli_fetch_assoc($result_task_status);
         $task_status = $row_task_status['status']; // Get the task status
+    } else {
+        // If no status found in documents table, check administrative_document table
+        
+        // First get TaskDept_ID(s) for this task
+        $sql_task_dept = "SELECT TaskDept_ID FROM task_department WHERE TaskID = '$task_id'";
+        $result_task_dept = mysqli_query($conn, $sql_task_dept);
+        
+        if (mysqli_num_rows($result_task_dept) > 0) {
+            $task_dept_ids = [];
+            while ($row = mysqli_fetch_assoc($result_task_dept)) {
+                $task_dept_ids[] = $row['TaskDept_ID'];
+            }
+            
+            // Create IN clause for the query
+            $in_clause = implode(',', $task_dept_ids);
+            
+            // Query to fetch status from administrative_document table
+            $sql_admin_status = "SELECT Status FROM administrative_document 
+                                WHERE TaskDept_ID IN ($in_clause) AND UserID = '$user_id'
+                                LIMIT 1";
+            $result_admin_status = mysqli_query($conn, $sql_admin_status);
+            
+            if (mysqli_num_rows($result_admin_status) > 0) {
+                $row_admin_status = mysqli_fetch_assoc($result_admin_status);
+                $task_status = $row_admin_status['Status']; // Get the task status
+            }
+        }
     }
 
     // Query to fetch task status from taskk_users table
