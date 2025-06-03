@@ -105,7 +105,8 @@ if (isset($_GET['task_id'])) {
             ad.name AS file_name,
             ad.uri AS file_path,
             ad.mimeType,
-            ad.Admin_Docu_ID
+            ad.Admin_Docu_ID,
+            td.TaskID
         FROM 
             task_user tu
         JOIN 
